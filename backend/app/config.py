@@ -6,7 +6,7 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://meeplesshelf:meeplesshelf@localhost:5432/meeplesshelf"
     )
 
-    model_config = {"env_prefix": "APP_"}
+    model_config = {"env_prefix": "APP_", "env_file": ".env"}
 
 
 settings = Settings()
