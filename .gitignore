@@ -11,8 +11,8 @@ env/
 .env.local
 
 node_modules/
-frontend/dist/
-frontend/build/
+web/dist/
+web/build/
 
 .idea/
 .vscode/

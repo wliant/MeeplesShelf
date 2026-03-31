@@ -25,19 +25,20 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: |
-          pip install -r backend/requirements.txt
-          pip install ruff
+        run: cd apps && uv sync --frozen --dev
       - name: Lint
-        run: ruff check backend/
+        run: cd apps && uv run ruff check .
       - name: Test
         env:
           APP_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/meeplesshelf_test
-        run: cd backend && pytest tests/ -v
+        run: cd apps && uv run pytest tests/ -v
 
   frontend-build:
     runs-on: ubuntu-latest
@@ -47,12 +48,12 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: web/package-lock.json
       - name: Install dependencies
-        run: cd frontend && npm ci
+        run: cd web && npm ci
       - name: Type check
-        run: cd frontend && npx tsc -b --noEmit
+        run: cd web && npx tsc -b --noEmit
       - name: Lint
-        run: cd frontend && npm run lint
+        run: cd web && npm run lint
       - name: Build
-        run: cd frontend && npm run build
+        run: cd web && npm run build

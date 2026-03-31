@@ -167,41 +167,41 @@ MeeplesShelf is an early-stage board game inventory and session tracking app (2 
 *Fix critical usability gaps that make the app feel incomplete.*
 
 #### 0.1 Loading States & Error Handling
-- **Files**: `frontend/src/pages/InventoryPage.tsx`, `frontend/src/pages/SessionsPage.tsx`, `frontend/src/api/client.ts`
-- **New files**: `frontend/src/components/common/SnackbarProvider.tsx`, `frontend/src/components/common/ErrorBoundary.tsx`
+- **Files**: `web/src/pages/InventoryPage.tsx`, `web/src/pages/SessionsPage.tsx`, `web/src/api/client.ts`
+- **New files**: `web/src/components/common/SnackbarProvider.tsx`, `web/src/components/common/ErrorBoundary.tsx`
 - **Changes**: Add `loading` state to both pages, show MUI `Skeleton` during fetch. Add axios response interceptor for global error toasts. Wrap app in `SnackbarProvider` (use `notistack` library). Add `ErrorBoundary` at app root.
 - **Complexity**: S
 
 #### 0.2 Confirmation Dialogs & Toast Notifications
-- **New file**: `frontend/src/components/common/ConfirmDialog.tsx`
-- **Files**: `frontend/src/components/games/GameCard.tsx`, `frontend/src/components/sessions/SessionList.tsx`
+- **New file**: `web/src/components/common/ConfirmDialog.tsx`
+- **Files**: `web/src/components/games/GameCard.tsx`, `web/src/components/sessions/SessionList.tsx`
 - **Changes**: Wrap all delete actions in confirmation dialog. Show success snackbar on create/update/delete.
 - **Complexity**: S
 
 #### 0.3 Session Editing
-- **Backend**: Add `PUT /api/sessions/{session_id}` in `backend/app/routers/sessions.py`. Add `GameSessionUpdate` schema in `backend/app/schemas/session.py`.
+- **Backend**: Add `PUT /api/sessions/{session_id}` in `apps/app/routers/sessions.py`. Add `GameSessionUpdate` schema in `apps/app/schemas/session.py`.
 - **Frontend**: Modify `SessionForm.tsx` to accept existing session for pre-population. Add edit button in `SessionDetail.tsx`. Wire edit flow in `SessionsPage.tsx`.
-- **API client**: Add `updateSession()` in `frontend/src/api/sessions.ts`
+- **API client**: Add `updateSession()` in `web/src/api/sessions.ts`
 - **Complexity**: M
 
 #### 0.4 Inventory Search, Sort & Filter
-- **Backend**: Extend `GET /api/games` in `backend/app/routers/games.py` with query params: `search`, `sort_by` (name/created_at/min_players), `sort_dir` (asc/desc)
-- **Frontend**: Add search `TextField`, sort `Select` to `InventoryPage.tsx`. Update `listGames()` in `frontend/src/api/games.ts`.
+- **Backend**: Extend `GET /api/games` in `apps/app/routers/games.py` with query params: `search`, `sort_by` (name/created_at/min_players), `sort_dir` (asc/desc)
+- **Frontend**: Add search `TextField`, sort `Select` to `InventoryPage.tsx`. Update `listGames()` in `web/src/api/games.ts`.
 - **Complexity**: M
 
 #### 0.5 Session Filtering
-- **Backend**: Extend `GET /api/sessions` in `backend/app/routers/sessions.py` with: `player_id`, `date_from`, `date_to`, `sort_by`
-- **Frontend**: New `frontend/src/components/sessions/SessionFilterBar.tsx` with date pickers, game/player dropdowns. Wire into `SessionsPage.tsx`.
+- **Backend**: Extend `GET /api/sessions` in `apps/app/routers/sessions.py` with: `player_id`, `date_from`, `date_to`, `sort_by`
+- **Frontend**: New `web/src/components/sessions/SessionFilterBar.tsx` with date pickers, game/player dropdowns. Wire into `SessionsPage.tsx`.
 - **Complexity**: M
 
 #### 0.6 Input Validation & Indexes
-- **Backend schemas** (`backend/app/schemas/game.py`): Add validators — `min_players >= 1`, `max_players >= min_players`, `name` non-empty
-- **New migration** `backend/alembic/versions/002_indexes.py`: Add indexes on `game_sessions.game_id`, `game_sessions.played_at`, `session_players.player_id`, `games.name`
+- **Backend schemas** (`apps/app/schemas/game.py`): Add validators — `min_players >= 1`, `max_players >= min_players`, `name` non-empty
+- **New migration** `apps/alembic/versions/002_indexes.py`: Add indexes on `game_sessions.game_id`, `game_sessions.played_at`, `session_players.player_id`, `games.name`
 - **Complexity**: S
 
 #### 0.7 Health Check & CORS Lockdown
-- **File**: `backend/app/main.py` — Add `GET /health` endpoint, read allowed CORS origins from config
-- **File**: `backend/app/config.py` — Add `cors_origins: list[str]` setting
+- **File**: `apps/app/main.py` — Add `GET /health` endpoint, read allowed CORS origins from config
+- **File**: `apps/app/config.py` — Add `cors_origins: list[str]` setting
 - **Complexity**: S
 
 ---
@@ -211,61 +211,61 @@ MeeplesShelf is an early-stage board game inventory and session tracking app (2 
 *Bring the app to minimum viable product for serious hobbyists.*
 
 #### 1.1 Game Metadata Expansion
-- **Model** (`backend/app/models/game.py`): Add columns: `description` (Text), `image_url` (String), `thumbnail_url` (String), `min_playtime` (Integer), `max_playtime` (Integer), `min_age` (Integer), `weight` (Float), `year_published` (Integer), `bgg_id` (Integer, unique), `user_rating` (Float). New models: `Designer`, `Publisher`, `Category`, `Mechanic` with association tables.
-- **Schemas** (`backend/app/schemas/game.py`): Extend `GameCreate`, `GameUpdate`, `GameRead` with all fields. Add `DesignerRead`, `PublisherRead`, `CategoryRead`, `MechanicRead`.
-- **Router** (`backend/app/routers/games.py`): Extend create/update. Add `GET /api/categories`, `GET /api/mechanics`.
+- **Model** (`apps/app/models/game.py`): Add columns: `description` (Text), `image_url` (String), `thumbnail_url` (String), `min_playtime` (Integer), `max_playtime` (Integer), `min_age` (Integer), `weight` (Float), `year_published` (Integer), `bgg_id` (Integer, unique), `user_rating` (Float). New models: `Designer`, `Publisher`, `Category`, `Mechanic` with association tables.
+- **Schemas** (`apps/app/schemas/game.py`): Extend `GameCreate`, `GameUpdate`, `GameRead` with all fields. Add `DesignerRead`, `PublisherRead`, `CategoryRead`, `MechanicRead`.
+- **Router** (`apps/app/routers/games.py`): Extend create/update. Add `GET /api/categories`, `GET /api/mechanics`.
 - **Frontend**: Extend `GameForm.tsx` with new fields. Extend `GameCard.tsx` with image, playtime, weight badge.
 - **Migration**: `003_game_metadata.py`
 - **Complexity**: L
 
 #### 1.2 Collection Status Tracking
-- **Model** (`backend/app/models/game.py`): Add `collection_status` (String, default "owned", enum: owned/wishlist/want_to_play/previously_owned/want_to_trade/for_trade/preordered), `is_favorite` (Boolean)
+- **Model** (`apps/app/models/game.py`): Add `collection_status` (String, default "owned", enum: owned/wishlist/want_to_play/previously_owned/want_to_trade/for_trade/preordered), `is_favorite` (Boolean)
 - **Router**: Add `PATCH /api/games/{id}/status`, filter `GET /api/games` by `status`
 - **Frontend**: Status tabs on `InventoryPage.tsx`, status badge + favorite star on `GameCard.tsx`
 - **Migration**: `004_collection_status.py`
 - **Complexity**: M
 
 #### 1.3 Play Duration & Cooperative Support
-- **Model** (`backend/app/models/session.py`): Add `duration_minutes` (Integer), `is_cooperative` (Boolean), `cooperative_result` (String: "win"/"loss")
+- **Model** (`apps/app/models/session.py`): Add `duration_minutes` (Integer), `is_cooperative` (Boolean), `cooperative_result` (String: "win"/"loss")
 - **Schemas/Router**: Extend create/read/update with new fields
 - **Frontend**: Duration field + optional timer in `SessionForm.tsx`, cooperative toggle
 - **Migration**: `005_session_enhancements.py`
 - **Complexity**: S
 
 #### 1.4 Statistics Engine
-- **New files**: `backend/app/routers/stats.py`, `backend/app/services/stats.py`, `backend/app/schemas/stats.py`
+- **New files**: `apps/app/routers/stats.py`, `apps/app/services/stats.py`, `apps/app/schemas/stats.py`
 - **Endpoints**:
   - `GET /api/stats/overview` — total games, plays, players, play hours, H-index
   - `GET /api/stats/games/{game_id}` — play count, avg/high score, last played, win distribution
   - `GET /api/stats/players/{player_id}` — games played, win rate, average scores
   - `GET /api/stats/play-frequency?period=month&range=12` — plays grouped by period
   - `GET /api/stats/top-games?limit=10&metric=play_count` — leaderboard
-- **Register**: Add router in `backend/app/main.py`
+- **Register**: Add router in `apps/app/main.py`
 - **Complexity**: L
 
 #### 1.5 Dashboard Page
-- **New files**: `frontend/src/pages/DashboardPage.tsx`, `frontend/src/api/stats.ts`, `frontend/src/types/stats.ts`
-- **New components**: `frontend/src/components/stats/OverviewCards.tsx`, `PlayFrequencyChart.tsx`, `TopGamesChart.tsx`
+- **New files**: `web/src/pages/DashboardPage.tsx`, `web/src/api/stats.ts`, `web/src/types/stats.ts`
+- **New components**: `web/src/components/stats/OverviewCards.tsx`, `PlayFrequencyChart.tsx`, `TopGamesChart.tsx`
 - **Dependency**: Add `recharts` to `package.json`
 - **Routing**: Add `/dashboard` in `App.tsx` (make default). Add nav link in `AppShell.tsx`.
 - **Complexity**: L
 
 #### 1.6 BGG Game Search & Import
-- **New files**: `backend/app/services/bgg.py` (BGG XML API v2 client), `backend/app/routers/integrations.py`, `backend/app/schemas/bgg.py`
+- **New files**: `apps/app/services/bgg.py` (BGG XML API v2 client), `apps/app/routers/integrations.py`, `apps/app/schemas/bgg.py`
 - **Endpoints**: `GET /api/bgg/search?q=catan`, `POST /api/bgg/import/{bgg_id}`
 - **Dependency**: Add `httpx` + `xmltodict` to `requirements.txt`
-- **Frontend**: New `frontend/src/components/games/BGGSearchDialog.tsx` — search, preview, one-click import
+- **Frontend**: New `web/src/components/games/BGGSearchDialog.tsx` — search, preview, one-click import
 - **Complexity**: L
 
 #### 1.7 Game & Player Detail Pages
-- **New files**: `frontend/src/pages/GameDetailPage.tsx`, `frontend/src/pages/PlayerDetailPage.tsx`
+- **New files**: `web/src/pages/GameDetailPage.tsx`, `web/src/pages/PlayerDetailPage.tsx`
 - **Routing**: Add `/games/:id` and `/players/:id` in `App.tsx`
 - **Content**: Game detail = full metadata + play history + per-game stats. Player detail = profile + play history + win rates.
 - **Complexity**: M each
 
 #### 1.8 Dark Mode
-- **File**: `frontend/src/App.tsx` — Add `ThemeContext` with dark/light toggle, persist to localStorage, use `prefers-color-scheme` for default
-- **File**: `frontend/src/components/layout/AppShell.tsx` — Add theme toggle button
+- **File**: `web/src/App.tsx` — Add `ThemeContext` with dark/light toggle, persist to localStorage, use `prefers-color-scheme` for default
+- **File**: `web/src/components/layout/AppShell.tsx` — Add theme toggle button
 - **Complexity**: M
 
 #### 1.9 Pagination
@@ -275,7 +275,7 @@ MeeplesShelf is an early-stage board game inventory and session tracking app (2 
 - **Complexity**: M
 
 #### 1.10 Test Suite Foundation
-- **New directory**: `backend/tests/` with `conftest.py` (async test DB setup), `test_games.py`, `test_sessions.py`, `test_scoring.py`
+- **New directory**: `apps/tests/` with `conftest.py` (async test DB setup), `test_games.py`, `test_sessions.py`, `test_scoring.py`
 - **Dependency**: Add `pytest`, `pytest-asyncio`, `httpx` to dev requirements
 - **Frontend**: Add Vitest + React Testing Library, initial component tests
 - **Complexity**: L
