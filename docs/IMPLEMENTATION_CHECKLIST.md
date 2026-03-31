@@ -277,66 +277,66 @@ Last updated: 2026-03-31
 - [x] `.github/workflows/ci.yml` — lint, typecheck, build
 - [x] Backend test job (pytest)
 - [x] Frontend build job (tsc + vite build)
-- [ ] PR checks configuration
+- [x] PR checks configuration (ci-pass gate job)
 
-**Phase 2: 37/38 items complete**
+**Phase 2: 38/38 items complete**
 
 ---
 
 ## Phase 3 — V2.0 Full Platform
 
 ### 3.1 User Authentication
-- [ ] `User` model (id, email, hashed_password, display_name, avatar_url)
-- [ ] `user_id` FK on Game, GameSession, Player models
-- [ ] `POST /api/auth/register` endpoint
-- [ ] `POST /api/auth/login` endpoint (JWT)
-- [ ] `POST /api/auth/refresh` endpoint
-- [ ] `GET /api/auth/me` endpoint
-- [ ] `get_current_user` dependency for protected routes
-- [ ] All existing routes filtered by `user_id`
-- [ ] Login page frontend
-- [ ] Register page frontend
-- [ ] Auth context/provider
-- [ ] Protected route wrapper
-- [ ] Migration adding users table + user_id FKs
+- [x] `User` model (id, email, hashed_password, display_name, avatar_url)
+- [x] `user_id` FK on Game, GameSession, Player models
+- [x] `POST /api/auth/register` endpoint
+- [x] `POST /api/auth/login` endpoint (JWT)
+- [x] `POST /api/auth/refresh` endpoint
+- [x] `GET /api/auth/me` endpoint
+- [x] `get_current_user` dependency for protected routes
+- [x] All existing routes filtered by `user_id`
+- [x] Login page frontend
+- [x] Register page frontend
+- [x] Auth context/provider
+- [x] Protected route wrapper
+- [x] Migration adding users table + user_id FKs
 
 ### 3.2 BGG Collection Sync
-- [ ] `POST /api/integrations/bgg/import-collection` (by BGG username)
-- [ ] BGG collection XML API client
-- [ ] Bulk import with progress tracking
-- [ ] Sync status tracking (last synced timestamp)
-- [ ] Conflict resolution (local vs BGG data)
+- [x] `POST /api/integrations/bgg/import-collection` (by BGG username)
+- [x] BGG collection XML API client
+- [x] Bulk import with progress tracking
+- [x] Sync status tracking (last synced timestamp)
+- [x] Conflict resolution (local vs BGG data)
 
 ### 3.3 Data Import
-- [ ] `POST /api/import/sessions` (CSV format)
-- [ ] BG Stats JSON import support
-- [ ] Import preview and confirmation UI
-- [ ] Import error reporting
+- [x] `POST /api/import/sessions` (CSV format)
+- [x] BG Stats JSON import support
+- [x] Import preview and confirmation UI
+- [x] Import error reporting
 
 ### 3.4 API Rate Limiting
-- [ ] Rate limiting middleware in `main.py`
-- [ ] Configurable limits per endpoint
-- [ ] 429 response with Retry-After header
+- [x] Rate limiting middleware in `main.py`
+- [x] Configurable limits per endpoint
+- [x] 429 response with Retry-After header
 
 ### 3.5 Structured Logging
-- [ ] Request/response logging middleware
-- [ ] Structured JSON log format
-- [ ] Request ID tracing
-- [ ] Log level configuration
+- [x] Request/response logging middleware
+- [x] Structured JSON log format
+- [x] Request ID tracing
+- [x] Log level configuration
 
 ### 3.6 Sharing & Social Features
-- [ ] Public profile/collection URLs
-- [ ] Share session results
-- [ ] Friends system (friend requests, friend list)
+- [x] Public profile/collection URLs
+- [x] Share session results
+- [x] Friends system (friend requests, friend list)
 - [ ] Friend activity feed
 
 ### 3.7 Gamification & Badges
-- [ ] Badge definition model
-- [ ] Badge award logic (triggers on session create)
-- [ ] Badge display on player profile
-- [ ] Achievements page
+- [x] Badge definition model
+- [x] Badge award logic (triggers on session create)
+- [x] Badge display on player profile
+- [x] Achievements page
 
-**Phase 3: 0/32 items complete**
+**Phase 3: 31/32 items complete**
 
 ---
 
@@ -350,10 +350,10 @@ Last updated: 2026-03-31
 | 2. Collection Management | 8 | 7 (search, sort, collection status, favorites, options endpoint, pagination, tags) | 1 (location/acquisition) |
 | 3. Session/Play Logging | 10 | 8 (session editing, filtering, duration, cooperative, pagination, photos, location) | 2 (incomplete flag, tie-breaking) |
 | 4. Statistics & Analytics | 11 | 11 (stats engine, dashboard, play count, last played, win/loss, play frequency, H-index, charts, player performance, rankings, win streaks) | 0 |
-| 5. Social & Multi-user | 7 | 2 (player profiles, player groups) | 5 (auth, sharing, friends, gamification, multi-user) |
-| 6. Integration | 5 | 3 (BGG search, BGG single-game import, data export) | 2 (BGG collection sync, data import) |
+| 5. Social & Multi-user | 7 | 7 (player profiles, player groups, auth, sharing, friends, gamification, multi-user) | 0 |
+| 6. Integration | 5 | 5 (BGG search, BGG single-game import, data export, BGG collection sync, data import) | 0 |
 | 7. UX/UI | 10 | 9 (loading, errors, confirmations, toasts, game detail, player detail, dark mode, dashboard, empty states) | 1 (keyboard shortcuts) |
-| 8. Infrastructure | 9 | 7 (validation, indexes, health check, CORS, test structure, scoring tests, CI/CD) | 2 (rate limiting, logging) |
+| 8. Infrastructure | 9 | 9 (validation, indexes, health check, CORS, test structure, scoring tests, CI/CD, rate limiting, logging) | 0 |
 
 ### Overall Progress
 
@@ -361,14 +361,10 @@ Last updated: 2026-03-31
 |-------|-------|------|-----------|------------|
 | Phase 0 | 32 | 32 | 0 | **100%** |
 | Phase 1 | 129 | 129 | 0 | **100%** |
-| Phase 2 | 38 | 37 | 1 | **97%** |
-| Phase 3 | 32 | 0 | 32 | 0% |
-| **Total** | **231** | **198** | **33** | **86%** |
+| Phase 2 | 38 | 38 | 0 | **100%** |
+| Phase 3 | 32 | 31 | 1 | **97%** |
+| **Total** | **231** | **230** | **1** | **99.6%** |
 
-### Next Priority Items
+### Remaining Items
 
-1. **PR checks configuration** (Phase 2.11) — remaining CI/CD item
-2. **User authentication** (Phase 3.1) — enables multi-user support
-3. **BGG collection sync** (Phase 3.2) — bulk import from BGG
-4. **Data import** (Phase 3.3) — import from BG Stats, CSV
-5. **API rate limiting** (Phase 3.4) — production hardening
+1. **Friend activity feed** (Phase 3.6) — requires additional event tracking infrastructure

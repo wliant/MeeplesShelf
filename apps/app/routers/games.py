@@ -4,16 +4,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.game import (
     Category,
     Designer,
     Expansion,
     Game,
-    GameTag,
     Mechanic,
     Publisher,
     game_tag_assignments,
 )
+from app.models.user import User
 from app.schemas.game import (
     ExpansionCreate,
     ExpansionRead,
@@ -84,8 +85,9 @@ async def list_games(
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    base = select(Game)
+    base = select(Game).where(Game.user_id == current_user.id)
     if collection_status:
         base = base.where(Game.collection_status == collection_status)
     if search:
@@ -112,19 +114,28 @@ async def list_games(
 
 
 @router.get("/games/options", response_model=list[GameBrief])
-async def list_game_options(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Game).order_by(Game.name))
+async def list_game_options(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Game).where(Game.user_id == current_user.id).order_by(Game.name)
+    )
     return result.unique().scalars().all()
 
 
 @router.post("/games", response_model=GameRead, status_code=201)
-async def create_game(payload: GameCreate, db: AsyncSession = Depends(get_db)):
+async def create_game(
+    payload: GameCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     data = payload.model_dump(
         exclude={"designer_names", "publisher_names", "category_names", "mechanic_names"}
     )
     if data.get("scoring_spec") is not None:
         data["scoring_spec"] = payload.scoring_spec.model_dump()
-    game = Game(**data)
+    game = Game(**data, user_id=current_user.id)
     db.add(game)
     await db.flush()
     # Eagerly load empty relationship collections to avoid lazy-load in async context
@@ -138,9 +149,15 @@ async def create_game(payload: GameCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/games/{game_id}", response_model=GameRead)
-async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
+async def get_game(
+    game_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(
-        select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
+        select(Game)
+        .options(*GAME_LOAD_OPTIONS)
+        .where(Game.id == game_id, Game.user_id == current_user.id)
     )
     game = result.unique().scalar_one_or_none()
     if not game:
@@ -150,10 +167,15 @@ async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.put("/games/{game_id}", response_model=GameRead)
 async def update_game(
-    game_id: int, payload: GameUpdate, db: AsyncSession = Depends(get_db)
+    game_id: int,
+    payload: GameUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
+        select(Game)
+        .options(*GAME_LOAD_OPTIONS)
+        .where(Game.id == game_id, Game.user_id == current_user.id)
     )
     game = result.unique().scalar_one_or_none()
     if not game:
@@ -178,9 +200,15 @@ async def update_game(
 
 
 @router.patch("/games/{game_id}/favorite", response_model=GameRead)
-async def toggle_favorite(game_id: int, db: AsyncSession = Depends(get_db)):
+async def toggle_favorite(
+    game_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(
-        select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
+        select(Game)
+        .options(*GAME_LOAD_OPTIONS)
+        .where(Game.id == game_id, Game.user_id == current_user.id)
     )
     game = result.unique().scalar_one_or_none()
     if not game:
@@ -194,8 +222,14 @@ async def toggle_favorite(game_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/games/{game_id}", status_code=204)
-async def delete_game(game_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Game).where(Game.id == game_id))
+async def delete_game(
+    game_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Game).where(Game.id == game_id, Game.user_id == current_user.id)
+    )
     game = result.unique().scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
@@ -210,9 +244,14 @@ async def delete_game(game_id: int, db: AsyncSession = Depends(get_db)):
     "/games/{game_id}/expansions", response_model=ExpansionRead, status_code=201
 )
 async def add_expansion(
-    game_id: int, payload: ExpansionCreate, db: AsyncSession = Depends(get_db)
+    game_id: int,
+    payload: ExpansionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Game).where(Game.id == game_id))
+    result = await db.execute(
+        select(Game).where(Game.id == game_id, Game.user_id == current_user.id)
+    )
     if not result.scalar_one_or_none():
         raise HTTPException(404, "Game not found")
 
@@ -233,7 +272,10 @@ async def add_expansion(
 
 @router.delete("/games/{game_id}/expansions/{expansion_id}", status_code=204)
 async def delete_expansion(
-    game_id: int, expansion_id: int, db: AsyncSession = Depends(get_db)
+    game_id: int,
+    expansion_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(Expansion).where(
@@ -251,13 +293,16 @@ async def delete_expansion(
 
 
 @router.post("/seed", status_code=201)
-async def seed_games(db: AsyncSession = Depends(get_db)):
+async def seed_games(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     created = []
     for data in SEED_GAMES:
         existing = await db.execute(select(Game).where(Game.name == data["name"]))
         if existing.scalar_one_or_none():
             continue
-        game = Game(**data)
+        game = Game(**data, user_id=current_user.id)
         db.add(game)
         created.append(data["name"])
     await db.commit()

@@ -6,8 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.game import Expansion, Game
 from app.models.session import GameSession, Player, SessionPhoto, SessionPlayer
+from app.models.user import User
 from app.schemas.session import (
     GameSessionCreate,
     GameSessionRead,
@@ -28,17 +30,28 @@ router = APIRouter(tags=["sessions"])
 
 
 @router.get("/players", response_model=list[PlayerRead])
-async def list_players(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Player).order_by(Player.name))
+async def list_players(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Player).where(Player.user_id == current_user.id).order_by(Player.name)
+    )
     return result.scalars().all()
 
 
 @router.post("/players", response_model=PlayerRead, status_code=201)
-async def create_player(payload: PlayerCreate, db: AsyncSession = Depends(get_db)):
-    existing = await db.execute(select(Player).where(Player.name == payload.name))
+async def create_player(
+    payload: PlayerCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    existing = await db.execute(
+        select(Player).where(Player.name == payload.name, Player.user_id == current_user.id)
+    )
     if existing.scalar_one_or_none():
         raise HTTPException(409, "Player already exists")
-    player = Player(name=payload.name)
+    player = Player(name=payload.name, user_id=current_user.id)
     db.add(player)
     await db.commit()
     await db.refresh(player)
@@ -47,9 +60,14 @@ async def create_player(payload: PlayerCreate, db: AsyncSession = Depends(get_db
 
 @router.put("/players/{player_id}", response_model=PlayerRead)
 async def update_player(
-    player_id: int, payload: PlayerUpdate, db: AsyncSession = Depends(get_db)
+    player_id: int,
+    payload: PlayerUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Player).where(Player.id == player_id))
+    result = await db.execute(
+        select(Player).where(Player.id == player_id, Player.user_id == current_user.id)
+    )
     player = result.scalar_one_or_none()
     if not player:
         raise HTTPException(404, "Player not found")
@@ -80,8 +98,9 @@ async def list_sessions(
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    base = select(GameSession)
+    base = select(GameSession).where(GameSession.user_id == current_user.id)
     if game_id is not None:
         base = base.where(GameSession.game_id == game_id)
     if player_id is not None:
@@ -131,14 +150,19 @@ def _build_session(payload) -> GameSession:
 
 @router.post("/sessions", response_model=GameSessionRead, status_code=201)
 async def create_session(
-    payload: GameSessionCreate, db: AsyncSession = Depends(get_db)
+    payload: GameSessionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Game).where(Game.id == payload.game_id))
+    result = await db.execute(
+        select(Game).where(Game.id == payload.game_id, Game.user_id == current_user.id)
+    )
     game = result.unique().scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
 
     session = _build_session(payload)
+    session.user_id = current_user.id
 
     if payload.expansion_ids:
         exp_result = await db.execute(
@@ -168,11 +192,12 @@ async def update_session(
     session_id: int,
     payload: GameSessionUpdate,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(GameSession)
         .options(selectinload(GameSession.players))
-        .where(GameSession.id == session_id)
+        .where(GameSession.id == session_id, GameSession.user_id == current_user.id)
     )
     session = result.unique().scalar_one_or_none()
     if not session:
@@ -219,11 +244,15 @@ async def update_session(
 
 
 @router.get("/sessions/{session_id}", response_model=GameSessionRead)
-async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
+async def get_session(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(
         select(GameSession)
         .options(*SESSION_LOAD_OPTIONS)
-        .where(GameSession.id == session_id)
+        .where(GameSession.id == session_id, GameSession.user_id == current_user.id)
     )
     session = result.scalar_one_or_none()
     if not session:
@@ -232,9 +261,15 @@ async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/sessions/{session_id}", status_code=204)
-async def delete_session(session_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_session(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(
-        select(GameSession).where(GameSession.id == session_id)
+        select(GameSession).where(
+            GameSession.id == session_id, GameSession.user_id == current_user.id
+        )
     )
     session = result.unique().scalar_one_or_none()
     if not session:
@@ -250,10 +285,15 @@ async def delete_session(session_id: int, db: AsyncSession = Depends(get_db)):
     "/sessions/{session_id}/photos", response_model=SessionPhotoRead, status_code=201
 )
 async def add_session_photo(
-    session_id: int, payload: SessionPhotoCreate, db: AsyncSession = Depends(get_db)
+    session_id: int,
+    payload: SessionPhotoCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(GameSession).where(GameSession.id == session_id)
+        select(GameSession).where(
+            GameSession.id == session_id, GameSession.user_id == current_user.id
+        )
     )
     if not result.scalar_one_or_none():
         raise HTTPException(404, "Session not found")
@@ -268,7 +308,10 @@ async def add_session_photo(
 
 @router.delete("/sessions/{session_id}/photos/{photo_id}", status_code=204)
 async def delete_session_photo(
-    session_id: int, photo_id: int, db: AsyncSession = Depends(get_db)
+    session_id: int,
+    photo_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(SessionPhoto).where(

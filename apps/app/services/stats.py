@@ -7,26 +7,41 @@ from app.models.game import Game
 from app.models.session import GameSession, Player, SessionPlayer
 
 
-async def get_overview_stats(db: AsyncSession) -> dict:
-    total_games = (await db.execute(select(func.count(Game.id)))).scalar() or 0
+async def get_overview_stats(db: AsyncSession, user_id: int) -> dict:
+    total_games = (
+        await db.execute(select(func.count(Game.id)).where(Game.user_id == user_id))
+    ).scalar() or 0
     total_sessions = (
-        await db.execute(select(func.count(GameSession.id)))
+        await db.execute(
+            select(func.count(GameSession.id)).where(GameSession.user_id == user_id)
+        )
     ).scalar() or 0
     total_players = (
-        await db.execute(select(func.count(Player.id)))
+        await db.execute(
+            select(func.count(Player.id)).where(Player.user_id == user_id)
+        )
     ).scalar() or 0
     total_play_time = (
-        await db.execute(select(func.coalesce(func.sum(GameSession.duration_minutes), 0)))
+        await db.execute(
+            select(func.coalesce(func.sum(GameSession.duration_minutes), 0)).where(
+                GameSession.user_id == user_id
+            )
+        )
     ).scalar() or 0
     unique_games_played = (
-        await db.execute(select(func.count(distinct(GameSession.game_id))))
+        await db.execute(
+            select(func.count(distinct(GameSession.game_id))).where(
+                GameSession.user_id == user_id
+            )
+        )
     ).scalar() or 0
 
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     sessions_last_30 = (
         await db.execute(
             select(func.count(GameSession.id)).where(
-                GameSession.played_at >= thirty_days_ago
+                GameSession.played_at >= thirty_days_ago,
+                GameSession.user_id == user_id,
             )
         )
     ).scalar() or 0
@@ -41,9 +56,11 @@ async def get_overview_stats(db: AsyncSession) -> dict:
     }
 
 
-async def get_game_stats(db: AsyncSession, game_id: int) -> dict | None:
+async def get_game_stats(db: AsyncSession, game_id: int, user_id: int) -> dict | None:
     game = (
-        await db.execute(select(Game).where(Game.id == game_id))
+        await db.execute(
+            select(Game).where(Game.id == game_id, Game.user_id == user_id)
+        )
     ).scalar_one_or_none()
     if not game:
         return None
@@ -51,7 +68,8 @@ async def get_game_stats(db: AsyncSession, game_id: int) -> dict | None:
     total_plays = (
         await db.execute(
             select(func.count(GameSession.id)).where(
-                GameSession.game_id == game_id
+                GameSession.game_id == game_id,
+                GameSession.user_id == user_id,
             )
         )
     ).scalar() or 0
@@ -60,7 +78,7 @@ async def get_game_stats(db: AsyncSession, game_id: int) -> dict | None:
         await db.execute(
             select(func.count(distinct(SessionPlayer.player_id)))
             .join(GameSession, SessionPlayer.session_id == GameSession.id)
-            .where(GameSession.game_id == game_id)
+            .where(GameSession.game_id == game_id, GameSession.user_id == user_id)
         )
     ).scalar() or 0
 
@@ -71,7 +89,7 @@ async def get_game_stats(db: AsyncSession, game_id: int) -> dict | None:
                 func.max(SessionPlayer.total_score),
             )
             .join(GameSession, SessionPlayer.session_id == GameSession.id)
-            .where(GameSession.game_id == game_id)
+            .where(GameSession.game_id == game_id, GameSession.user_id == user_id)
             .where(SessionPlayer.total_score.is_not(None))
         )
     ).one_or_none()
@@ -82,7 +100,7 @@ async def get_game_stats(db: AsyncSession, game_id: int) -> dict | None:
     last_played = (
         await db.execute(
             select(func.max(GameSession.played_at)).where(
-                GameSession.game_id == game_id
+                GameSession.game_id == game_id, GameSession.user_id == user_id
             )
         )
     ).scalar()
@@ -93,7 +111,7 @@ async def get_game_stats(db: AsyncSession, game_id: int) -> dict | None:
             select(Player.name, func.count(SessionPlayer.id))
             .join(Player, SessionPlayer.player_id == Player.id)
             .join(GameSession, SessionPlayer.session_id == GameSession.id)
-            .where(GameSession.game_id == game_id)
+            .where(GameSession.game_id == game_id, GameSession.user_id == user_id)
             .where(SessionPlayer.winner.is_(True))
             .group_by(Player.name)
         )
@@ -111,26 +129,34 @@ async def get_game_stats(db: AsyncSession, game_id: int) -> dict | None:
     }
 
 
-async def get_player_stats(db: AsyncSession, player_id: int) -> dict | None:
+async def get_player_stats(db: AsyncSession, player_id: int, user_id: int) -> dict | None:
     player = (
-        await db.execute(select(Player).where(Player.id == player_id))
+        await db.execute(
+            select(Player).where(Player.id == player_id, Player.user_id == user_id)
+        )
     ).scalar_one_or_none()
     if not player:
         return None
 
     total_sessions = (
         await db.execute(
-            select(func.count(SessionPlayer.id)).where(
-                SessionPlayer.player_id == player_id
+            select(func.count(SessionPlayer.id))
+            .join(GameSession, SessionPlayer.session_id == GameSession.id)
+            .where(
+                SessionPlayer.player_id == player_id,
+                GameSession.user_id == user_id,
             )
         )
     ).scalar() or 0
 
     total_wins = (
         await db.execute(
-            select(func.count(SessionPlayer.id)).where(
+            select(func.count(SessionPlayer.id))
+            .join(GameSession, SessionPlayer.session_id == GameSession.id)
+            .where(
                 SessionPlayer.player_id == player_id,
                 SessionPlayer.winner.is_(True),
+                GameSession.user_id == user_id,
             )
         )
     ).scalar() or 0
@@ -143,7 +169,7 @@ async def get_player_stats(db: AsyncSession, player_id: int) -> dict | None:
             select(Game.name, func.count(GameSession.id).label("cnt"))
             .join(GameSession, Game.id == GameSession.game_id)
             .join(SessionPlayer, GameSession.id == SessionPlayer.session_id)
-            .where(SessionPlayer.player_id == player_id)
+            .where(SessionPlayer.player_id == player_id, GameSession.user_id == user_id)
             .group_by(Game.name)
             .order_by(func.count(GameSession.id).desc())
             .limit(1)
@@ -155,7 +181,7 @@ async def get_player_stats(db: AsyncSession, player_id: int) -> dict | None:
             select(distinct(Game.name))
             .join(GameSession, Game.id == GameSession.game_id)
             .join(SessionPlayer, GameSession.id == SessionPlayer.session_id)
-            .where(SessionPlayer.player_id == player_id)
+            .where(SessionPlayer.player_id == player_id, GameSession.user_id == user_id)
         )
     ).scalars().all()
 
@@ -171,26 +197,25 @@ async def get_player_stats(db: AsyncSession, player_id: int) -> dict | None:
 
 
 async def get_play_frequency(
-    db: AsyncSession, period: str = "month", months: int = 12
+    db: AsyncSession, period: str = "month", months: int = 12, user_id: int | None = None
 ) -> list[dict]:
     cutoff = datetime.utcnow() - timedelta(days=months * 30)
     trunc_fn = func.date_trunc(period, GameSession.played_at)
 
-    rows = (
-        await db.execute(
-            select(trunc_fn.label("period"), func.count(GameSession.id))
-            .where(GameSession.played_at >= cutoff)
-            .group_by("period")
-            .order_by("period")
-        )
-    ).all()
+    query = (
+        select(trunc_fn.label("period"), func.count(GameSession.id))
+        .where(GameSession.played_at >= cutoff, GameSession.user_id == user_id)
+        .group_by("period")
+        .order_by("period")
+    )
+    rows = (await db.execute(query)).all()
 
     return [
         {"period": row[0].strftime("%Y-%m-%d"), "count": row[1]} for row in rows
     ]
 
 
-async def get_h_index(db: AsyncSession) -> dict:
+async def get_h_index(db: AsyncSession, user_id: int) -> dict:
     """Compute the H-index: largest h where h games have been played h+ times."""
     rows = (
         await db.execute(
@@ -200,6 +225,7 @@ async def get_h_index(db: AsyncSession) -> dict:
                 func.count(GameSession.id).label("cnt"),
             )
             .join(GameSession, Game.id == GameSession.game_id)
+            .where(GameSession.user_id == user_id)
             .group_by(Game.id, Game.name)
             .order_by(func.count(GameSession.id).desc())
         )
@@ -219,10 +245,12 @@ async def get_h_index(db: AsyncSession) -> dict:
     return {"h_index": h_index, "contributing_games": contributing}
 
 
-async def get_win_streaks(db: AsyncSession, player_id: int) -> dict | None:
+async def get_win_streaks(db: AsyncSession, player_id: int, user_id: int) -> dict | None:
     """Compute current and longest win streak for a player."""
     player = (
-        await db.execute(select(Player).where(Player.id == player_id))
+        await db.execute(
+            select(Player).where(Player.id == player_id, Player.user_id == user_id)
+        )
     ).scalar_one_or_none()
     if not player:
         return None
@@ -231,7 +259,10 @@ async def get_win_streaks(db: AsyncSession, player_id: int) -> dict | None:
         await db.execute(
             select(SessionPlayer.winner, GameSession.played_at)
             .join(GameSession, SessionPlayer.session_id == GameSession.id)
-            .where(SessionPlayer.player_id == player_id)
+            .where(
+                SessionPlayer.player_id == player_id,
+                GameSession.user_id == user_id,
+            )
             .order_by(GameSession.played_at.asc())
         )
     ).all()
@@ -250,7 +281,7 @@ async def get_win_streaks(db: AsyncSession, player_id: int) -> dict | None:
     return {"current_streak": current_streak, "longest_streak": longest_streak}
 
 
-async def get_player_win_rates(db: AsyncSession) -> list[dict]:
+async def get_player_win_rates(db: AsyncSession, user_id: int) -> list[dict]:
     """Get win rates for all players."""
     rows = (
         await db.execute(
@@ -263,6 +294,7 @@ async def get_player_win_rates(db: AsyncSession) -> list[dict]:
                 ).label("wins"),
             )
             .join(SessionPlayer, Player.id == SessionPlayer.player_id)
+            .where(Player.user_id == user_id)
             .group_by(Player.id, Player.name)
             .order_by(func.count(SessionPlayer.id).desc())
         )
@@ -280,13 +312,16 @@ async def get_player_win_rates(db: AsyncSession) -> list[dict]:
     ]
 
 
-async def get_score_distribution(db: AsyncSession, game_id: int) -> list[dict]:
+async def get_score_distribution(db: AsyncSession, game_id: int, user_id: int) -> list[dict]:
     """Get score distribution for a game (histogram data)."""
     rows = (
         await db.execute(
             select(SessionPlayer.total_score, func.count(SessionPlayer.id))
             .join(GameSession, SessionPlayer.session_id == GameSession.id)
-            .where(GameSession.game_id == game_id)
+            .where(
+                GameSession.game_id == game_id,
+                GameSession.user_id == user_id,
+            )
             .where(SessionPlayer.total_score.is_not(None))
             .group_by(SessionPlayer.total_score)
             .order_by(SessionPlayer.total_score)
@@ -296,7 +331,7 @@ async def get_score_distribution(db: AsyncSession, game_id: int) -> list[dict]:
     return [{"score": row[0], "count": row[1]} for row in rows]
 
 
-async def get_player_score_trends(db: AsyncSession, player_id: int) -> list[dict]:
+async def get_player_score_trends(db: AsyncSession, player_id: int, user_id: int) -> list[dict]:
     """Get per-game score trends for a player over time."""
     rows = (
         await db.execute(
@@ -307,8 +342,11 @@ async def get_player_score_trends(db: AsyncSession, player_id: int) -> list[dict
             )
             .join(GameSession, SessionPlayer.session_id == GameSession.id)
             .join(Game, GameSession.game_id == Game.id)
-            .where(SessionPlayer.player_id == player_id)
-            .where(SessionPlayer.total_score.is_not(None))
+            .where(
+                SessionPlayer.player_id == player_id,
+                SessionPlayer.total_score.is_not(None),
+                GameSession.user_id == user_id,
+            )
             .order_by(GameSession.played_at.asc())
         )
     ).all()
@@ -328,7 +366,7 @@ async def get_player_score_trends(db: AsyncSession, player_id: int) -> list[dict
     ]
 
 
-async def get_top_games(db: AsyncSession, limit: int = 10) -> list[dict]:
+async def get_top_games(db: AsyncSession, limit: int = 10, user_id: int | None = None) -> list[dict]:
     rows = (
         await db.execute(
             select(
@@ -338,6 +376,7 @@ async def get_top_games(db: AsyncSession, limit: int = 10) -> list[dict]:
                 Game.thumbnail_url,
             )
             .join(GameSession, Game.id == GameSession.game_id)
+            .where(GameSession.user_id == user_id)
             .group_by(Game.id, Game.name, Game.thumbnail_url)
             .order_by(func.count(GameSession.id).desc())
             .limit(limit)

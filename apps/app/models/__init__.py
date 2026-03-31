@@ -22,6 +22,10 @@ from app.models.session import (
     player_group_members,
     session_expansions,
 )
+from app.models.badges import BadgeDefinition, UserBadge
+from app.models.social import Friendship, SharedCollection
+from app.models.sync import BggSyncStatus
+from app.models.user import RefreshToken, User
 
 __all__ = [
     "Base",
@@ -35,8 +39,15 @@ __all__ = [
     "Player",
     "PlayerGroup",
     "Publisher",
+    "RefreshToken",
     "SessionPhoto",
     "SessionPlayer",
+    "BadgeDefinition",
+    "BggSyncStatus",
+    "Friendship",
+    "SharedCollection",
+    "User",
+    "UserBadge",
     "game_categories",
     "game_designers",
     "game_mechanics",

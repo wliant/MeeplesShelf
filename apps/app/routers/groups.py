@@ -5,7 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.session import Player, PlayerGroup
+from app.models.user import User
 from app.schemas.groups import (
     PlayerGroupCreate,
     PlayerGroupWithMembers,
@@ -15,10 +17,14 @@ router = APIRouter(tags=["groups"])
 
 
 @router.get("/groups", response_model=list[PlayerGroupWithMembers])
-async def list_groups(db: AsyncSession = Depends(get_db)):
+async def list_groups(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(
         select(PlayerGroup)
         .options(selectinload(PlayerGroup.members))
+        .where(PlayerGroup.user_id == current_user.id)
         .order_by(PlayerGroup.name)
     )
     return result.scalars().unique().all()
@@ -26,9 +32,11 @@ async def list_groups(db: AsyncSession = Depends(get_db)):
 
 @router.post("/groups", response_model=PlayerGroupWithMembers, status_code=201)
 async def create_group(
-    payload: PlayerGroupCreate, db: AsyncSession = Depends(get_db)
+    payload: PlayerGroupCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    group = PlayerGroup(name=payload.name)
+    group = PlayerGroup(name=payload.name, user_id=current_user.id)
     db.add(group)
     try:
         await db.commit()
@@ -41,12 +49,15 @@ async def create_group(
 
 @router.put("/groups/{group_id}", response_model=PlayerGroupWithMembers)
 async def update_group(
-    group_id: int, payload: PlayerGroupCreate, db: AsyncSession = Depends(get_db)
+    group_id: int,
+    payload: PlayerGroupCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(PlayerGroup)
         .options(selectinload(PlayerGroup.members))
-        .where(PlayerGroup.id == group_id)
+        .where(PlayerGroup.id == group_id, PlayerGroup.user_id == current_user.id)
     )
     group = result.scalar_one_or_none()
     if not group:
@@ -58,9 +69,15 @@ async def update_group(
 
 
 @router.delete("/groups/{group_id}", status_code=204)
-async def delete_group(group_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_group(
+    group_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(
-        select(PlayerGroup).where(PlayerGroup.id == group_id)
+        select(PlayerGroup).where(
+            PlayerGroup.id == group_id, PlayerGroup.user_id == current_user.id
+        )
     )
     group = result.scalar_one_or_none()
     if not group:
@@ -71,12 +88,15 @@ async def delete_group(group_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("/groups/{group_id}/members/{player_id}", status_code=204)
 async def add_member(
-    group_id: int, player_id: int, db: AsyncSession = Depends(get_db)
+    group_id: int,
+    player_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(PlayerGroup)
         .options(selectinload(PlayerGroup.members))
-        .where(PlayerGroup.id == group_id)
+        .where(PlayerGroup.id == group_id, PlayerGroup.user_id == current_user.id)
     )
     group = result.scalar_one_or_none()
     if not group:
@@ -94,12 +114,15 @@ async def add_member(
 
 @router.delete("/groups/{group_id}/members/{player_id}", status_code=204)
 async def remove_member(
-    group_id: int, player_id: int, db: AsyncSession = Depends(get_db)
+    group_id: int,
+    player_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(PlayerGroup)
         .options(selectinload(PlayerGroup.members))
-        .where(PlayerGroup.id == group_id)
+        .where(PlayerGroup.id == group_id, PlayerGroup.user_id == current_user.id)
     )
     group = result.scalar_one_or_none()
     if not group:
