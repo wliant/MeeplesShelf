@@ -84,23 +84,28 @@ async def list_sessions(
     return result.scalars().unique().all()
 
 
+def _build_session(payload) -> GameSession:
+    return GameSession(
+        game_id=payload.game_id,
+        played_at=payload.played_at,
+        notes=payload.notes,
+        duration_minutes=payload.duration_minutes,
+        is_cooperative=payload.is_cooperative,
+        cooperative_result=payload.cooperative_result,
+    )
+
+
 @router.post("/sessions", response_model=GameSessionRead, status_code=201)
 async def create_session(
     payload: GameSessionCreate, db: AsyncSession = Depends(get_db)
 ):
-    # Fetch game with scoring spec
     result = await db.execute(select(Game).where(Game.id == payload.game_id))
     game = result.scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
 
-    session = GameSession(
-        game_id=payload.game_id,
-        played_at=payload.played_at,
-        notes=payload.notes,
-    )
+    session = _build_session(payload)
 
-    # Attach expansions
     if payload.expansion_ids:
         exp_result = await db.execute(
             select(Expansion).where(Expansion.id.in_(payload.expansion_ids))
@@ -110,11 +115,12 @@ async def create_session(
     db.add(session)
     await db.flush()
 
-    _add_players_with_scores(session, payload.players, game.scoring_spec, db)
+    _add_players_with_scores(
+        session, payload.players, game.scoring_spec, payload.is_cooperative, db
+    )
 
     await db.commit()
 
-    # Re-fetch with all relationships
     result = await db.execute(
         select(GameSession)
         .options(*SESSION_LOAD_OPTIONS)
@@ -138,7 +144,6 @@ async def update_session(
     if not session:
         raise HTTPException(404, "Session not found")
 
-    # Fetch the game for scoring
     game_result = await db.execute(
         select(Game).where(Game.id == payload.game_id)
     )
@@ -150,24 +155,26 @@ async def update_session(
     if payload.played_at is not None:
         session.played_at = payload.played_at
     session.notes = payload.notes
+    session.duration_minutes = payload.duration_minutes
+    session.is_cooperative = payload.is_cooperative
+    session.cooperative_result = payload.cooperative_result
 
-    # Update expansions
     if payload.expansion_ids is not None:
         exp_result = await db.execute(
             select(Expansion).where(Expansion.id.in_(payload.expansion_ids))
         )
         session.expansions = list(exp_result.scalars().all())
 
-    # Remove old players
     for sp in session.players:
         await db.delete(sp)
     await db.flush()
 
-    _add_players_with_scores(session, payload.players, game.scoring_spec, db)
+    _add_players_with_scores(
+        session, payload.players, game.scoring_spec, payload.is_cooperative, db
+    )
 
     await db.commit()
 
-    # Re-fetch with all relationships
     result = await db.execute(
         select(GameSession)
         .options(*SESSION_LOAD_OPTIONS)
@@ -201,7 +208,7 @@ async def delete_session(session_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
-def _add_players_with_scores(session, players, scoring_spec, db):
+def _add_players_with_scores(session, players, scoring_spec, is_cooperative, db):
     max_score = None
     session_players = []
 
@@ -220,5 +227,8 @@ def _add_players_with_scores(session, players, scoring_spec, db):
             max_score = total
 
     for sp in session_players:
-        sp.winner = sp.total_score is not None and sp.total_score == max_score
+        if is_cooperative:
+            sp.winner = False
+        else:
+            sp.winner = sp.total_score is not None and sp.total_score == max_score
         db.add(sp)

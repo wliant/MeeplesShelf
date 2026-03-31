@@ -4,10 +4,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models.game import Expansion, Game
+from app.models.game import (
+    Category,
+    Designer,
+    Expansion,
+    Game,
+    Mechanic,
+    Publisher,
+)
 from app.schemas.game import (
     ExpansionCreate,
     ExpansionRead,
+    GameBrief,
     GameCreate,
     GameRead,
     GameUpdate,
@@ -16,35 +24,95 @@ from app.services.seed import SEED_GAMES
 
 router = APIRouter(tags=["games"])
 
+GAME_LOAD_OPTIONS = [
+    selectinload(Game.expansions),
+    selectinload(Game.designers),
+    selectinload(Game.publishers),
+    selectinload(Game.categories),
+    selectinload(Game.mechanics),
+]
+
+
+async def _get_or_create_entities(db: AsyncSession, model, names: list[str]):
+    """Get existing entities by name or create new ones."""
+    entities = []
+    for name in names:
+        name = name.strip()
+        if not name:
+            continue
+        result = await db.execute(select(model).where(model.name == name))
+        entity = result.scalar_one_or_none()
+        if not entity:
+            entity = model(name=name)
+            db.add(entity)
+            await db.flush()
+        entities.append(entity)
+    return entities
+
+
+async def _apply_relationships(db: AsyncSession, game: Game, payload):
+    """Apply designer/publisher/category/mechanic relationships if provided."""
+    if payload.designer_names is not None:
+        game.designers = await _get_or_create_entities(
+            db, Designer, payload.designer_names
+        )
+    if payload.publisher_names is not None:
+        game.publishers = await _get_or_create_entities(
+            db, Publisher, payload.publisher_names
+        )
+    if payload.category_names is not None:
+        game.categories = await _get_or_create_entities(
+            db, Category, payload.category_names
+        )
+    if payload.mechanic_names is not None:
+        game.mechanics = await _get_or_create_entities(
+            db, Mechanic, payload.mechanic_names
+        )
+
 
 @router.get("/games", response_model=list[GameRead])
-async def list_games(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Game).options(selectinload(Game.expansions)).order_by(Game.name)
-    )
+async def list_games(
+    collection_status: str | None = None,
+    search: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(Game).options(*GAME_LOAD_OPTIONS).order_by(Game.name)
+    if collection_status:
+        query = query.where(Game.collection_status == collection_status)
+    if search:
+        query = query.where(Game.name.ilike(f"%{search}%"))
+    result = await db.execute(query)
+    return result.scalars().unique().all()
+
+
+@router.get("/games/options", response_model=list[GameBrief])
+async def list_game_options(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Game).order_by(Game.name))
     return result.scalars().all()
 
 
 @router.post("/games", response_model=GameRead, status_code=201)
 async def create_game(payload: GameCreate, db: AsyncSession = Depends(get_db)):
-    game = Game(
-        name=payload.name,
-        min_players=payload.min_players,
-        max_players=payload.max_players,
-        scoring_spec=payload.scoring_spec.model_dump() if payload.scoring_spec else None,
+    data = payload.model_dump(
+        exclude={"designer_names", "publisher_names", "category_names", "mechanic_names"}
     )
+    if data.get("scoring_spec") is not None:
+        data["scoring_spec"] = payload.scoring_spec.model_dump()
+    game = Game(**data)
     db.add(game)
+    await db.flush()
+
+    await _apply_relationships(db, game, payload)
+
     await db.commit()
-    await db.refresh(game, ["expansions"])
+    await db.refresh(game, ["expansions", "designers", "publishers", "categories", "mechanics"])
     return game
 
 
 @router.get("/games/{game_id}", response_model=GameRead)
 async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(Game)
-        .options(selectinload(Game.expansions))
-        .where(Game.id == game_id)
+        select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
     )
     game = result.scalar_one_or_none()
     if not game:
@@ -57,20 +125,39 @@ async def update_game(
     game_id: int, payload: GameUpdate, db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
-        select(Game).options(selectinload(Game.expansions)).where(Game.id == game_id)
+        select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
     )
     game = result.scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
 
-    update_data = payload.model_dump(exclude_unset=True)
+    update_data = payload.model_dump(
+        exclude_unset=True,
+        exclude={"designer_names", "publisher_names", "category_names", "mechanic_names"},
+    )
     if "scoring_spec" in update_data and update_data["scoring_spec"] is not None:
         update_data["scoring_spec"] = payload.scoring_spec.model_dump()
     for key, value in update_data.items():
         setattr(game, key, value)
 
+    await _apply_relationships(db, game, payload)
+
     await db.commit()
-    await db.refresh(game, ["expansions"])
+    await db.refresh(game, ["expansions", "designers", "publishers", "categories", "mechanics"])
+    return game
+
+
+@router.patch("/games/{game_id}/favorite", response_model=GameRead)
+async def toggle_favorite(game_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
+    )
+    game = result.scalar_one_or_none()
+    if not game:
+        raise HTTPException(404, "Game not found")
+    game.is_favorite = not game.is_favorite
+    await db.commit()
+    await db.refresh(game, ["expansions", "designers", "publishers", "categories", "mechanics"])
     return game
 
 

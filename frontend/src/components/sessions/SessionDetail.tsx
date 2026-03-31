@@ -34,6 +34,32 @@ export default function SessionDetail({ session, onClose, onEdit }: Props) {
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
+          <Stack direction="row" spacing={2}>
+            {session.duration_minutes && (
+              <Chip
+                label={`${session.duration_minutes} min`}
+                size="small"
+              />
+            )}
+            {session.is_cooperative && (
+              <Chip
+                label={
+                  session.cooperative_result
+                    ? `Co-op: ${session.cooperative_result.toUpperCase()}`
+                    : "Cooperative"
+                }
+                size="small"
+                color={
+                  session.cooperative_result === "win"
+                    ? "success"
+                    : session.cooperative_result === "loss"
+                      ? "error"
+                      : "default"
+                }
+              />
+            )}
+          </Stack>
+
           {session.notes && (
             <Typography variant="body2" color="text.secondary">
               {session.notes}

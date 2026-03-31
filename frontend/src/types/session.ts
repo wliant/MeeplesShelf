@@ -32,6 +32,9 @@ export interface GameSession {
   created_at: string;
   players: SessionPlayer[];
   expansions: ExpansionBrief[];
+  duration_minutes: number | null;
+  is_cooperative: boolean;
+  cooperative_result: string | null;
 }
 
 export interface SessionPlayerCreate {
@@ -45,4 +48,7 @@ export interface GameSessionCreate {
   notes?: string;
   expansion_ids?: number[];
   players: SessionPlayerCreate[];
+  duration_minutes?: number | null;
+  is_cooperative?: boolean;
+  cooperative_result?: string | null;
 }

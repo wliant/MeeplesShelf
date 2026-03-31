@@ -48,6 +48,13 @@ class GameSession(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
+    # Session enhancements
+    duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_cooperative: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    cooperative_result: Mapped[str | None] = mapped_column(
+        String(10), nullable=True
+    )
+
     game: Mapped["Game"] = relationship(lazy="joined")
     players: Mapped[list["SessionPlayer"]] = relationship(
         back_populates="session", cascade="all, delete-orphan"

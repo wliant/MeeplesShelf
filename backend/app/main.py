@@ -4,7 +4,7 @@ from sqlalchemy import text
 
 from app.config import settings
 from app.database import async_session
-from app.routers import games, sessions
+from app.routers import games, integrations, sessions, stats
 
 app = FastAPI(title="MeeplesShelf", version="0.1.0")
 
@@ -18,6 +18,8 @@ app.add_middleware(
 
 app.include_router(games.router, prefix="/api")
 app.include_router(sessions.router, prefix="/api")
+app.include_router(stats.router, prefix="/api")
+app.include_router(integrations.router, prefix="/api")
 
 
 @app.get("/health")

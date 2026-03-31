@@ -1,10 +1,53 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, field_validator, model_validator
 
 from app.schemas.scoring import ScoringSpec
+
+CollectionStatus = Literal[
+    "owned",
+    "wishlist",
+    "want_to_play",
+    "previously_owned",
+    "want_to_trade",
+    "for_trade",
+    "preordered",
+]
+
+VALID_STATUSES = set(CollectionStatus.__args__)
+
+
+# --- Taxonomy schemas ---
+
+
+class DesignerRead(BaseModel):
+    id: int
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class PublisherRead(BaseModel):
+    id: int
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class CategoryRead(BaseModel):
+    id: int
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class MechanicRead(BaseModel):
+    id: int
+    name: str
+    model_config = {"from_attributes": True}
+
+
+# --- Expansion schemas ---
 
 
 class ExpansionCreate(BaseModel):
@@ -22,11 +65,36 @@ class ExpansionRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# --- Game schemas ---
+
+
 class GameCreate(BaseModel):
     name: str
     min_players: int = 1
     max_players: int = 4
     scoring_spec: ScoringSpec | None = None
+
+    # Metadata
+    description: str | None = None
+    image_url: str | None = None
+    thumbnail_url: str | None = None
+    min_playtime: int | None = None
+    max_playtime: int | None = None
+    min_age: int | None = None
+    weight: float | None = None
+    year_published: int | None = None
+    bgg_id: int | None = None
+    user_rating: float | None = None
+
+    # Collection
+    collection_status: CollectionStatus = "owned"
+    is_favorite: bool = False
+
+    # Relationships (names to get-or-create)
+    designer_names: list[str] = []
+    publisher_names: list[str] = []
+    category_names: list[str] = []
+    mechanic_names: list[str] = []
 
     @field_validator("name")
     @classmethod
@@ -54,6 +122,28 @@ class GameUpdate(BaseModel):
     min_players: int | None = None
     max_players: int | None = None
     scoring_spec: ScoringSpec | None = None
+
+    # Metadata
+    description: str | None = None
+    image_url: str | None = None
+    thumbnail_url: str | None = None
+    min_playtime: int | None = None
+    max_playtime: int | None = None
+    min_age: int | None = None
+    weight: float | None = None
+    year_published: int | None = None
+    bgg_id: int | None = None
+    user_rating: float | None = None
+
+    # Collection
+    collection_status: CollectionStatus | None = None
+    is_favorite: bool | None = None
+
+    # Relationships
+    designer_names: list[str] | None = None
+    publisher_names: list[str] | None = None
+    category_names: list[str] | None = None
+    mechanic_names: list[str] | None = None
 
     @field_validator("name")
     @classmethod
@@ -89,5 +179,34 @@ class GameRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     expansions: list[ExpansionRead] = []
+
+    # Metadata
+    description: str | None = None
+    image_url: str | None = None
+    thumbnail_url: str | None = None
+    min_playtime: int | None = None
+    max_playtime: int | None = None
+    min_age: int | None = None
+    weight: float | None = None
+    year_published: int | None = None
+    bgg_id: int | None = None
+    user_rating: float | None = None
+
+    # Collection
+    collection_status: str = "owned"
+    is_favorite: bool = False
+
+    # Relationships
+    designers: list[DesignerRead] = []
+    publishers: list[PublisherRead] = []
+    categories: list[CategoryRead] = []
+    mechanics: list[MechanicRead] = []
+
+    model_config = {"from_attributes": True}
+
+
+class GameBrief(BaseModel):
+    id: int
+    name: str
 
     model_config = {"from_attributes": True}

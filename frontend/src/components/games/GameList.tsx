@@ -7,9 +7,16 @@ interface Props {
   onEdit: (game: Game) => void;
   onDelete: (id: number) => void;
   onRefresh: () => void;
+  onToggleFavorite: (id: number) => void;
 }
 
-export default function GameList({ games, onEdit, onDelete, onRefresh }: Props) {
+export default function GameList({
+  games,
+  onEdit,
+  onDelete,
+  onRefresh,
+  onToggleFavorite,
+}: Props) {
   return (
     <Grid container spacing={2}>
       {games.map((game) => (
@@ -19,6 +26,7 @@ export default function GameList({ games, onEdit, onDelete, onRefresh }: Props) 
             onEdit={onEdit}
             onDelete={onDelete}
             onRefresh={onRefresh}
+            onToggleFavorite={onToggleFavorite}
           />
         </Grid>
       ))}

@@ -13,26 +13,39 @@ import {
   Skeleton,
   Grid,
   InputAdornment,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
-import type { Game, GameCreate } from "../types/game";
+import type { Game, GameCreate, CollectionStatus } from "../types/game";
 import {
   listGames,
   createGame,
   updateGame,
   deleteGame,
   seedGames,
+  toggleFavorite,
 } from "../api/games";
 import GameList from "../components/games/GameList";
 import GameForm from "../components/games/GameForm";
+import BGGSearchDialog from "../components/games/BGGSearchDialog";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import { useNotify } from "../components/common/useNotify";
 
 type SortBy = "name" | "created_at" | "min_players";
 type SortDir = "asc" | "desc";
+
+const STATUS_TABS: { label: string; value: CollectionStatus | "all" }[] = [
+  { label: "All", value: "all" },
+  { label: "Owned", value: "owned" },
+  { label: "Wishlist", value: "wishlist" },
+  { label: "Want to Play", value: "want_to_play" },
+  { label: "Previously Owned", value: "previously_owned" },
+  { label: "For Trade", value: "for_trade" },
+];
 
 export default function InventoryPage() {
   const [games, setGames] = useState<Game[]>([]);
@@ -43,19 +56,23 @@ export default function InventoryPage() {
   const [sortBy, setSortBy] = useState<SortBy>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
+  const [statusTab, setStatusTab] = useState<CollectionStatus | "all">("all");
+  const [bggOpen, setBggOpen] = useState(false);
   const { success, error } = useNotify();
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await listGames();
+      const params: Record<string, string> = {};
+      if (statusTab !== "all") params.collection_status = statusTab;
+      const data = await listGames(params);
       setGames(data);
     } catch {
       error("Failed to load games");
     } finally {
       setLoading(false);
     }
-  }, [error]);
+  }, [statusTab, error]);
 
   useEffect(() => {
     refresh();
@@ -107,6 +124,15 @@ export default function InventoryPage() {
     }
   };
 
+  const handleToggleFavorite = async (id: number) => {
+    try {
+      await toggleFavorite(id);
+      refresh();
+    } catch {
+      error("Failed to toggle favorite");
+    }
+  };
+
   const handleSeed = async () => {
     try {
       const result = await seedGames();
@@ -123,15 +149,32 @@ export default function InventoryPage() {
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        sx={{ mb: 3 }}
+        sx={{ mb: 2 }}
       >
         <Typography variant="h4">Game Inventory</Typography>
-        {games.length === 0 && !loading && (
-          <Button variant="outlined" onClick={handleSeed}>
-            Seed Default Games
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" onClick={() => setBggOpen(true)}>
+            Import from BGG
           </Button>
-        )}
+          {games.length === 0 && !loading && (
+            <Button variant="outlined" onClick={handleSeed}>
+              Seed Default Games
+            </Button>
+          )}
+        </Stack>
       </Stack>
+
+      <Tabs
+        value={statusTab}
+        onChange={(_, v) => setStatusTab(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{ mb: 2 }}
+      >
+        {STATUS_TABS.map((t) => (
+          <Tab key={t.value} label={t.label} value={t.value} />
+        ))}
+      </Tabs>
 
       <Stack direction="row" spacing={2} sx={{ mb: 3 }} alignItems="center">
         <TextField
@@ -192,6 +235,7 @@ export default function InventoryPage() {
             if (game) setDeleteTarget(game);
           }}
           onRefresh={refresh}
+          onToggleFavorite={handleToggleFavorite}
         />
       )}
 
@@ -222,6 +266,12 @@ export default function InventoryPage() {
         message={`Are you sure you want to delete "${deleteTarget?.name}"? This will also delete all associated sessions.`}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <BGGSearchDialog
+        open={bggOpen}
+        onClose={() => setBggOpen(false)}
+        onImport={() => refresh()}
       />
     </Box>
   );

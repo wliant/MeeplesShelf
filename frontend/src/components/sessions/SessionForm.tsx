@@ -9,6 +9,12 @@ import {
   Stack,
   Chip,
   Typography,
+  FormControlLabel,
+  Switch,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import type { Game } from "../../types/game";
@@ -41,6 +47,9 @@ export default function SessionForm({
     new Date().toISOString().slice(0, 16)
   );
   const [notes, setNotes] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState<number | "">("");
+  const [isCooperative, setIsCooperative] = useState(false);
+  const [cooperativeResult, setCooperativeResult] = useState<string>("");
   const [newPlayerName, setNewPlayerName] = useState("");
 
   useEffect(() => {
@@ -54,6 +63,9 @@ export default function SessionForm({
           setSelectedGame(game);
           setPlayedAt(new Date(session.played_at).toISOString().slice(0, 16));
           setNotes(session.notes ?? "");
+          setDurationMinutes(session.duration_minutes ?? "");
+          setIsCooperative(session.is_cooperative ?? false);
+          setCooperativeResult(session.cooperative_result ?? "");
 
           const sessionPlayerObjs = session.players.map((sp) => sp.player);
           setSelectedPlayers(sessionPlayerObjs);
@@ -69,6 +81,9 @@ export default function SessionForm({
           setScoreData({});
           setPlayedAt(new Date().toISOString().slice(0, 16));
           setNotes("");
+          setDurationMinutes("");
+          setIsCooperative(false);
+          setCooperativeResult("");
         }
       });
     }
@@ -119,6 +134,9 @@ export default function SessionForm({
         player_id: p.id,
         score_data: scoreData[p.id] ?? {},
       })),
+      duration_minutes: durationMinutes || null,
+      is_cooperative: isCooperative,
+      cooperative_result: isCooperative && cooperativeResult ? cooperativeResult : null,
     });
   };
 
@@ -197,6 +215,47 @@ export default function SessionForm({
               />
             </>
           )}
+
+          <Stack direction="row" spacing={2} alignItems="center">
+            <TextField
+              label="Duration (minutes)"
+              type="number"
+              value={durationMinutes}
+              onChange={(e) =>
+                setDurationMinutes(
+                  e.target.value ? Number(e.target.value) : ""
+                )
+              }
+              sx={{ width: 180 }}
+              slotProps={{ htmlInput: { min: 1 } }}
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isCooperative}
+                  onChange={(e) => {
+                    setIsCooperative(e.target.checked);
+                    if (!e.target.checked) setCooperativeResult("");
+                  }}
+                />
+              }
+              label="Cooperative"
+            />
+            {isCooperative && (
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Result</InputLabel>
+                <Select
+                  value={cooperativeResult}
+                  label="Result"
+                  onChange={(e) => setCooperativeResult(e.target.value)}
+                >
+                  <MenuItem value="">Undecided</MenuItem>
+                  <MenuItem value="win">Win</MenuItem>
+                  <MenuItem value="loss">Loss</MenuItem>
+                </Select>
+              </FormControl>
+            )}
+          </Stack>
 
           <TextField
             label="Notes (optional)"
