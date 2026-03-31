@@ -28,22 +28,34 @@ export default function PhotoGallery({ sessionId, photos, onUpdate }: Props) {
   const [addOpen, setAddOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [caption, setCaption] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleAdd = async () => {
-    if (!url.trim()) return;
-    await addSessionPhoto(sessionId, {
-      url: url.trim(),
-      caption: caption.trim() || undefined,
-    });
-    setUrl("");
-    setCaption("");
-    setAddOpen(false);
-    onUpdate();
+    if (!url.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await addSessionPhoto(sessionId, {
+        url: url.trim(),
+        caption: caption.trim() || undefined,
+      });
+      setUrl("");
+      setCaption("");
+      setAddOpen(false);
+      onUpdate();
+    } catch {
+      // Error handled by global interceptor
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async (photoId: number) => {
-    await deleteSessionPhoto(sessionId, photoId);
-    onUpdate();
+    try {
+      await deleteSessionPhoto(sessionId, photoId);
+      onUpdate();
+    } catch {
+      // Error handled by global interceptor
+    }
   };
 
   return (
@@ -110,8 +122,8 @@ export default function PhotoGallery({ sessionId, photos, onUpdate }: Props) {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAddOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAdd} disabled={!url.trim()}>
-            Add
+          <Button variant="contained" onClick={handleAdd} disabled={!url.trim() || submitting}>
+            {submitting ? "Adding..." : "Add"}
           </Button>
         </DialogActions>
       </Dialog>

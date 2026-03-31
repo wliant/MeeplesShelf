@@ -15,6 +15,9 @@ from app.models.session import GameSession, SessionPlayer
 router = APIRouter(prefix="/export", tags=["export"])
 
 
+MAX_EXPORT_ROWS = 10000
+
+
 @router.get("/collection")
 async def export_collection(
     format: str = Query("csv", pattern="^(csv|json)$"),
@@ -29,6 +32,7 @@ async def export_collection(
             selectinload(Game.mechanics),
         )
         .order_by(Game.name)
+        .limit(MAX_EXPORT_ROWS)
     )
     games = result.scalars().unique().all()
 
@@ -100,6 +104,7 @@ async def export_sessions(
             selectinload(GameSession.players).selectinload(SessionPlayer.player),
         )
         .order_by(GameSession.played_at.desc())
+        .limit(MAX_EXPORT_ROWS)
     )
     sessions = result.scalars().unique().all()
 

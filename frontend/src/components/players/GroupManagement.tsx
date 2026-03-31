@@ -4,6 +4,7 @@ import {
   Chip,
   Dialog,
   DialogTitle,
+  CircularProgress,
   DialogContent,
   DialogActions,
   IconButton,
@@ -37,11 +38,17 @@ export default function GroupManagement({ open, onClose }: Props) {
   const [groups, setGroups] = useState<PlayerGroup[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [newName, setNewName] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const refresh = async () => {
-    const [g, p] = await Promise.all([listGroups(), listPlayers()]);
-    setGroups(g);
-    setPlayers(p);
+    setLoading(true);
+    try {
+      const [g, p] = await Promise.all([listGroups(), listPlayers()]);
+      setGroups(g);
+      setPlayers(p);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -74,6 +81,9 @@ export default function GroupManagement({ open, onClose }: Props) {
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Player Groups</DialogTitle>
       <DialogContent>
+        {loading && groups.length === 0 ? (
+          <Stack alignItems="center" sx={{ py: 3 }}><CircularProgress /></Stack>
+        ) : (
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Stack direction="row" spacing={1}>
             <TextField
@@ -128,6 +138,7 @@ export default function GroupManagement({ open, onClose }: Props) {
             );
           })}
         </Stack>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Close</Button>

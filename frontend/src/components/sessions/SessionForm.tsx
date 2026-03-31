@@ -16,7 +16,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Game, GameBrief } from "../../types/game";
 import type { Player, GameSessionCreate, GameSession } from "../../types/session";
 import type { PlayerGroup } from "../../types/group";
@@ -56,6 +56,7 @@ export default function SessionForm({
   const [newPlayerName, setNewPlayerName] = useState("");
   const [location, setLocation] = useState("");
   const [groups, setGroups] = useState<PlayerGroup[]>([]);
+  const gameSelectRef = useRef(0);
 
   useEffect(() => {
     if (open) {
@@ -163,9 +164,13 @@ export default function SessionForm({
             value={games.find((g) => g.id === selectedGame?.id) ?? null}
             onChange={async (_, v) => {
               if (v) {
+                const requestId = ++gameSelectRef.current;
                 const full = await getGame(v.id);
-                setSelectedGame(full);
+                if (gameSelectRef.current === requestId) {
+                  setSelectedGame(full);
+                }
               } else {
+                ++gameSelectRef.current;
                 setSelectedGame(null);
               }
             }}

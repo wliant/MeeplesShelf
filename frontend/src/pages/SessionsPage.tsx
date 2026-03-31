@@ -131,10 +131,10 @@ export default function SessionsPage() {
             open={!!exportAnchor}
             onClose={() => setExportAnchor(null)}
           >
-            <MenuItem onClick={() => { exportSessions("csv"); setExportAnchor(null); }}>
+            <MenuItem onClick={async () => { setExportAnchor(null); try { await exportSessions("csv"); success("Sessions exported"); } catch { error("Failed to export"); } }}>
               CSV
             </MenuItem>
-            <MenuItem onClick={() => { exportSessions("json"); setExportAnchor(null); }}>
+            <MenuItem onClick={async () => { setExportAnchor(null); try { await exportSessions("json"); success("Sessions exported"); } catch { error("Failed to export"); } }}>
               JSON
             </MenuItem>
           </Menu>

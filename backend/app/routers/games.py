@@ -22,7 +22,6 @@ from app.schemas.game import (
     GameRead,
     GameUpdate,
     PaginatedGameResponse,
-    GameTagRead,
 )
 from app.services.seed import SEED_GAMES
 
@@ -96,8 +95,9 @@ async def list_games(
             game_tag_assignments.c.tag_id == tag_id
         )
 
-    # Count total
-    count_result = await db.execute(select(func.count()).select_from(base.subquery()))
+    # Count total (use distinct IDs to avoid inflation from joined relationships)
+    count_sub = base.with_only_columns(Game.id).distinct().subquery()
+    count_result = await db.execute(select(func.count()).select_from(count_sub))
     total = count_result.scalar_one()
 
     # Sort
@@ -114,7 +114,7 @@ async def list_games(
 @router.get("/games/options", response_model=list[GameBrief])
 async def list_game_options(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Game).order_by(Game.name))
-    return result.scalars().all()
+    return result.unique().scalars().all()
 
 
 @router.post("/games", response_model=GameRead, status_code=201)
@@ -127,11 +127,13 @@ async def create_game(payload: GameCreate, db: AsyncSession = Depends(get_db)):
     game = Game(**data)
     db.add(game)
     await db.flush()
+    # Eagerly load empty relationship collections to avoid lazy-load in async context
+    await db.refresh(game, ["designers", "publishers", "categories", "mechanics", "tags"])
 
     await _apply_relationships(db, game, payload)
 
     await db.commit()
-    await db.refresh(game, ["expansions", "designers", "publishers", "categories", "mechanics"])
+    await db.refresh(game, ["expansions", "designers", "publishers", "categories", "mechanics", "tags"])
     return game
 
 
@@ -140,7 +142,7 @@ async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
     )
-    game = result.scalar_one_or_none()
+    game = result.unique().scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
     return game
@@ -153,7 +155,7 @@ async def update_game(
     result = await db.execute(
         select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
     )
-    game = result.scalar_one_or_none()
+    game = result.unique().scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
 
@@ -169,8 +171,10 @@ async def update_game(
     await _apply_relationships(db, game, payload)
 
     await db.commit()
-    await db.refresh(game, ["expansions", "designers", "publishers", "categories", "mechanics"])
-    return game
+    result = await db.execute(
+        select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
+    )
+    return result.unique().scalar_one()
 
 
 @router.patch("/games/{game_id}/favorite", response_model=GameRead)
@@ -178,19 +182,21 @@ async def toggle_favorite(game_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
     )
-    game = result.scalar_one_or_none()
+    game = result.unique().scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
     game.is_favorite = not game.is_favorite
     await db.commit()
-    await db.refresh(game, ["expansions", "designers", "publishers", "categories", "mechanics"])
-    return game
+    result2 = await db.execute(
+        select(Game).options(*GAME_LOAD_OPTIONS).where(Game.id == game_id)
+    )
+    return result2.unique().scalar_one()
 
 
 @router.delete("/games/{game_id}", status_code=204)
 async def delete_game(game_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Game).where(Game.id == game_id))
-    game = result.scalar_one_or_none()
+    game = result.unique().scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
     await db.delete(game)

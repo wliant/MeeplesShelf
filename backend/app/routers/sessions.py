@@ -101,7 +101,8 @@ async def list_sessions(
         )
 
     # Count total
-    count_result = await db.execute(select(func.count()).select_from(base.subquery()))
+    count_sub = base.with_only_columns(GameSession.id).distinct().subquery()
+    count_result = await db.execute(select(func.count()).select_from(count_sub))
     total = count_result.scalar_one()
 
     query = (
@@ -133,7 +134,7 @@ async def create_session(
     payload: GameSessionCreate, db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(select(Game).where(Game.id == payload.game_id))
-    game = result.scalar_one_or_none()
+    game = result.unique().scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
 
@@ -173,14 +174,14 @@ async def update_session(
         .options(selectinload(GameSession.players))
         .where(GameSession.id == session_id)
     )
-    session = result.scalar_one_or_none()
+    session = result.unique().scalar_one_or_none()
     if not session:
         raise HTTPException(404, "Session not found")
 
     game_result = await db.execute(
         select(Game).where(Game.id == payload.game_id)
     )
-    game = game_result.scalar_one_or_none()
+    game = game_result.unique().scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
 
@@ -235,7 +236,7 @@ async def delete_session(session_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(GameSession).where(GameSession.id == session_id)
     )
-    session = result.scalar_one_or_none()
+    session = result.unique().scalar_one_or_none()
     if not session:
         raise HTTPException(404, "Session not found")
     await db.delete(session)

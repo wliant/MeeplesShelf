@@ -187,10 +187,10 @@ export default function InventoryPage() {
             open={!!exportAnchor}
             onClose={() => setExportAnchor(null)}
           >
-            <MenuItem onClick={() => { exportCollection("csv"); setExportAnchor(null); }}>
+            <MenuItem onClick={async () => { setExportAnchor(null); try { await exportCollection("csv"); success("Collection exported"); } catch { error("Failed to export"); } }}>
               CSV
             </MenuItem>
-            <MenuItem onClick={() => { exportCollection("json"); setExportAnchor(null); }}>
+            <MenuItem onClick={async () => { setExportAnchor(null); try { await exportCollection("json"); success("Collection exported"); } catch { error("Failed to export"); } }}>
               JSON
             </MenuItem>
           </Menu>

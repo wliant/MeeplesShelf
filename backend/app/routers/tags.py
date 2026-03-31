@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -18,12 +19,13 @@ async def list_tags(db: AsyncSession = Depends(get_db)):
 
 @router.post("/tags", response_model=GameTagRead, status_code=201)
 async def create_tag(payload: GameTagCreate, db: AsyncSession = Depends(get_db)):
-    existing = await db.execute(select(GameTag).where(GameTag.name == payload.name))
-    if existing.scalar_one_or_none():
-        raise HTTPException(409, "Tag already exists")
     tag = GameTag(name=payload.name, color=payload.color)
     db.add(tag)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "Tag already exists")
     await db.refresh(tag)
     return tag
 
@@ -38,7 +40,7 @@ async def delete_tag(tag_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
-@router.post("/games/{game_id}/tags/{tag_id}", status_code=201)
+@router.post("/games/{game_id}/tags/{tag_id}", status_code=204)
 async def assign_tag(
     game_id: int, tag_id: int, db: AsyncSession = Depends(get_db)
 ):
@@ -57,7 +59,6 @@ async def assign_tag(
     if tag not in game.tags:
         game.tags.append(tag)
         await db.commit()
-    return {"status": "ok"}
 
 
 @router.delete("/games/{game_id}/tags/{tag_id}", status_code=204)

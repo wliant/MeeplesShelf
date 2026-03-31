@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -27,14 +28,13 @@ async def list_groups(db: AsyncSession = Depends(get_db)):
 async def create_group(
     payload: PlayerGroupCreate, db: AsyncSession = Depends(get_db)
 ):
-    existing = await db.execute(
-        select(PlayerGroup).where(PlayerGroup.name == payload.name)
-    )
-    if existing.scalar_one_or_none():
-        raise HTTPException(409, "Group already exists")
     group = PlayerGroup(name=payload.name)
     db.add(group)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "Group already exists")
     await db.refresh(group, ["members"])
     return group
 
@@ -69,7 +69,7 @@ async def delete_group(group_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
-@router.post("/groups/{group_id}/members/{player_id}", status_code=201)
+@router.post("/groups/{group_id}/members/{player_id}", status_code=204)
 async def add_member(
     group_id: int, player_id: int, db: AsyncSession = Depends(get_db)
 ):
@@ -90,7 +90,6 @@ async def add_member(
     if player not in group.members:
         group.members.append(player)
         await db.commit()
-    return {"status": "ok"}
 
 
 @router.delete("/groups/{group_id}/members/{player_id}", status_code=204)

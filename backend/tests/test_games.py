@@ -152,8 +152,8 @@ async def test_pagination(client):
 
 @pytest.mark.asyncio
 async def test_sort_by(client):
-    await client.post("/api/games", json={"name": "Zebra", "min_players": 1})
-    await client.post("/api/games", json={"name": "Alpha", "min_players": 5})
+    await client.post("/api/games", json={"name": "Zebra", "min_players": 1, "max_players": 4})
+    await client.post("/api/games", json={"name": "Alpha", "min_players": 2, "max_players": 5})
     resp = await client.get("/api/games", params={"sort_by": "name", "sort_dir": "desc"})
     items = resp.json()["items"]
     assert items[0]["name"] == "Zebra"

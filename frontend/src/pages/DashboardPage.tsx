@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Typography, Stack, Skeleton } from "@mui/material";
 import { Dashboard as DashboardIcon } from "@mui/icons-material";
@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [hIndex, setHIndex] = useState<HIndexResponse | null>(null);
   const [winRates, setWinRates] = useState<PlayerWinRate[]>([]);
   const [freqPeriod, setFreqPeriod] = useState("month");
+  const freqPeriodRef = useRef(freqPeriod);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { error } = useNotify();
@@ -40,7 +41,7 @@ export default function DashboardPage() {
     try {
       const [o, f, t, h, w] = await Promise.all([
         getOverviewStats(),
-        getPlayFrequency(freqPeriod, 12),
+        getPlayFrequency(freqPeriodRef.current, 12),
         getTopGames(10),
         getHIndex(),
         getPlayerWinRates(),
@@ -55,7 +56,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [freqPeriod, error]);
+  }, [error]);
 
   useEffect(() => {
     refresh();
@@ -63,6 +64,7 @@ export default function DashboardPage() {
 
   const handlePeriodChange = async (period: string) => {
     setFreqPeriod(period);
+    freqPeriodRef.current = period;
     try {
       const f = await getPlayFrequency(period, 12);
       setFrequency(f);
