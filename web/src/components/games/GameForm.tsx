@@ -23,7 +23,8 @@ import {
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
-import type { Game, GameCreate, CollectionStatus } from "../../types/game";
+import type { Game, GameCreate, CollectionStatus, GameType, GameCondition } from "../../types/game";
+import { Rating } from "@mui/material";
 import type { ScoringField } from "../../types/scoring";
 
 interface Props {
@@ -49,6 +50,21 @@ const STATUS_OPTIONS: { value: CollectionStatus; label: string }[] = [
   { value: "want_to_trade", label: "Want to Trade" },
   { value: "for_trade", label: "For Trade" },
   { value: "preordered", label: "Preordered" },
+];
+
+const GAME_TYPE_OPTIONS: { value: GameType; label: string }[] = [
+  { value: "base_game", label: "Base Game" },
+  { value: "expansion", label: "Expansion" },
+  { value: "reimplementation", label: "Reimplementation" },
+  { value: "standalone_expansion", label: "Standalone Expansion" },
+];
+
+const CONDITION_OPTIONS: { value: GameCondition; label: string }[] = [
+  { value: "new", label: "New" },
+  { value: "like_new", label: "Like New" },
+  { value: "good", label: "Good" },
+  { value: "fair", label: "Fair" },
+  { value: "poor", label: "Poor" },
 ];
 
 function emptyField(type: string): ScoringField {
@@ -87,6 +103,13 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
   const [yearPublished, setYearPublished] = useState<number | "">("");
   const [collectionStatus, setCollectionStatus] =
     useState<CollectionStatus>("owned");
+  const [gameType, setGameType] = useState<GameType>("base_game");
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [shelfLocation, setShelfLocation] = useState("");
+  const [acquisitionDate, setAcquisitionDate] = useState("");
+  const [acquisitionPrice, setAcquisitionPrice] = useState<number | "">("");
+  const [condition, setCondition] = useState<GameCondition | "">("");
+  const [lentTo, setLentTo] = useState("");
   const [designerNames, setDesignerNames] = useState("");
   const [publisherNames, setPublisherNames] = useState("");
   const [categoryNames, setCategoryNames] = useState("");
@@ -106,6 +129,13 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
       setWeight(game.weight ?? "");
       setYearPublished(game.year_published ?? "");
       setCollectionStatus(game.collection_status);
+      setGameType(game.game_type ?? "base_game");
+      setUserRating(game.user_rating);
+      setShelfLocation(game.shelf_location ?? "");
+      setAcquisitionDate(game.acquisition_date ?? "");
+      setAcquisitionPrice(game.acquisition_price ?? "");
+      setCondition((game.condition as GameCondition) ?? "");
+      setLentTo(game.lent_to ?? "");
       setDesignerNames(game.designers.map((d) => d.name).join(", "));
       setPublisherNames(game.publishers.map((p) => p.name).join(", "));
       setCategoryNames(game.categories.map((c) => c.name).join(", "));
@@ -123,6 +153,13 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
       setWeight("");
       setYearPublished("");
       setCollectionStatus("owned");
+      setGameType("base_game");
+      setUserRating(null);
+      setShelfLocation("");
+      setAcquisitionDate("");
+      setAcquisitionPrice("");
+      setCondition("");
+      setLentTo("");
       setDesignerNames("");
       setPublisherNames("");
       setCategoryNames("");
@@ -150,7 +187,14 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
       min_age: minAge || null,
       weight: weight || null,
       year_published: yearPublished || null,
+      game_type: gameType,
       collection_status: collectionStatus,
+      user_rating: userRating,
+      shelf_location: shelfLocation || null,
+      acquisition_date: acquisitionDate || null,
+      acquisition_price: acquisitionPrice || null,
+      condition: condition || null,
+      lent_to: lentTo || null,
       designer_names: splitNames(designerNames),
       publisher_names: splitNames(publisherNames),
       category_names: splitNames(categoryNames),
@@ -217,6 +261,35 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
                 ))}
               </Select>
             </FormControl>
+            <FormControl sx={{ minWidth: 180 }}>
+              <InputLabel>Game Type</InputLabel>
+              <Select
+                value={gameType}
+                label="Game Type"
+                onChange={(e) => setGameType(e.target.value as GameType)}
+              >
+                {GAME_TYPE_OPTIONS.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>
+                    {o.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Typography variant="body2">My Rating:</Typography>
+            <Rating
+              value={userRating ? userRating / 2 : null}
+              precision={0.5}
+              onChange={(_, v) => setUserRating(v ? v * 2 : null)}
+              max={5}
+            />
+            {userRating != null && (
+              <Typography variant="body2" color="text.secondary">
+                {userRating.toFixed(1)}/10
+              </Typography>
+            )}
           </Stack>
 
           <Accordion variant="outlined">
@@ -309,6 +382,70 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
                   value={mechanicNames}
                   onChange={(e) => setMechanicNames(e.target.value)}
                 />
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+
+          <Accordion variant="outlined">
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography>Collection Details</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack spacing={2}>
+                <TextField
+                  label="Shelf Location"
+                  placeholder="e.g. Shelf A, Living Room"
+                  value={shelfLocation}
+                  onChange={(e) => setShelfLocation(e.target.value)}
+                />
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    label="Acquisition Date"
+                    type="date"
+                    value={acquisitionDate}
+                    onChange={(e) => setAcquisitionDate(e.target.value)}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    label="Acquisition Price"
+                    type="number"
+                    value={acquisitionPrice}
+                    onChange={(e) =>
+                      setAcquisitionPrice(
+                        e.target.value ? Number(e.target.value) : ""
+                      )
+                    }
+                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                    sx={{ flex: 1 }}
+                  />
+                </Stack>
+                <Stack direction="row" spacing={2}>
+                  <FormControl sx={{ flex: 1 }}>
+                    <InputLabel>Condition</InputLabel>
+                    <Select
+                      value={condition}
+                      label="Condition"
+                      onChange={(e) =>
+                        setCondition(e.target.value as GameCondition | "")
+                      }
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      {CONDITION_OPTIONS.map((o) => (
+                        <MenuItem key={o.value} value={o.value}>
+                          {o.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    label="Lent To"
+                    placeholder="e.g. Friend's name"
+                    value={lentTo}
+                    onChange={(e) => setLentTo(e.target.value)}
+                    sx={{ flex: 1 }}
+                  />
+                </Stack>
               </Stack>
             </AccordionDetails>
           </Accordion>

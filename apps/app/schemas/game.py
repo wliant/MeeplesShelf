@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, field_validator, model_validator
@@ -21,6 +21,21 @@ CollectionStatus = Literal[
 ]
 
 VALID_STATUSES = set(CollectionStatus.__args__)
+
+GameType = Literal[
+    "base_game",
+    "expansion",
+    "reimplementation",
+    "standalone_expansion",
+]
+
+GameCondition = Literal[
+    "new",
+    "like_new",
+    "good",
+    "fair",
+    "poor",
+]
 
 
 # --- Taxonomy schemas ---
@@ -89,9 +104,19 @@ class GameCreate(BaseModel):
     bgg_id: int | None = None
     user_rating: float | None = None
 
+    # Classification
+    game_type: GameType = "base_game"
+
     # Collection
     collection_status: CollectionStatus = "owned"
     is_favorite: bool = False
+
+    # Collection details
+    shelf_location: str | None = None
+    acquisition_date: date | None = None
+    acquisition_price: float | None = None
+    condition: GameCondition | None = None
+    lent_to: str | None = None
 
     # Relationships (names to get-or-create)
     designer_names: list[str] = []
@@ -138,9 +163,19 @@ class GameUpdate(BaseModel):
     bgg_id: int | None = None
     user_rating: float | None = None
 
+    # Classification
+    game_type: GameType | None = None
+
     # Collection
     collection_status: CollectionStatus | None = None
     is_favorite: bool | None = None
+
+    # Collection details
+    shelf_location: str | None = None
+    acquisition_date: date | None = None
+    acquisition_price: float | None = None
+    condition: GameCondition | None = None
+    lent_to: str | None = None
 
     # Relationships
     designer_names: list[str] | None = None
@@ -195,9 +230,19 @@ class GameRead(BaseModel):
     bgg_id: int | None = None
     user_rating: float | None = None
 
+    # Classification
+    game_type: str = "base_game"
+
     # Collection
     collection_status: str = "owned"
     is_favorite: bool = False
+
+    # Collection details
+    shelf_location: str | None = None
+    acquisition_date: date | None = None
+    acquisition_price: float | None = None
+    condition: str | None = None
+    lent_to: str | None = None
 
     # Relationships
     designers: list[DesignerRead] = []

@@ -8,16 +8,12 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   Stack,
   TextField,
   Typography,
   Autocomplete,
 } from "@mui/material";
-import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
+import { Delete as DeleteIcon } from "@mui/icons-material";
 import type { PlayerGroup } from "../../types/group";
 import type { Player } from "../../types/session";
 import {

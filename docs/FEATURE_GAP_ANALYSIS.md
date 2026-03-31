@@ -30,8 +30,8 @@ MeeplesShelf is an early-stage board game inventory and session tracking app (2 
 | No BGG ID reference | Missing | Required for any BGG integration | P1 |
 | No year published | Missing | Core BGG metadata | P2 |
 | No recommended age | Missing | `min_age` is universal | P2 |
-| No game type classification | Missing | Base game vs expansion vs reimplementation | P2 |
-| No personal rating | Missing | 1-10 rating is universal | P2 |
+| No game type classification | ✅ `game_type` column with 4 types | Base game vs expansion vs reimplementation | P2 |
+| No personal rating | ✅ `user_rating` displayed via Rating component | 1-10 rating is universal | P2 |
 
 **Impact**: Games are identified only by name with player count range. Users cannot make informed decisions about what to play (no playtime, complexity, or category info). No foundation for BGG integration exists.
 
@@ -47,8 +47,8 @@ MeeplesShelf is an early-stage board game inventory and session tracking app (2 
 | No pagination | Returns all rows | Needed for any collection > 50 games | P1 |
 | No favorites/tags | Missing | User-defined tags and favorites | P2 |
 | No collection statistics | Missing | Total owned, total plays, collection value | P2 |
-| No location tracking | Missing | Shelf label, lent to friend | P3 |
-| No acquisition info | Missing | Purchase date, price, condition | P3 |
+| No location tracking | ✅ `shelf_location` + `lent_to` columns | Shelf label, lent to friend | P3 |
+| No acquisition info | ✅ `acquisition_date`, `acquisition_price`, `condition` | Purchase date, price, condition | P3 |
 
 **Impact**: Any collection beyond ~20 games becomes unmanageable. Users cannot find games by criteria ("what 2-player game under 30 minutes?"), track wishlists, or organize their collection meaningfully.
 
@@ -66,8 +66,8 @@ MeeplesShelf is an early-stage board game inventory and session tracking app (2 
 | No session pagination | Returns all sessions | Needed for real usage | P1 |
 | No session location | Missing | Home, cafe, game store, convention | P2 |
 | No session photos | Missing | BG Stats supports photos per session | P2 |
-| No incomplete session flag | Missing | Mark abandoned/unfinished games | P3 |
-| No tie-breaking rules | All max-score = winner | Many games have specific tiebreakers | P3 |
+| No incomplete session flag | ✅ `is_incomplete` column + UI | Mark abandoned/unfinished games | P3 |
+| No tie-breaking rules | ✅ `tiebreaker_winner_id` for explicit tiebreak | Many games have specific tiebreakers | P3 |
 
 **Impact**: Mistakes in logged sessions require delete-and-recreate. Cooperative games (Pandemic, Spirit Island, etc.) cannot be properly tracked. Finding historical sessions requires scrolling through the entire list.
 
@@ -136,7 +136,7 @@ MeeplesShelf is an early-stage board game inventory and session tracking app (2 
 | No dark mode | Hardcoded light | Dark/light toggle | P1 |
 | No empty states with CTAs | Basic text only | Illustrated empty states guiding user | P2 |
 | No breadcrumbs | Flat 2-page nav | Breadcrumbs for drill-down pages | P2 |
-| No keyboard shortcuts | Missing | Quick-add, navigation | P3 |
+| No keyboard shortcuts | ✅ Global shortcuts with help dialog | Quick-add, navigation | P3 |
 
 **Impact**: Delete operations cannot be undone and have no confirmation. Users receive no feedback when operations succeed or fail. The app feels unresponsive during API calls.
 

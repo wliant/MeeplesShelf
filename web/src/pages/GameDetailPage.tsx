@@ -9,10 +9,11 @@ import {
   Skeleton,
   Grid,
   CardMedia,
+  Rating,
 } from "@mui/material";
 import type { Game } from "../types/game";
 import type { GameStats, ScoreDistributionEntry } from "../types/stats";
-import { getGame } from "../api/games";
+import { getGame, updateGame } from "../api/games";
 import { getGameStats, getScoreDistribution } from "../api/stats";
 import ScoreDistributionChart from "../components/stats/ScoreDistributionChart";
 import { useNotify } from "../components/common/useNotify";
@@ -102,6 +103,35 @@ export default function GameDetailPage() {
                 />
               )}
               {game.min_age && <Chip label={`Age ${game.min_age}+`} />}
+              {game.game_type && game.game_type !== "base_game" && (
+                <Chip
+                  label={game.game_type.replace(/_/g, " ")}
+                  color="info"
+                />
+              )}
+            </Stack>
+
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="body2">My Rating:</Typography>
+              <Rating
+                value={game.user_rating ? game.user_rating / 2 : null}
+                precision={0.5}
+                max={5}
+                onChange={async (_, v) => {
+                  const newRating = v ? v * 2 : null;
+                  try {
+                    await updateGame(game.id, { user_rating: newRating });
+                    setGame({ ...game, user_rating: newRating });
+                  } catch {
+                    /* ignore */
+                  }
+                }}
+              />
+              {game.user_rating != null && (
+                <Typography variant="body2" color="text.secondary">
+                  {game.user_rating.toFixed(1)}/10
+                </Typography>
+              )}
             </Stack>
 
             {game.description && (
@@ -200,6 +230,21 @@ export default function GameDetailPage() {
               ))}
             </Stack>
           )}
+        </Paper>
+      )}
+
+      {(game.shelf_location || game.acquisition_date || game.acquisition_price != null || game.condition || game.lent_to) && (
+        <Paper variant="outlined" sx={{ p: 2, mt: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Collection Details
+          </Typography>
+          <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+            {game.shelf_location && <Chip label={`Location: ${game.shelf_location}`} />}
+            {game.acquisition_date && <Chip label={`Acquired: ${game.acquisition_date}`} />}
+            {game.acquisition_price != null && <Chip label={`Price: $${game.acquisition_price.toFixed(2)}`} />}
+            {game.condition && <Chip label={`Condition: ${game.condition.replace(/_/g, " ")}`} />}
+            {game.lent_to && <Chip label={`Lent to: ${game.lent_to}`} color="warning" />}
+          </Stack>
         </Paper>
       )}
 

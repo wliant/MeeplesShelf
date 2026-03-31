@@ -17,6 +17,7 @@ import {
   Star as StarIcon,
   StarBorder as StarBorderIcon,
 } from "@mui/icons-material";
+import { Rating } from "@mui/material";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Game } from "../../types/game";
@@ -103,7 +104,28 @@ export default function GameCard({
               size="small"
             />
           )}
+          {game.game_type && game.game_type !== "base_game" && (
+            <Chip
+              label={game.game_type.replace(/_/g, " ")}
+              size="small"
+              color="info"
+            />
+          )}
         </Stack>
+        {game.user_rating != null && (
+          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.5 }}>
+            <Rating
+              value={game.user_rating / 2}
+              precision={0.5}
+              readOnly
+              size="small"
+              max={5}
+            />
+            <Typography variant="caption" color="text.secondary">
+              {game.user_rating.toFixed(1)}
+            </Typography>
+          </Stack>
+        )}
         {(game.categories.length > 0 || game.mechanics.length > 0) && (
           <Stack direction="row" spacing={0.5} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
             {game.categories.map((c) => (

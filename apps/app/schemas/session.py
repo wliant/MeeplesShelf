@@ -88,6 +88,8 @@ class GameSessionCreate(BaseModel):
     is_cooperative: bool = False
     cooperative_result: str | None = None
     location: str | None = None
+    is_incomplete: bool = False
+    tiebreaker_winner_id: int | None = None
 
     @model_validator(mode="after")
     def validate_cooperative(self):
@@ -108,6 +110,8 @@ class GameSessionUpdate(BaseModel):
     is_cooperative: bool = False
     cooperative_result: str | None = None
     location: str | None = None
+    is_incomplete: bool = False
+    tiebreaker_winner_id: int | None = None
 
     @model_validator(mode="after")
     def validate_cooperative(self):
@@ -131,6 +135,8 @@ class GameSessionRead(BaseModel):
     is_cooperative: bool = False
     cooperative_result: str | None = None
     location: str | None = None
+    is_incomplete: bool = False
+    tiebreaker_winner_id: int | None = None
     photos: list[SessionPhotoRead] = []
 
     model_config = {"from_attributes": True}

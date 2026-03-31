@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Typography, Stack, Skeleton } from "@mui/material";
+import { Box, Typography, Stack, Skeleton, Paper, List, ListItem, ListItemText } from "@mui/material";
 import { Dashboard as DashboardIcon } from "@mui/icons-material";
 import type {
   OverviewStats,
@@ -23,6 +23,23 @@ import HIndexCard from "../components/stats/HIndexCard";
 import PlayerWinRateChart from "../components/stats/PlayerWinRateChart";
 import EmptyState from "../components/common/EmptyState";
 import { useNotify } from "../components/common/useNotify";
+import { getFriendActivity, type ActivityEvent } from "../api/social";
+
+function formatActivityEvent(e: ActivityEvent): string {
+  const name = e.user_name;
+  switch (e.event_type) {
+    case "session_logged":
+      return `${name} played ${(e.payload.game_name as string) || "a game"}`;
+    case "game_added":
+      return `${name} added ${(e.payload.game_name as string) || "a game"} to their collection`;
+    case "badge_earned":
+      return `${name} earned the "${(e.payload.badge_name as string) || "?"}" badge`;
+    case "friend_added":
+      return `${name} made a new friend: ${(e.payload.friend_name as string) || "someone"}`;
+    default:
+      return `${name} did something`;
+  }
+}
 
 export default function DashboardPage() {
   const [overview, setOverview] = useState<OverviewStats | null>(null);
@@ -30,6 +47,7 @@ export default function DashboardPage() {
   const [topGames, setTopGames] = useState<TopGame[]>([]);
   const [hIndex, setHIndex] = useState<HIndexResponse | null>(null);
   const [winRates, setWinRates] = useState<PlayerWinRate[]>([]);
+  const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [freqPeriod, setFreqPeriod] = useState("month");
   const freqPeriodRef = useRef(freqPeriod);
   const [loading, setLoading] = useState(true);
@@ -39,18 +57,20 @@ export default function DashboardPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [o, f, t, h, w] = await Promise.all([
+      const [o, f, t, h, w, a] = await Promise.all([
         getOverviewStats(),
         getPlayFrequency(freqPeriodRef.current, 12),
         getTopGames(10),
         getHIndex(),
         getPlayerWinRates(),
+        getFriendActivity(10).catch(() => []),
       ]);
       setOverview(o);
       setFrequency(f);
       setTopGames(t);
       setHIndex(h);
       setWinRates(w);
+      setActivity(a);
     } catch {
       error("Failed to load dashboard");
     } finally {
@@ -121,6 +141,24 @@ export default function DashboardPage() {
               <TopGamesChart data={topGames} />
             </Box>
           </Stack>
+
+          {activity.length > 0 && (
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Friend Activity
+              </Typography>
+              <List dense>
+                {activity.map((e) => (
+                  <ListItem key={e.id}>
+                    <ListItemText
+                      primary={formatActivityEvent(e)}
+                      secondary={new Date(e.created_at).toLocaleString()}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Paper>
+          )}
         </Stack>
       )}
     </Box>

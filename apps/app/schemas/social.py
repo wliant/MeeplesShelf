@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -34,3 +35,12 @@ class SharedCollectionResponse(BaseModel):
 class PublicProfileResponse(BaseModel):
     display_name: str
     games: list[dict]
+
+
+class ActivityEventResponse(BaseModel):
+    id: int
+    user_id: int
+    user_name: str
+    event_type: str
+    payload: dict[str, Any]
+    created_at: datetime

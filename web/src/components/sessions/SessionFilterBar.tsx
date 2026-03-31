@@ -3,6 +3,8 @@ import {
   TextField,
   Autocomplete,
   Button,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import type { GameBrief } from "../../types/game";
 import type { Player } from "../../types/session";
@@ -22,7 +24,7 @@ export default function SessionFilterBar({
   onChange,
 }: Props) {
   const hasFilters =
-    filters.gameId || filters.playerId || filters.dateFrom || filters.dateTo;
+    filters.gameId || filters.playerId || filters.dateFrom || filters.dateTo || filters.isIncomplete;
 
   return (
     <Stack direction="row" spacing={2} sx={{ mb: 3 }} alignItems="center" flexWrap="wrap" useFlexGap>
@@ -65,6 +67,21 @@ export default function SessionFilterBar({
         onChange={(e) => onChange({ ...filters, dateTo: e.target.value || undefined })}
         slotProps={{ inputLabel: { shrink: true } }}
         sx={{ width: 160 }}
+      />
+      <FormControlLabel
+        control={
+          <Checkbox
+            size="small"
+            checked={filters.isIncomplete ?? false}
+            onChange={(e) =>
+              onChange({
+                ...filters,
+                isIncomplete: e.target.checked || undefined,
+              })
+            }
+          />
+        }
+        label="Incomplete only"
       />
       {hasFilters && (
         <Button size="small" onClick={() => onChange({})}>

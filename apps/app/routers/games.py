@@ -14,6 +14,7 @@ from app.models.game import (
     Publisher,
     game_tag_assignments,
 )
+from app.models.social import ActivityEvent
 from app.models.user import User
 from app.schemas.game import (
     ExpansionCreate,
@@ -78,6 +79,7 @@ async def _apply_relationships(db: AsyncSession, game: Game, payload):
 @router.get("/games", response_model=PaginatedGameResponse)
 async def list_games(
     collection_status: str | None = None,
+    game_type: str | None = None,
     search: str | None = None,
     tag_id: int | None = None,
     sort_by: str = Query("name", pattern="^(name|created_at|min_players)$"),
@@ -90,6 +92,8 @@ async def list_games(
     base = select(Game).where(Game.user_id == current_user.id)
     if collection_status:
         base = base.where(Game.collection_status == collection_status)
+    if game_type:
+        base = base.where(Game.game_type == game_type)
     if search:
         base = base.where(Game.name.ilike(f"%{search}%"))
     if tag_id is not None:
@@ -142,6 +146,13 @@ async def create_game(
     await db.refresh(game, ["designers", "publishers", "categories", "mechanics", "tags"])
 
     await _apply_relationships(db, game, payload)
+
+    # Record activity event
+    db.add(ActivityEvent(
+        user_id=current_user.id,
+        event_type="game_added",
+        payload={"game_name": game.name, "game_id": game.id},
+    ))
 
     await db.commit()
     await db.refresh(game, ["expansions", "designers", "publishers", "categories", "mechanics", "tags"])

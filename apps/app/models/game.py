@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
     Boolean,
     Column,
+    Date,
     DateTime,
     Float,
     ForeignKey,
@@ -151,6 +152,11 @@ class Game(Base):
     bgg_id: Mapped[int | None] = mapped_column(Integer, nullable=True, unique=True)
     user_rating: Mapped[float | None] = mapped_column(Float, nullable=True)
 
+    # Classification
+    game_type: Mapped[str] = mapped_column(
+        String(30), server_default="base_game"
+    )
+
     # Ownership
     user_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True
@@ -161,6 +167,13 @@ class Game(Base):
         String(20), server_default="owned"
     )
     is_favorite: Mapped[bool] = mapped_column(Boolean, server_default="false")
+
+    # Collection details
+    shelf_location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    acquisition_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    acquisition_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    condition: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    lent_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Relationships
     expansions: Mapped[list["Expansion"]] = relationship(

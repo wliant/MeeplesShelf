@@ -9,6 +9,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.game import Expansion, Game
 from app.models.session import GameSession, Player, SessionPhoto, SessionPlayer
+from app.models.social import ActivityEvent
 from app.models.user import User
 from app.schemas.session import (
     GameSessionCreate,
@@ -95,6 +96,7 @@ async def list_sessions(
     player_id: int | None = None,
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
+    is_incomplete: bool | None = None,
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -118,6 +120,8 @@ async def list_sessions(
                 hour=23, minute=59, second=59
             )
         )
+    if is_incomplete is not None:
+        base = base.where(GameSession.is_incomplete == is_incomplete)
 
     # Count total
     count_sub = base.with_only_columns(GameSession.id).distinct().subquery()
@@ -145,6 +149,8 @@ def _build_session(payload) -> GameSession:
         is_cooperative=payload.is_cooperative,
         cooperative_result=payload.cooperative_result,
         location=payload.location,
+        is_incomplete=payload.is_incomplete,
+        tiebreaker_winner_id=payload.tiebreaker_winner_id,
     )
 
 
@@ -174,8 +180,16 @@ async def create_session(
     await db.flush()
 
     _add_players_with_scores(
-        session, payload.players, game.scoring_spec, payload.is_cooperative, db
+        session, payload.players, game.scoring_spec, payload.is_cooperative, db,
+        is_incomplete=payload.is_incomplete, tiebreaker_winner_id=payload.tiebreaker_winner_id,
     )
+
+    # Record activity event
+    db.add(ActivityEvent(
+        user_id=current_user.id,
+        event_type="session_logged",
+        payload={"game_name": game.name, "session_id": session.id},
+    ))
 
     await db.commit()
 
@@ -218,6 +232,8 @@ async def update_session(
     session.is_cooperative = payload.is_cooperative
     session.cooperative_result = payload.cooperative_result
     session.location = payload.location
+    session.is_incomplete = payload.is_incomplete
+    session.tiebreaker_winner_id = payload.tiebreaker_winner_id
 
     if payload.expansion_ids is not None:
         exp_result = await db.execute(
@@ -230,7 +246,8 @@ async def update_session(
     await db.flush()
 
     _add_players_with_scores(
-        session, payload.players, game.scoring_spec, payload.is_cooperative, db
+        session, payload.players, game.scoring_spec, payload.is_cooperative, db,
+        is_incomplete=payload.is_incomplete, tiebreaker_winner_id=payload.tiebreaker_winner_id,
     )
 
     await db.commit()
@@ -325,7 +342,9 @@ async def delete_session_photo(
     await db.commit()
 
 
-def _add_players_with_scores(session, players, scoring_spec, is_cooperative, db):
+def _add_players_with_scores(
+    session, players, scoring_spec, is_cooperative, db, *, is_incomplete=False, tiebreaker_winner_id=None
+):
     max_score = None
     session_players = []
 
@@ -343,9 +362,19 @@ def _add_players_with_scores(session, players, scoring_spec, is_cooperative, db)
         if total is not None and (max_score is None or total > max_score):
             max_score = total
 
+    # Determine tied players for tiebreaker logic
+    tied_player_ids = set()
+    if max_score is not None:
+        tied_player_ids = {
+            sp.player_id for sp in session_players if sp.total_score == max_score
+        }
+
     for sp in session_players:
-        if is_cooperative:
+        if is_incomplete or is_cooperative:
             sp.winner = False
+        elif tiebreaker_winner_id and len(tied_player_ids) > 1:
+            # Tiebreaker: only the designated player wins
+            sp.winner = sp.player_id == tiebreaker_winner_id
         else:
             sp.winner = sp.total_score is not None and sp.total_score == max_score
         db.add(sp)

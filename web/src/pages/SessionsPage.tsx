@@ -26,6 +26,7 @@ export interface SessionFilters {
   playerId?: number;
   dateFrom?: string;
   dateTo?: string;
+  isIncomplete?: boolean;
 }
 
 export default function SessionsPage() {

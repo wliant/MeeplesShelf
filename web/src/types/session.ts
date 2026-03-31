@@ -46,6 +46,8 @@ export interface GameSession {
   is_cooperative: boolean;
   cooperative_result: string | null;
   location: string | null;
+  is_incomplete: boolean;
+  tiebreaker_winner_id: number | null;
   photos: SessionPhoto[];
 }
 
@@ -64,6 +66,8 @@ export interface GameSessionCreate {
   is_cooperative?: boolean;
   cooperative_result?: string | null;
   location?: string | null;
+  is_incomplete?: boolean;
+  tiebreaker_winner_id?: number | null;
 }
 
 export interface PlayerUpdate {

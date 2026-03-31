@@ -34,7 +34,7 @@ export default function PlayerWinRateChart({ data }: Props) {
             fontSize={12}
           />
           <Tooltip
-            formatter={(value: number) => [`${value}%`, "Win Rate"]}
+            formatter={(value) => [`${value}%`, "Win Rate"]}
           />
           <Bar dataKey="win_rate_pct" fill="#66bb6a" radius={[0, 4, 4, 0]} />
         </BarChart>

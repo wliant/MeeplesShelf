@@ -15,6 +15,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Checkbox,
 } from "@mui/material";
 import { useState, useEffect, useRef } from "react";
 import type { Game, GameBrief } from "../../types/game";
@@ -55,6 +56,8 @@ export default function SessionForm({
   const [cooperativeResult, setCooperativeResult] = useState<string>("");
   const [newPlayerName, setNewPlayerName] = useState("");
   const [location, setLocation] = useState("");
+  const [isIncomplete, setIsIncomplete] = useState(false);
+  const [tiebreakerWinnerId, setTiebreakerWinnerId] = useState<number | null>(null);
   const [groups, setGroups] = useState<PlayerGroup[]>([]);
   const gameSelectRef = useRef(0);
 
@@ -73,6 +76,8 @@ export default function SessionForm({
           setIsCooperative(session.is_cooperative ?? false);
           setCooperativeResult(session.cooperative_result ?? "");
           setLocation(session.location ?? "");
+          setIsIncomplete(session.is_incomplete ?? false);
+          setTiebreakerWinnerId(session.tiebreaker_winner_id ?? null);
 
           const sessionPlayerObjs = session.players.map((sp) => sp.player);
           setSelectedPlayers(sessionPlayerObjs);
@@ -92,6 +97,8 @@ export default function SessionForm({
           setIsCooperative(false);
           setCooperativeResult("");
           setLocation("");
+          setIsIncomplete(false);
+          setTiebreakerWinnerId(null);
         }
       });
     }
@@ -146,6 +153,8 @@ export default function SessionForm({
       is_cooperative: isCooperative,
       cooperative_result: isCooperative && cooperativeResult ? cooperativeResult : null,
       location: location || null,
+      is_incomplete: isIncomplete,
+      tiebreaker_winner_id: tiebreakerWinnerId,
     });
   };
 
@@ -303,12 +312,24 @@ export default function SessionForm({
             )}
           </Stack>
 
-          <TextField
-            label="Location (optional)"
-            placeholder="e.g. Home, Game Store, Convention"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          />
+          <Stack direction="row" spacing={2} alignItems="center">
+            <TextField
+              label="Location (optional)"
+              placeholder="e.g. Home, Game Store, Convention"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              sx={{ flex: 1 }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={isIncomplete}
+                  onChange={(e) => setIsIncomplete(e.target.checked)}
+                />
+              }
+              label="Incomplete"
+            />
+          </Stack>
 
           <TextField
             label="Notes (optional)"

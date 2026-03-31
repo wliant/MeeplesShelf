@@ -8,16 +8,18 @@ export interface SessionFilterParams {
   playerId?: number;
   dateFrom?: string;
   dateTo?: string;
+  isIncomplete?: boolean;
   offset?: number;
   limit?: number;
 }
 
 export const listSessions = (filters?: SessionFilterParams) => {
-  const params: Record<string, string | number> = {};
+  const params: Record<string, string | number | boolean> = {};
   if (filters?.gameId) params.game_id = filters.gameId;
   if (filters?.playerId) params.player_id = filters.playerId;
   if (filters?.dateFrom) params.date_from = filters.dateFrom;
   if (filters?.dateTo) params.date_to = filters.dateTo;
+  if (filters?.isIncomplete !== undefined) params.is_incomplete = filters.isIncomplete;
   if (filters?.offset !== undefined) params.offset = filters.offset;
   if (filters?.limit !== undefined) params.limit = filters.limit;
   return client

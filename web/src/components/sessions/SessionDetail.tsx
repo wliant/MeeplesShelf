@@ -37,6 +37,9 @@ export default function SessionDetail({ session, onClose, onEdit, onRefresh }: P
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Stack direction="row" spacing={2}>
+            {session.is_incomplete && (
+              <Chip label="Incomplete" size="small" color="warning" />
+            )}
             {session.duration_minutes && (
               <Chip
                 label={`${session.duration_minutes} min`}

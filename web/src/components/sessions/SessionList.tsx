@@ -54,7 +54,12 @@ export default function SessionList({ sessions, onDelete, onSelect }: Props) {
                 <TableCell>
                   {new Date(s.played_at).toLocaleDateString()}
                 </TableCell>
-                <TableCell>{s.game.name}</TableCell>
+                <TableCell>
+                  {s.game.name}
+                  {s.is_incomplete && (
+                    <Chip label="Incomplete" size="small" color="warning" sx={{ ml: 1 }} />
+                  )}
+                </TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
                     {s.players.map((p) => (

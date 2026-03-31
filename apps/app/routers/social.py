@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.game import Game
-from app.models.social import Friendship, SharedCollection
+from app.models.social import ActivityEvent, Friendship, SharedCollection
 from app.models.user import User
 from app.schemas.social import (
+    ActivityEventResponse,
     FriendRequestCreate,
     PublicProfileResponse,
     SharedCollectionCreate,
@@ -186,6 +187,20 @@ async def accept_friend_request(
         raise HTTPException(404, "Friend request not found")
 
     friendship.status = "accepted"
+
+    # Record activity events for both users
+    requester = (await db.execute(select(User).where(User.id == friendship.user_id))).scalar_one()
+    db.add(ActivityEvent(
+        user_id=current_user.id,
+        event_type="friend_added",
+        payload={"friend_name": requester.display_name},
+    ))
+    db.add(ActivityEvent(
+        user_id=friendship.user_id,
+        event_type="friend_added",
+        payload={"friend_name": current_user.display_name},
+    ))
+
     await db.commit()
     return {"status": "accepted"}
 
@@ -210,3 +225,62 @@ async def remove_friend(
         raise HTTPException(404, "Friendship not found")
     await db.delete(friendship)
     await db.commit()
+
+
+# --- Activity Feed ---
+
+
+@router.get("/friends/activity", response_model=list[ActivityEventResponse])
+async def get_friend_activity(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Get accepted friend IDs
+    result = await db.execute(
+        select(Friendship).where(
+            or_(
+                Friendship.user_id == current_user.id,
+                Friendship.friend_id == current_user.id,
+            ),
+            Friendship.status == "accepted",
+        )
+    )
+    friendships = result.scalars().all()
+    friend_ids = set()
+    for f in friendships:
+        friend_ids.add(f.friend_id if f.user_id == current_user.id else f.user_id)
+
+    if not friend_ids:
+        return []
+
+    # Fetch activity events from friends
+    events_result = await db.execute(
+        select(ActivityEvent)
+        .where(ActivityEvent.user_id.in_(friend_ids))
+        .order_by(ActivityEvent.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    events = events_result.scalars().all()
+
+    # Resolve user display names
+    user_ids = {e.user_id for e in events}
+    if user_ids:
+        users_result = await db.execute(select(User).where(User.id.in_(user_ids)))
+        user_map = {u.id: u.display_name for u in users_result.scalars().all()}
+    else:
+        user_map = {}
+
+    return [
+        ActivityEventResponse(
+            id=e.id,
+            user_id=e.user_id,
+            user_name=user_map.get(e.user_id, "Unknown"),
+            event_type=e.event_type,
+            payload=e.payload,
+            created_at=e.created_at,
+        )
+        for e in events
+    ]

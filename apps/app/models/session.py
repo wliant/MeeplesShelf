@@ -63,6 +63,8 @@ class GameSession(Base):
         String(10), nullable=True
     )
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_incomplete: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    tiebreaker_winner_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     game: Mapped["Game"] = relationship(lazy="joined")
     players: Mapped[list["SessionPlayer"]] = relationship(

@@ -20,3 +20,17 @@ export const createPublicProfile = (slug: string) =>
 
 export const getPublicProfile = (slug: string) =>
   client.get(`/profile/${slug}`).then((r) => r.data);
+
+export interface ActivityEvent {
+  id: number;
+  user_id: number;
+  user_name: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export const getFriendActivity = (limit = 20, offset = 0) =>
+  client
+    .get<ActivityEvent[]>("/friends/activity", { params: { limit, offset } })
+    .then((r) => r.data);

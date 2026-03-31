@@ -9,6 +9,14 @@ export type CollectionStatus =
   | "for_trade"
   | "preordered";
 
+export type GameType =
+  | "base_game"
+  | "expansion"
+  | "reimplementation"
+  | "standalone_expansion";
+
+export type GameCondition = "new" | "like_new" | "good" | "fair" | "poor";
+
 export interface NamedEntity {
   id: number;
   name: string;
@@ -44,9 +52,19 @@ export interface Game {
   bgg_id: number | null;
   user_rating: number | null;
 
+  // Classification
+  game_type: GameType;
+
   // Collection
   collection_status: CollectionStatus;
   is_favorite: boolean;
+
+  // Collection details
+  shelf_location: string | null;
+  acquisition_date: string | null;
+  acquisition_price: number | null;
+  condition: GameCondition | null;
+  lent_to: string | null;
 
   // Relationships
   designers: NamedEntity[];
@@ -82,8 +100,14 @@ export interface GameCreate {
   year_published?: number | null;
   bgg_id?: number | null;
   user_rating?: number | null;
+  game_type?: GameType;
   collection_status?: CollectionStatus;
   is_favorite?: boolean;
+  shelf_location?: string | null;
+  acquisition_date?: string | null;
+  acquisition_price?: number | null;
+  condition?: GameCondition | null;
+  lent_to?: string | null;
   designer_names?: string[];
   publisher_names?: string[];
   category_names?: string[];

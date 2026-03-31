@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.badges import BadgeDefinition, UserBadge
 from app.models.game import Game
 from app.models.session import GameSession
+from app.models.social import ActivityEvent
 
 
 async def evaluate_badges(db: AsyncSession, user_id: int) -> list[str]:
@@ -70,6 +71,11 @@ async def evaluate_badges(db: AsyncSession, user_id: int) -> list[str]:
 
         if earned:
             db.add(UserBadge(user_id=user_id, badge_id=badge.id))
+            db.add(ActivityEvent(
+                user_id=user_id,
+                event_type="badge_earned",
+                payload={"badge_name": badge.name},
+            ))
             awarded.append(badge.name)
 
     if awarded:

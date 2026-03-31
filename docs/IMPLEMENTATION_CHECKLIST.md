@@ -328,7 +328,7 @@ Last updated: 2026-03-31
 - [x] Public profile/collection URLs
 - [x] Share session results
 - [x] Friends system (friend requests, friend list)
-- [ ] Friend activity feed
+- [x] Friend activity feed (ActivityEvent model, feed endpoint, dashboard integration)
 
 ### 3.7 Gamification & Badges
 - [x] Badge definition model
@@ -336,7 +336,56 @@ Last updated: 2026-03-31
 - [x] Badge display on player profile
 - [x] Achievements page
 
-**Phase 3: 31/32 items complete**
+**Phase 3: 32/32 items complete**
+
+---
+
+## Phase 4 — Remaining Feature Gaps
+
+*Addresses all P2/P3 gaps from the Feature Gap Analysis that were not in the original checklist.*
+
+### 4.1 Game Type Classification
+- [x] `game_type` column on Game model (base_game, expansion, reimplementation, standalone_expansion)
+- [x] `GameType` literal type in schema
+- [x] `game_type` filter param on `GET /api/games`
+- [x] Game type `Select` dropdown in `GameForm`
+- [x] Game type chip on `GameCard` (shown when not base_game)
+- [x] Game type display on `GameDetailPage`
+
+### 4.2 Personal Rating Display
+- [x] `Rating` component on `GameCard` (read-only, shows user_rating as stars)
+- [x] Editable `Rating` component on `GameDetailPage` (updates via API)
+- [x] `Rating` input in `GameForm`
+
+### 4.3 Incomplete Session Flag
+- [x] `is_incomplete` column on GameSession model
+- [x] `is_incomplete` in create/update/read schemas
+- [x] `is_incomplete` filter param on `GET /api/sessions`
+- [x] Skip winner determination for incomplete sessions
+- [x] "Mark as incomplete" checkbox in `SessionForm`
+- [x] "Incomplete" chip in `SessionDetail` and `SessionList`
+- [x] Incomplete filter toggle in `SessionFilterBar`
+
+### 4.4 Tie-Breaking Rules
+- [x] `tiebreaker_winner_id` column on GameSession model
+- [x] `tiebreaker_winner_id` in create/update/read schemas
+- [x] Tiebreaker logic in `_add_players_with_scores` (designates single winner among tied players)
+
+### 4.5 Collection Location & Acquisition
+- [x] `shelf_location`, `acquisition_date`, `acquisition_price`, `condition`, `lent_to` columns on Game model
+- [x] All 5 fields in create/update/read schemas with `GameCondition` literal type
+- [x] "Collection Details" accordion in `GameForm`
+- [x] Collection details section on `GameDetailPage`
+
+### 4.6 Keyboard Shortcuts
+- [x] `useKeyboardShortcuts` hook with navigation and action shortcuts
+- [x] Keyboard shortcuts help dialog (triggered by `?` key)
+- [x] Keyboard icon button in `AppShell` toolbar
+
+### 4.7 Database Migration
+- [x] Migration `008_remaining_features.py` covering all model changes
+
+**Phase 4: 25/25 items complete**
 
 ---
 
@@ -346,14 +395,14 @@ Last updated: 2026-03-31
 
 | Category | Total Gaps | Addressed | Remaining |
 |----------|-----------|-----------|-----------|
-| 1. Game Metadata | 11 | 9 | 2 (P2 game type classification, P2 personal rating display) |
-| 2. Collection Management | 8 | 7 (search, sort, collection status, favorites, options endpoint, pagination, tags) | 1 (location/acquisition) |
-| 3. Session/Play Logging | 10 | 8 (session editing, filtering, duration, cooperative, pagination, photos, location) | 2 (incomplete flag, tie-breaking) |
-| 4. Statistics & Analytics | 11 | 11 (stats engine, dashboard, play count, last played, win/loss, play frequency, H-index, charts, player performance, rankings, win streaks) | 0 |
-| 5. Social & Multi-user | 7 | 7 (player profiles, player groups, auth, sharing, friends, gamification, multi-user) | 0 |
-| 6. Integration | 5 | 5 (BGG search, BGG single-game import, data export, BGG collection sync, data import) | 0 |
-| 7. UX/UI | 10 | 9 (loading, errors, confirmations, toasts, game detail, player detail, dark mode, dashboard, empty states) | 1 (keyboard shortcuts) |
-| 8. Infrastructure | 9 | 9 (validation, indexes, health check, CORS, test structure, scoring tests, CI/CD, rate limiting, logging) | 0 |
+| 1. Game Metadata | 11 | 11 (all original + game type classification + personal rating display) | 0 |
+| 2. Collection Management | 8 | 8 (all original + location/acquisition) | 0 |
+| 3. Session/Play Logging | 10 | 10 (all original + incomplete flag + tie-breaking) | 0 |
+| 4. Statistics & Analytics | 11 | 11 | 0 |
+| 5. Social & Multi-user | 7 | 7 (all original + friend activity feed) | 0 |
+| 6. Integration | 5 | 5 | 0 |
+| 7. UX/UI | 10 | 10 (all original + keyboard shortcuts) | 0 |
+| 8. Infrastructure | 9 | 9 | 0 |
 
 ### Overall Progress
 
@@ -362,9 +411,10 @@ Last updated: 2026-03-31
 | Phase 0 | 32 | 32 | 0 | **100%** |
 | Phase 1 | 129 | 129 | 0 | **100%** |
 | Phase 2 | 38 | 38 | 0 | **100%** |
-| Phase 3 | 32 | 31 | 1 | **97%** |
-| **Total** | **231** | **230** | **1** | **99.6%** |
+| Phase 3 | 32 | 32 | 0 | **100%** |
+| Phase 4 | 25 | 25 | 0 | **100%** |
+| **Total** | **256** | **256** | **0** | **100%** |
 
 ### Remaining Items
 
-1. **Friend activity feed** (Phase 3.6) — requires additional event tracking infrastructure
+None — all feature gaps from the Feature Gap Analysis have been addressed.
