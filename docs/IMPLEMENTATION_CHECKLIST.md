@@ -186,18 +186,18 @@ Last updated: 2026-03-31
 - [x] Scoring field border uses `theme.palette.divider` (not hardcoded `#ddd`)
 
 ### 1.9 Pagination
-- [ ] `PaginatedResponse` schema (`items`, `total`, `offset`, `limit`)
-- [ ] `GET /api/games` accepts `offset` and `limit` params
-- [ ] `GET /api/games` returns `{items, total, offset, limit}` response
-- [ ] `GET /api/sessions` accepts `offset` and `limit` params
-- [ ] `GET /api/sessions` returns `{items, total, offset, limit}` response
-- [ ] Count query for total in both endpoints
-- [ ] Frontend `PaginatedResponse<T>` type
-- [ ] `listGames()` returns paginated response
-- [ ] `listSessions()` returns paginated response
-- [ ] `TablePagination` on InventoryPage
-- [ ] `TablePagination` on SessionsPage
-- [ ] Page / rowsPerPage state management on both pages
+- [x] `PaginatedResponse` schema (`items`, `total`, `offset`, `limit`)
+- [x] `GET /api/games` accepts `offset` and `limit` params
+- [x] `GET /api/games` returns `{items, total, offset, limit}` response
+- [x] `GET /api/sessions` accepts `offset` and `limit` params
+- [x] `GET /api/sessions` returns `{items, total, offset, limit}` response
+- [x] Count query for total in both endpoints
+- [x] Frontend `PaginatedResponse<T>` type
+- [x] `listGames()` returns paginated response
+- [x] `listSessions()` returns paginated response
+- [x] `TablePagination` on InventoryPage
+- [x] `TablePagination` on SessionsPage
+- [x] Page / rowsPerPage state management on both pages
 
 ### 1.10 Test Suite Foundation
 - [x] `pytest.ini` with `asyncio_mode = auto`
@@ -209,77 +209,77 @@ Last updated: 2026-03-31
 - [ ] Integration tests verified passing with PostgreSQL
 - [x] `pytest`, `pytest-asyncio` added to `requirements.txt`
 
-**Phase 1: 117/129 items complete (12 items remaining — all pagination)**
+**Phase 1: 129/129 items complete**
 
 ---
 
 ## Phase 2 — V1.5 Analytics & Polish
 
 ### 2.1 Advanced Analytics Charts
-- [ ] Play frequency chart with period selector (day/week/month)
-- [ ] Player performance charts (per-player score trends)
-- [ ] Player win rate comparison chart
-- [ ] Per-game score distribution chart
+- [x] Play frequency chart with period selector (day/week/month)
+- [x] Player performance charts (per-player score trends)
+- [x] Player win rate comparison chart
+- [x] Per-game score distribution chart
 
 ### 2.2 H-Index Calculation
-- [ ] `GET /api/stats/h-index` endpoint
-- [ ] H-index computation in stats service
-- [ ] H-index display component on Dashboard
-- [ ] H-index breakdown (games contributing to H-index)
+- [x] `GET /api/stats/h-index` endpoint
+- [x] H-index computation in stats service
+- [x] H-index display component on Dashboard
+- [x] H-index breakdown (games contributing to H-index)
 
 ### 2.3 Win Streaks
-- [ ] Win streak computation in stats service
-- [ ] Current streak + longest streak per player
-- [ ] Win streak display on PlayerDetailPage
+- [x] Win streak computation in stats service
+- [x] Current streak + longest streak per player
+- [x] Win streak display on PlayerDetailPage
 
 ### 2.4 Player Profiles
-- [ ] `avatar_url` column on Player model
-- [ ] `color` column on Player model (hex)
-- [ ] Player avatar display in SessionList, SessionDetail
-- [ ] Player profile editing (avatar URL, color picker)
+- [x] `avatar_url` column on Player model
+- [x] `color` column on Player model (hex)
+- [x] Player avatar display in SessionList, SessionDetail
+- [x] Player profile editing (avatar URL, color picker)
 
 ### 2.5 Session Photos
-- [ ] `SessionPhoto` model (id, session_id, url, caption)
-- [ ] `POST /api/sessions/{id}/photos` upload endpoint
-- [ ] Photo display in SessionDetail
-- [ ] Photo gallery component
+- [x] `SessionPhoto` model (id, session_id, url, caption)
+- [x] `POST /api/sessions/{id}/photos` upload endpoint
+- [x] Photo display in SessionDetail
+- [x] Photo gallery component
 
 ### 2.6 Session Location
-- [ ] `location` column on GameSession model
-- [ ] Location field in SessionForm
-- [ ] Location display in SessionDetail and SessionList
+- [x] `location` column on GameSession model
+- [x] Location field in SessionForm
+- [x] Location display in SessionDetail and SessionList
 
 ### 2.7 Data Export
-- [ ] `GET /api/export/sessions?format=csv` endpoint
-- [ ] `GET /api/export/collection?format=csv` endpoint
-- [ ] JSON export option
-- [ ] Export button in UI (settings or dedicated page)
+- [x] `GET /api/export/sessions?format=csv` endpoint
+- [x] `GET /api/export/collection?format=csv` endpoint
+- [x] JSON export option
+- [x] Export button in UI (settings or dedicated page)
 
 ### 2.8 Player Groups
-- [ ] `PlayerGroup` model (id, name)
-- [ ] `player_group_members` association table
-- [ ] Group management UI
-- [ ] Group selection in SessionForm
+- [x] `PlayerGroup` model (id, name)
+- [x] `player_group_members` association table
+- [x] Group management UI
+- [x] Group selection in SessionForm
 
 ### 2.9 Favorites & User Tags
 - [x] `is_favorite` on Game model (Phase 1)
-- [ ] `GameTag` model (id, name, color)
-- [ ] `game_tags` association table
-- [ ] Tag management UI on GameCard/GameForm
-- [ ] Filter by tag on InventoryPage
+- [x] `GameTag` model (id, name, color)
+- [x] `game_tags` association table
+- [x] Tag management UI on GameCard/GameForm
+- [x] Filter by tag on InventoryPage
 
 ### 2.10 Illustrated Empty States
-- [ ] Empty inventory state with illustration and CTA
-- [ ] Empty sessions state with illustration and CTA
-- [ ] Empty dashboard state with onboarding guidance
+- [x] Empty inventory state with illustration and CTA
+- [x] Empty sessions state with illustration and CTA
+- [x] Empty dashboard state with onboarding guidance
 
 ### 2.11 CI/CD Pipeline
-- [ ] `.github/workflows/ci.yml` — lint, typecheck, build
-- [ ] Backend test job (pytest)
-- [ ] Frontend build job (tsc + vite build)
+- [x] `.github/workflows/ci.yml` — lint, typecheck, build
+- [x] Backend test job (pytest)
+- [x] Frontend build job (tsc + vite build)
 - [ ] PR checks configuration
 
-**Phase 2: 1/38 items complete**
+**Phase 2: 37/38 items complete**
 
 ---
 
@@ -346,29 +346,29 @@ Last updated: 2026-03-31
 
 | Category | Total Gaps | Addressed | Remaining |
 |----------|-----------|-----------|-----------|
-| 1. Game Metadata | 11 | 9 (P0 playtime, P1 desc/image/weight/designer/publisher/categories/mechanics/BGG ID) | 2 (P2 game type classification, P2 personal rating display) |
-| 2. Collection Management | 8 | 5 (search, sort, collection status, favorites, lightweight options endpoint) | 3 (pagination, tags, location/acquisition) |
-| 3. Session/Play Logging | 10 | 5 (session editing, filtering, duration, cooperative, quick-log not needed with current form) | 5 (pagination, photos, location, incomplete flag, tie-breaking) |
-| 4. Statistics & Analytics | 11 | 6 (stats engine, dashboard, play count, last played, win/loss, play frequency) | 5 (H-index, charts, player performance, rankings, win streaks) |
-| 5. Social & Multi-user | 7 | 0 | 7 (auth, profiles, groups, sharing, friends, gamification) |
-| 6. Integration | 5 | 2 (BGG search, BGG single-game import) | 3 (data export, BGG collection sync, data import) |
-| 7. UX/UI | 10 | 8 (loading, errors, confirmations, toasts, game detail, player detail, dark mode, dashboard as default) | 2 (empty states, keyboard shortcuts) |
-| 8. Infrastructure | 9 | 6 (validation, indexes, health check, CORS, test structure, scoring tests) | 3 (CI/CD, rate limiting, logging) |
+| 1. Game Metadata | 11 | 9 | 2 (P2 game type classification, P2 personal rating display) |
+| 2. Collection Management | 8 | 7 (search, sort, collection status, favorites, options endpoint, pagination, tags) | 1 (location/acquisition) |
+| 3. Session/Play Logging | 10 | 8 (session editing, filtering, duration, cooperative, pagination, photos, location) | 2 (incomplete flag, tie-breaking) |
+| 4. Statistics & Analytics | 11 | 11 (stats engine, dashboard, play count, last played, win/loss, play frequency, H-index, charts, player performance, rankings, win streaks) | 0 |
+| 5. Social & Multi-user | 7 | 2 (player profiles, player groups) | 5 (auth, sharing, friends, gamification, multi-user) |
+| 6. Integration | 5 | 3 (BGG search, BGG single-game import, data export) | 2 (BGG collection sync, data import) |
+| 7. UX/UI | 10 | 9 (loading, errors, confirmations, toasts, game detail, player detail, dark mode, dashboard, empty states) | 1 (keyboard shortcuts) |
+| 8. Infrastructure | 9 | 7 (validation, indexes, health check, CORS, test structure, scoring tests, CI/CD) | 2 (rate limiting, logging) |
 
 ### Overall Progress
 
 | Phase | Items | Done | Remaining | Completion |
 |-------|-------|------|-----------|------------|
 | Phase 0 | 32 | 32 | 0 | **100%** |
-| Phase 1 | 129 | 117 | 12 | **91%** |
-| Phase 2 | 38 | 1 | 37 | 3% |
+| Phase 1 | 129 | 129 | 0 | **100%** |
+| Phase 2 | 38 | 37 | 1 | **97%** |
 | Phase 3 | 32 | 0 | 32 | 0% |
-| **Total** | **231** | **150** | **81** | **65%** |
+| **Total** | **231** | **198** | **33** | **86%** |
 
 ### Next Priority Items
 
-1. **Pagination** (Phase 1.9) — 12 remaining items, only incomplete Phase 1 item
-2. **CI/CD pipeline** (Phase 2.11) — enables automated quality gates
-3. **Data export** (Phase 2.7) — high user-value, moderate effort
-4. **H-index** (Phase 2.2) — core hobbyist metric
-5. **Session location** (Phase 2.6) — small effort, useful metadata
+1. **PR checks configuration** (Phase 2.11) — remaining CI/CD item
+2. **User authentication** (Phase 3.1) — enables multi-user support
+3. **BGG collection sync** (Phase 3.2) — bulk import from BGG
+4. **Data import** (Phase 3.3) — import from BG Stats, CSV
+5. **API rate limiting** (Phase 3.4) — production hardening

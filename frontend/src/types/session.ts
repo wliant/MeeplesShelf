@@ -2,6 +2,8 @@ export interface Player {
   id: number;
   name: string;
   created_at: string;
+  avatar_url: string | null;
+  color: string | null;
 }
 
 export interface SessionPlayer {
@@ -23,6 +25,14 @@ export interface ExpansionBrief {
   name: string;
 }
 
+export interface SessionPhoto {
+  id: number;
+  session_id: number;
+  url: string;
+  caption: string | null;
+  created_at: string;
+}
+
 export interface GameSession {
   id: number;
   game_id: number;
@@ -35,6 +45,8 @@ export interface GameSession {
   duration_minutes: number | null;
   is_cooperative: boolean;
   cooperative_result: string | null;
+  location: string | null;
+  photos: SessionPhoto[];
 }
 
 export interface SessionPlayerCreate {
@@ -51,4 +63,10 @@ export interface GameSessionCreate {
   duration_minutes?: number | null;
   is_cooperative?: boolean;
   cooperative_result?: string | null;
+  location?: string | null;
+}
+
+export interface PlayerUpdate {
+  avatar_url?: string | null;
+  color?: string | null;
 }

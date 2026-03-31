@@ -201,6 +201,7 @@ class GameRead(BaseModel):
     publishers: list[PublisherRead] = []
     categories: list[CategoryRead] = []
     mechanics: list[MechanicRead] = []
+    tags: list["GameTagRead"] = []
 
     model_config = {"from_attributes": True}
 
@@ -210,3 +211,23 @@ class GameBrief(BaseModel):
     name: str
 
     model_config = {"from_attributes": True}
+
+
+class GameTagCreate(BaseModel):
+    name: str
+    color: str = "#666666"
+
+
+class GameTagRead(BaseModel):
+    id: int
+    name: str
+    color: str
+
+    model_config = {"from_attributes": True}
+
+
+class PaginatedGameResponse(BaseModel):
+    items: list[GameRead]
+    total: int
+    offset: int
+    limit: int

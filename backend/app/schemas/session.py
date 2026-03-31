@@ -14,8 +14,15 @@ class PlayerRead(BaseModel):
     id: int
     name: str
     created_at: datetime
+    avatar_url: str | None = None
+    color: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class PlayerUpdate(BaseModel):
+    avatar_url: str | None = None
+    color: str | None = None
 
 
 class SessionPlayerCreate(BaseModel):
@@ -43,6 +50,7 @@ class GameSessionCreate(BaseModel):
     duration_minutes: int | None = None
     is_cooperative: bool = False
     cooperative_result: str | None = None
+    location: str | None = None
 
     @model_validator(mode="after")
     def validate_cooperative(self):
@@ -62,6 +70,7 @@ class GameSessionUpdate(BaseModel):
     duration_minutes: int | None = None
     is_cooperative: bool = False
     cooperative_result: str | None = None
+    location: str | None = None
 
     @model_validator(mode="after")
     def validate_cooperative(self):
@@ -84,6 +93,8 @@ class GameSessionRead(BaseModel):
     duration_minutes: int | None = None
     is_cooperative: bool = False
     cooperative_result: str | None = None
+    location: str | None = None
+    photos: list[SessionPhotoRead] = []
 
     model_config = {"from_attributes": True}
 
@@ -104,3 +115,25 @@ class ExpansionBrief(BaseModel):
 
 # Rebuild models that use forward references
 GameSessionRead.model_rebuild()
+
+
+class SessionPhotoCreate(BaseModel):
+    url: str
+    caption: str | None = None
+
+
+class SessionPhotoRead(BaseModel):
+    id: int
+    session_id: int
+    url: str
+    caption: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PaginatedSessionResponse(BaseModel):
+    items: list[GameSessionRead]
+    total: int
+    offset: int
+    limit: int

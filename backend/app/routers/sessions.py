@@ -1,19 +1,23 @@
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.game import Expansion, Game
-from app.models.session import GameSession, Player, SessionPlayer
+from app.models.session import GameSession, Player, SessionPhoto, SessionPlayer
 from app.schemas.session import (
     GameSessionCreate,
     GameSessionRead,
     GameSessionUpdate,
+    PaginatedSessionResponse,
     PlayerCreate,
     PlayerRead,
+    PlayerUpdate,
+    SessionPhotoCreate,
+    SessionPhotoRead,
 )
 from app.services.scoring import calculate_total
 
@@ -41,47 +45,75 @@ async def create_player(payload: PlayerCreate, db: AsyncSession = Depends(get_db
     return player
 
 
+@router.put("/players/{player_id}", response_model=PlayerRead)
+async def update_player(
+    player_id: int, payload: PlayerUpdate, db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Player).where(Player.id == player_id))
+    player = result.scalar_one_or_none()
+    if not player:
+        raise HTTPException(404, "Player not found")
+    update_data = payload.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(player, key, value)
+    await db.commit()
+    await db.refresh(player)
+    return player
+
+
 # --- Sessions ---
 
 SESSION_LOAD_OPTIONS = [
     selectinload(GameSession.players).selectinload(SessionPlayer.player),
     selectinload(GameSession.game),
     selectinload(GameSession.expansions),
+    selectinload(GameSession.photos),
 ]
 
 
-@router.get("/sessions", response_model=list[GameSessionRead])
+@router.get("/sessions", response_model=PaginatedSessionResponse)
 async def list_sessions(
     game_id: int | None = None,
     player_id: int | None = None,
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
-    query = (
-        select(GameSession)
-        .options(*SESSION_LOAD_OPTIONS)
-        .order_by(GameSession.played_at.desc())
-    )
+    base = select(GameSession)
     if game_id is not None:
-        query = query.where(GameSession.game_id == game_id)
+        base = base.where(GameSession.game_id == game_id)
     if player_id is not None:
-        query = query.join(GameSession.players).where(
+        base = base.join(GameSession.players).where(
             SessionPlayer.player_id == player_id
         )
     if date_from is not None:
-        query = query.where(
+        base = base.where(
             GameSession.played_at >= datetime.combine(date_from, datetime.min.time())
         )
     if date_to is not None:
-        query = query.where(
+        base = base.where(
             GameSession.played_at
             <= datetime.combine(date_to, datetime.max.time()).replace(
                 hour=23, minute=59, second=59
             )
         )
+
+    # Count total
+    count_result = await db.execute(select(func.count()).select_from(base.subquery()))
+    total = count_result.scalar_one()
+
+    query = (
+        base.options(*SESSION_LOAD_OPTIONS)
+        .order_by(GameSession.played_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
     result = await db.execute(query)
-    return result.scalars().unique().all()
+    items = result.scalars().unique().all()
+
+    return {"items": items, "total": total, "offset": offset, "limit": limit}
 
 
 def _build_session(payload) -> GameSession:
@@ -92,6 +124,7 @@ def _build_session(payload) -> GameSession:
         duration_minutes=payload.duration_minutes,
         is_cooperative=payload.is_cooperative,
         cooperative_result=payload.cooperative_result,
+        location=payload.location,
     )
 
 
@@ -158,6 +191,7 @@ async def update_session(
     session.duration_minutes = payload.duration_minutes
     session.is_cooperative = payload.is_cooperative
     session.cooperative_result = payload.cooperative_result
+    session.location = payload.location
 
     if payload.expansion_ids is not None:
         exp_result = await db.execute(
@@ -205,6 +239,45 @@ async def delete_session(session_id: int, db: AsyncSession = Depends(get_db)):
     if not session:
         raise HTTPException(404, "Session not found")
     await db.delete(session)
+    await db.commit()
+
+
+# --- Session Photos ---
+
+
+@router.post(
+    "/sessions/{session_id}/photos", response_model=SessionPhotoRead, status_code=201
+)
+async def add_session_photo(
+    session_id: int, payload: SessionPhotoCreate, db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(GameSession).where(GameSession.id == session_id)
+    )
+    if not result.scalar_one_or_none():
+        raise HTTPException(404, "Session not found")
+    photo = SessionPhoto(
+        session_id=session_id, url=payload.url, caption=payload.caption
+    )
+    db.add(photo)
+    await db.commit()
+    await db.refresh(photo)
+    return photo
+
+
+@router.delete("/sessions/{session_id}/photos/{photo_id}", status_code=204)
+async def delete_session_photo(
+    session_id: int, photo_id: int, db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(SessionPhoto).where(
+            SessionPhoto.id == photo_id, SessionPhoto.session_id == session_id
+        )
+    )
+    photo = result.scalar_one_or_none()
+    if not photo:
+        raise HTTPException(404, "Photo not found")
+    await db.delete(photo)
     await db.commit()
 
 
