@@ -6,6 +6,17 @@ import httpx
 
 BGG_BASE = "https://boardgamegeek.com/xmlapi2"
 
+# BGG collection status mapping
+BGG_STATUS_MAP = {
+    "own": "owned",
+    "wanttoplay": "want_to_play",
+    "wishlist": "wishlist",
+    "prevowned": "previously_owned",
+    "wanttobuy": "wishlist",
+    "fortrade": "for_trade",
+    "preordered": "preordered",
+}
+
 
 async def search_bgg(query: str) -> list[dict]:
     async with httpx.AsyncClient(timeout=15) as client:
@@ -92,3 +103,72 @@ async def get_bgg_details(bgg_id: int) -> dict:
         "designers": links_of_type("boardgamedesigner"),
         "publishers": links_of_type("boardgamepublisher"),
     }
+
+
+async def fetch_collection(bgg_username: str) -> list[dict]:
+    """Fetch a user's full collection from BGG XML API v2."""
+    async with httpx.AsyncClient(timeout=30) as client:
+        for attempt in range(4):
+            resp = await client.get(
+                f"{BGG_BASE}/collection",
+                params={
+                    "username": bgg_username,
+                    "stats": "1",
+                    "subtype": "boardgame",
+                },
+            )
+            if resp.status_code == 202:
+                await asyncio.sleep(2 * (attempt + 1))
+                continue
+            resp.raise_for_status()
+            break
+        else:
+            raise RuntimeError("BGG collection API returned 202 after retries")
+
+    root = ET.fromstring(resp.text)
+    games = []
+    for item in root.findall("item"):
+        bgg_id = int(item.attrib.get("objectid", 0))
+        name_el = item.find("name")
+        name = name_el.text if name_el is not None else ""
+        year_el = item.find("yearpublished")
+        year = int(year_el.text) if year_el is not None and year_el.text else None
+
+        # Determine collection status
+        status_el = item.find("status")
+        collection_status = "owned"
+        if status_el is not None:
+            for bgg_status, local_status in BGG_STATUS_MAP.items():
+                if status_el.attrib.get(bgg_status) == "1":
+                    collection_status = local_status
+                    break
+
+        image_el = item.find("image")
+        thumbnail_el = item.find("thumbnail")
+
+        # Stats
+        stats_el = item.find("stats")
+        min_players = None
+        max_players = None
+        min_playtime = None
+        max_playtime = None
+        if stats_el is not None:
+            min_players = int(stats_el.attrib.get("minplayers", 0)) or None
+            max_players = int(stats_el.attrib.get("maxplayers", 0)) or None
+            min_playtime = int(stats_el.attrib.get("minplaytime", 0)) or None
+            max_playtime = int(stats_el.attrib.get("maxplaytime", 0)) or None
+
+        games.append({
+            "bgg_id": bgg_id,
+            "name": name,
+            "year_published": year,
+            "collection_status": collection_status,
+            "image_url": image_el.text if image_el is not None else None,
+            "thumbnail_url": thumbnail_el.text if thumbnail_el is not None else None,
+            "min_players": min_players or 1,
+            "max_players": max_players or 4,
+            "min_playtime": min_playtime,
+            "max_playtime": max_playtime,
+        })
+
+    return games

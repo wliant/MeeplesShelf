@@ -151,6 +151,11 @@ class Game(Base):
     bgg_id: Mapped[int | None] = mapped_column(Integer, nullable=True, unique=True)
     user_rating: Mapped[float | None] = mapped_column(Float, nullable=True)
 
+    # Ownership
+    user_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
+
     # Collection
     collection_status: Mapped[str] = mapped_column(
         String(20), server_default="owned"
@@ -188,3 +193,6 @@ class GameTag(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     color: Mapped[str] = mapped_column(String(7), server_default="#666666")
+    user_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )

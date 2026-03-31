@@ -38,6 +38,7 @@ import {
 import GameList from "../components/games/GameList";
 import GameForm from "../components/games/GameForm";
 import BGGSearchDialog from "../components/games/BGGSearchDialog";
+import BggCollectionImport from "../components/games/BggCollectionImport";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import EmptyState from "../components/common/EmptyState";
 import { useNotify } from "../components/common/useNotify";
@@ -67,6 +68,7 @@ export default function InventoryPage() {
   const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
   const [statusTab, setStatusTab] = useState<CollectionStatus | "all">("all");
   const [bggOpen, setBggOpen] = useState(false);
+  const [bggCollectionOpen, setBggCollectionOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [tags, setTags] = useState<GameTag[]>([]);
@@ -173,7 +175,10 @@ export default function InventoryPage() {
         <Typography variant="h4">Game Inventory</Typography>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={() => setBggOpen(true)}>
-            Import from BGG
+            Search BGG
+          </Button>
+          <Button variant="outlined" onClick={() => setBggCollectionOpen(true)}>
+            Import Collection
           </Button>
           <Button
             variant="outlined"
@@ -351,6 +356,12 @@ export default function InventoryPage() {
         open={bggOpen}
         onClose={() => setBggOpen(false)}
         onImport={() => refresh()}
+      />
+
+      <BggCollectionImport
+        open={bggCollectionOpen}
+        onClose={() => setBggCollectionOpen(false)}
+        onComplete={() => refresh()}
       />
     </Box>
   );

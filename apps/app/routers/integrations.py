@@ -1,13 +1,18 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.game import Category, Designer, Game, Mechanic, Publisher
+from app.models.sync import BggSyncStatus
+from app.models.user import User
 from app.schemas.bgg import BGGGameDetails, BGGImportRequest, BGGSearchResult
 from app.schemas.game import GameRead
-from app.services.bgg import get_bgg_details, search_bgg
+from app.services.bgg import fetch_collection, get_bgg_details, search_bgg
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
@@ -48,13 +53,15 @@ async def bgg_details(bgg_id: int):
 
 @router.post("/bgg/import", response_model=GameRead, status_code=201)
 async def bgg_import(
-    payload: BGGImportRequest, db: AsyncSession = Depends(get_db)
+    payload: BGGImportRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    # Check if already imported
+    # Check if already imported for this user
     result = await db.execute(
         select(Game)
         .options(*GAME_LOAD_OPTIONS)
-        .where(Game.bgg_id == payload.bgg_id)
+        .where(Game.bgg_id == payload.bgg_id, Game.user_id == current_user.id)
     )
     existing = result.scalar_one_or_none()
 
@@ -66,7 +73,7 @@ async def bgg_import(
     if existing:
         game = existing
     else:
-        game = Game()
+        game = Game(user_id=current_user.id)
         db.add(game)
 
     game.bgg_id = details["bgg_id"]
@@ -103,3 +110,88 @@ async def bgg_import(
         ["expansions", "designers", "publishers", "categories", "mechanics"],
     )
     return game
+
+
+@router.post("/bgg/import-collection")
+async def bgg_import_collection(
+    bgg_username: str = Query(..., min_length=1),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Import a user's entire BGG collection by username."""
+    try:
+        collection = await fetch_collection(bgg_username)
+    except Exception as e:
+        raise HTTPException(502, f"BGG API error: {e}")
+
+    imported = 0
+    skipped = 0
+    updated = 0
+
+    for entry in collection:
+        # Check if game already exists for this user
+        result = await db.execute(
+            select(Game).where(
+                Game.bgg_id == entry["bgg_id"], Game.user_id == current_user.id
+            )
+        )
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            # Only fill in empty fields (conflict resolution: local wins)
+            changed = False
+            if not existing.image_url and entry.get("image_url"):
+                existing.image_url = entry["image_url"]
+                changed = True
+            if not existing.thumbnail_url and entry.get("thumbnail_url"):
+                existing.thumbnail_url = entry["thumbnail_url"]
+                changed = True
+            if not existing.year_published and entry.get("year_published"):
+                existing.year_published = entry["year_published"]
+                changed = True
+            if changed:
+                updated += 1
+            else:
+                skipped += 1
+        else:
+            game = Game(
+                bgg_id=entry["bgg_id"],
+                name=entry["name"],
+                year_published=entry.get("year_published"),
+                collection_status=entry.get("collection_status", "owned"),
+                image_url=entry.get("image_url"),
+                thumbnail_url=entry.get("thumbnail_url"),
+                min_players=entry.get("min_players", 1),
+                max_players=entry.get("max_players", 4),
+                min_playtime=entry.get("min_playtime"),
+                max_playtime=entry.get("max_playtime"),
+                user_id=current_user.id,
+            )
+            db.add(game)
+            imported += 1
+
+    # Update sync status
+    result = await db.execute(
+        select(BggSyncStatus).where(BggSyncStatus.user_id == current_user.id)
+    )
+    sync_status = result.scalar_one_or_none()
+    if not sync_status:
+        sync_status = BggSyncStatus(
+            user_id=current_user.id,
+            bgg_username=bgg_username,
+        )
+        db.add(sync_status)
+
+    sync_status.bgg_username = bgg_username
+    sync_status.last_synced_at = datetime.now(UTC)
+    sync_status.status = "completed"
+    sync_status.games_imported = imported
+
+    await db.commit()
+
+    return {
+        "imported": imported,
+        "skipped": skipped,
+        "updated": updated,
+        "total": len(collection),
+    }

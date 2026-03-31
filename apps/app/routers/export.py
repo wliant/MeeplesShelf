@@ -9,8 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.game import Game
 from app.models.session import GameSession, SessionPlayer
+from app.models.user import User
 
 router = APIRouter(prefix="/export", tags=["export"])
 
@@ -22,9 +24,11 @@ MAX_EXPORT_ROWS = 10000
 async def export_collection(
     format: str = Query("csv", pattern="^(csv|json)$"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(Game)
+        .where(Game.user_id == current_user.id)
         .options(
             selectinload(Game.designers),
             selectinload(Game.publishers),
@@ -96,9 +100,11 @@ async def export_collection(
 async def export_sessions(
     format: str = Query("csv", pattern="^(csv|json)$"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(GameSession)
+        .where(GameSession.user_id == current_user.id)
         .options(
             selectinload(GameSession.game),
             selectinload(GameSession.players).selectinload(SessionPlayer.player),

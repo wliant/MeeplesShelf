@@ -57,3 +57,18 @@ jobs:
         run: cd web && npm run lint
       - name: Build
         run: cd web && npm run build
+
+  # Gate job for branch protection — add "ci-pass" as a required status check
+  ci-pass:
+    if: always()
+    needs: [backend-lint-test, frontend-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.backend-lint-test.result }}" != "success" ]] || \
+             [[ "${{ needs.frontend-build.result }}" != "success" ]]; then
+            echo "One or more required jobs failed"
+            exit 1
+          fi
+          echo "All checks passed"
