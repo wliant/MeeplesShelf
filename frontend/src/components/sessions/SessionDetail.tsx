@@ -15,14 +15,15 @@ import {
   Chip,
   Stack,
 } from "@mui/material";
-import { GameSession } from "../../types/session";
+import type { GameSession } from "../../types/session";
 
 interface Props {
   session: GameSession | null;
   onClose: () => void;
+  onEdit: (session: GameSession) => void;
 }
 
-export default function SessionDetail({ session, onClose }: Props) {
+export default function SessionDetail({ session, onClose, onEdit }: Props) {
   if (!session) return null;
 
   return (
@@ -109,6 +110,7 @@ export default function SessionDetail({ session, onClose }: Props) {
         </Stack>
       </DialogContent>
       <DialogActions>
+        <Button onClick={() => onEdit(session)}>Edit</Button>
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>

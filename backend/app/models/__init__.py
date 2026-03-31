@@ -1,5 +1,5 @@
 from app.models.game import Base, Expansion, Game
-from app.models.session import GameSession, Player, SessionExpansion, SessionPlayer
+from app.models.session import GameSession, Player, session_expansions, SessionPlayer
 
 __all__ = [
     "Base",
@@ -8,5 +8,5 @@ __all__ = [
     "Player",
     "GameSession",
     "SessionPlayer",
-    "SessionExpansion",
+    "session_expansions",
 ]

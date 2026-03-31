@@ -16,8 +16,8 @@ import {
 } from "@mui/material";
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { useState, useEffect } from "react";
-import { Game, GameCreate } from "../../types/game";
-import { ScoringField } from "../../types/scoring";
+import type { Game, GameCreate } from "../../types/game";
+import type { ScoringField } from "../../types/scoring";
 
 interface Props {
   open: boolean;

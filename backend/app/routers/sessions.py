@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import date, datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -9,6 +11,7 @@ from app.models.session import GameSession, Player, SessionPlayer
 from app.schemas.session import (
     GameSessionCreate,
     GameSessionRead,
+    GameSessionUpdate,
     PlayerCreate,
     PlayerRead,
 )
@@ -40,22 +43,43 @@ async def create_player(payload: PlayerCreate, db: AsyncSession = Depends(get_db
 
 # --- Sessions ---
 
+SESSION_LOAD_OPTIONS = [
+    selectinload(GameSession.players).selectinload(SessionPlayer.player),
+    selectinload(GameSession.game),
+    selectinload(GameSession.expansions),
+]
+
 
 @router.get("/sessions", response_model=list[GameSessionRead])
 async def list_sessions(
-    game_id: int | None = None, db: AsyncSession = Depends(get_db)
+    game_id: int | None = None,
+    player_id: int | None = None,
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    db: AsyncSession = Depends(get_db),
 ):
     query = (
         select(GameSession)
-        .options(
-            selectinload(GameSession.players).selectinload(SessionPlayer.player),
-            selectinload(GameSession.game),
-            selectinload(GameSession.expansions),
-        )
+        .options(*SESSION_LOAD_OPTIONS)
         .order_by(GameSession.played_at.desc())
     )
     if game_id is not None:
         query = query.where(GameSession.game_id == game_id)
+    if player_id is not None:
+        query = query.join(GameSession.players).where(
+            SessionPlayer.player_id == player_id
+        )
+    if date_from is not None:
+        query = query.where(
+            GameSession.played_at >= datetime.combine(date_from, datetime.min.time())
+        )
+    if date_to is not None:
+        query = query.where(
+            GameSession.played_at
+            <= datetime.combine(date_to, datetime.max.time()).replace(
+                hour=23, minute=59, second=59
+            )
+        )
     result = await db.execute(query)
     return result.scalars().unique().all()
 
@@ -86,42 +110,67 @@ async def create_session(
     db.add(session)
     await db.flush()
 
-    # Add players with score calculation
-    scoring_spec = game.scoring_spec
-    max_score = None
-    session_players = []
-
-    for sp in payload.players:
-        total = (
-            calculate_total(scoring_spec, sp.score_data)
-            if scoring_spec
-            else None
-        )
-        session_player = SessionPlayer(
-            session_id=session.id,
-            player_id=sp.player_id,
-            score_data=sp.score_data,
-            total_score=total,
-        )
-        session_players.append(session_player)
-        if total is not None and (max_score is None or total > max_score):
-            max_score = total
-
-    # Mark winner(s)
-    for sp in session_players:
-        sp.winner = sp.total_score is not None and sp.total_score == max_score
-        db.add(sp)
+    _add_players_with_scores(session, payload.players, game.scoring_spec, db)
 
     await db.commit()
 
     # Re-fetch with all relationships
     result = await db.execute(
         select(GameSession)
-        .options(
-            selectinload(GameSession.players).selectinload(SessionPlayer.player),
-            selectinload(GameSession.game),
-            selectinload(GameSession.expansions),
+        .options(*SESSION_LOAD_OPTIONS)
+        .where(GameSession.id == session.id)
+    )
+    return result.scalar_one()
+
+
+@router.put("/sessions/{session_id}", response_model=GameSessionRead)
+async def update_session(
+    session_id: int,
+    payload: GameSessionUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(GameSession)
+        .options(selectinload(GameSession.players))
+        .where(GameSession.id == session_id)
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(404, "Session not found")
+
+    # Fetch the game for scoring
+    game_result = await db.execute(
+        select(Game).where(Game.id == payload.game_id)
+    )
+    game = game_result.scalar_one_or_none()
+    if not game:
+        raise HTTPException(404, "Game not found")
+
+    session.game_id = payload.game_id
+    if payload.played_at is not None:
+        session.played_at = payload.played_at
+    session.notes = payload.notes
+
+    # Update expansions
+    if payload.expansion_ids is not None:
+        exp_result = await db.execute(
+            select(Expansion).where(Expansion.id.in_(payload.expansion_ids))
         )
+        session.expansions = list(exp_result.scalars().all())
+
+    # Remove old players
+    for sp in session.players:
+        await db.delete(sp)
+    await db.flush()
+
+    _add_players_with_scores(session, payload.players, game.scoring_spec, db)
+
+    await db.commit()
+
+    # Re-fetch with all relationships
+    result = await db.execute(
+        select(GameSession)
+        .options(*SESSION_LOAD_OPTIONS)
         .where(GameSession.id == session.id)
     )
     return result.scalar_one()
@@ -131,11 +180,7 @@ async def create_session(
 async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(GameSession)
-        .options(
-            selectinload(GameSession.players).selectinload(SessionPlayer.player),
-            selectinload(GameSession.game),
-            selectinload(GameSession.expansions),
-        )
+        .options(*SESSION_LOAD_OPTIONS)
         .where(GameSession.id == session_id)
     )
     session = result.scalar_one_or_none()
@@ -154,3 +199,26 @@ async def delete_session(session_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(404, "Session not found")
     await db.delete(session)
     await db.commit()
+
+
+def _add_players_with_scores(session, players, scoring_spec, db):
+    max_score = None
+    session_players = []
+
+    for sp in players:
+        total = (
+            calculate_total(scoring_spec, sp.score_data) if scoring_spec else None
+        )
+        session_player = SessionPlayer(
+            session_id=session.id,
+            player_id=sp.player_id,
+            score_data=sp.score_data,
+            total_score=total,
+        )
+        session_players.append(session_player)
+        if total is not None and (max_score is None or total > max_score):
+            max_score = total
+
+    for sp in session_players:
+        sp.winner = sp.total_score is not None and sp.total_score == max_score
+        db.add(sp)

@@ -1,5 +1,5 @@
 import client from "./client";
-import { Game, GameCreate, ExpansionCreate, Expansion } from "../types/game";
+import type { Game, GameCreate, ExpansionCreate, Expansion } from "../types/game";
 
 export const listGames = () => client.get<Game[]>("/games").then((r) => r.data);
 

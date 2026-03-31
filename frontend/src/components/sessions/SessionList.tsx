@@ -12,7 +12,7 @@ import {
   Stack,
 } from "@mui/material";
 import { Delete as DeleteIcon } from "@mui/icons-material";
-import { GameSession } from "../../types/session";
+import type { GameSession } from "../../types/session";
 
 interface Props {
   sessions: GameSession[];
