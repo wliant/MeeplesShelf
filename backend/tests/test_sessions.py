@@ -147,4 +147,6 @@ async def test_filter_sessions_by_game(client):
         json={"game_id": g2["id"], "players": [{"player_id": p1["id"]}]},
     )
     resp = await client.get("/api/sessions", params={"game_id": g1["id"]})
-    assert len(resp.json()) == 1
+    data = resp.json()
+    assert data["total"] == 1
+    assert len(data["items"]) == 1

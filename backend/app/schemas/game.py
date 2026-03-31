@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, field_validator, model_validator
+
+HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 from app.schemas.scoring import ScoringSpec
 
@@ -201,6 +204,7 @@ class GameRead(BaseModel):
     publishers: list[PublisherRead] = []
     categories: list[CategoryRead] = []
     mechanics: list[MechanicRead] = []
+    tags: list["GameTagRead"] = []
 
     model_config = {"from_attributes": True}
 
@@ -210,3 +214,30 @@ class GameBrief(BaseModel):
     name: str
 
     model_config = {"from_attributes": True}
+
+
+class GameTagCreate(BaseModel):
+    name: str
+    color: str = "#666666"
+
+    @field_validator("color")
+    @classmethod
+    def validate_color(cls, v: str) -> str:
+        if not HEX_COLOR_RE.match(v):
+            raise ValueError("Color must be hex format (#RRGGBB)")
+        return v
+
+
+class GameTagRead(BaseModel):
+    id: int
+    name: str
+    color: str
+
+    model_config = {"from_attributes": True}
+
+
+class PaginatedGameResponse(BaseModel):
+    items: list[GameRead]
+    total: int
+    offset: int
+    limit: int

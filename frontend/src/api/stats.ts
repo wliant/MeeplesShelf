@@ -5,6 +5,11 @@ import type {
   PlayerStats,
   PlayFrequencyEntry,
   TopGame,
+  HIndexResponse,
+  WinStreakResponse,
+  PlayerWinRate,
+  ScoreDistributionEntry,
+  PlayerScoreTrend,
 } from "../types/stats";
 
 export const getOverviewStats = () =>
@@ -26,4 +31,25 @@ export const getPlayFrequency = (period = "month", months = 12) =>
 export const getTopGames = (limit = 10) =>
   client
     .get<TopGame[]>("/stats/top-games", { params: { limit } })
+    .then((r) => r.data);
+
+export const getHIndex = () =>
+  client.get<HIndexResponse>("/stats/h-index").then((r) => r.data);
+
+export const getWinStreaks = (playerId: number) =>
+  client
+    .get<WinStreakResponse>(`/stats/players/${playerId}/win-streaks`)
+    .then((r) => r.data);
+
+export const getPlayerScoreTrends = (playerId: number) =>
+  client
+    .get<PlayerScoreTrend[]>(`/stats/players/${playerId}/score-trends`)
+    .then((r) => r.data);
+
+export const getPlayerWinRates = () =>
+  client.get<PlayerWinRate[]>("/stats/player-win-rates").then((r) => r.data);
+
+export const getScoreDistribution = (gameId: number) =>
+  client
+    .get<ScoreDistributionEntry[]>(`/stats/games/${gameId}/score-distribution`)
     .then((r) => r.data);

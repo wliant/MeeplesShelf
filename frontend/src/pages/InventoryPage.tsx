@@ -15,14 +15,20 @@ import {
   InputAdornment,
   Tabs,
   Tab,
+  TablePagination,
+  Chip,
+  Menu,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Search as SearchIcon,
+  Download as DownloadIcon,
+  Casino as CasinoIcon,
 } from "@mui/icons-material";
-import type { Game, GameCreate, CollectionStatus } from "../types/game";
+import type { Game, GameCreate, GameTag, CollectionStatus } from "../types/game";
 import {
   listGames,
+  listTags,
   createGame,
   updateGame,
   deleteGame,
@@ -33,7 +39,9 @@ import GameList from "../components/games/GameList";
 import GameForm from "../components/games/GameForm";
 import BGGSearchDialog from "../components/games/BGGSearchDialog";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import EmptyState from "../components/common/EmptyState";
 import { useNotify } from "../components/common/useNotify";
+import { exportCollection } from "../api/export";
 
 type SortBy = "name" | "created_at" | "min_players";
 type SortDir = "asc" | "desc";
@@ -49,6 +57,7 @@ const STATUS_TABS: { label: string; value: CollectionStatus | "all" }[] = [
 
 export default function InventoryPage() {
   const [games, setGames] = useState<Game[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
@@ -58,37 +67,47 @@ export default function InventoryPage() {
   const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
   const [statusTab, setStatusTab] = useState<CollectionStatus | "all">("all");
   const [bggOpen, setBggOpen] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [tags, setTags] = useState<GameTag[]>([]);
+  const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
+  const [exportAnchor, setExportAnchor] = useState<null | HTMLElement>(null);
   const { success, error } = useNotify();
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, string | number> = {
+        sort_by: sortBy,
+        sort_dir: sortDir,
+        offset: page * rowsPerPage,
+        limit: rowsPerPage,
+      };
       if (statusTab !== "all") params.collection_status = statusTab;
-      const data = await listGames(params);
-      setGames(data);
+      if (search) params.search = search;
+      if (selectedTagId) params.tag_id = selectedTagId;
+      const [data, tagsData] = await Promise.all([
+        listGames(params),
+        listTags(),
+      ]);
+      setGames(data.items);
+      setTotal(data.total);
+      setTags(tagsData);
     } catch {
       error("Failed to load games");
     } finally {
       setLoading(false);
     }
-  }, [statusTab, error]);
+  }, [statusTab, search, sortBy, sortDir, page, rowsPerPage, selectedTagId, error]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  const filtered = games
-    .filter((g) => g.name.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => {
-      let cmp = 0;
-      if (sortBy === "name") cmp = a.name.localeCompare(b.name);
-      else if (sortBy === "created_at")
-        cmp =
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      else if (sortBy === "min_players") cmp = a.min_players - b.min_players;
-      return sortDir === "desc" ? -cmp : cmp;
-    });
+  // Reset page when filters/sort change
+  useEffect(() => {
+    setPage(0);
+  }, [statusTab, search, sortBy, sortDir, selectedTagId]);
 
   const handleSave = async (data: GameCreate) => {
     try {
@@ -156,11 +175,25 @@ export default function InventoryPage() {
           <Button variant="outlined" onClick={() => setBggOpen(true)}>
             Import from BGG
           </Button>
-          {games.length === 0 && !loading && (
-            <Button variant="outlined" onClick={handleSeed}>
-              Seed Default Games
-            </Button>
-          )}
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={(e) => setExportAnchor(e.currentTarget)}
+          >
+            Export
+          </Button>
+          <Menu
+            anchorEl={exportAnchor}
+            open={!!exportAnchor}
+            onClose={() => setExportAnchor(null)}
+          >
+            <MenuItem onClick={async () => { setExportAnchor(null); try { await exportCollection("csv"); success("Collection exported"); } catch { error("Failed to export"); } }}>
+              CSV
+            </MenuItem>
+            <MenuItem onClick={async () => { setExportAnchor(null); try { await exportCollection("json"); success("Collection exported"); } catch { error("Failed to export"); } }}>
+              JSON
+            </MenuItem>
+          </Menu>
         </Stack>
       </Stack>
 
@@ -218,6 +251,27 @@ export default function InventoryPage() {
         </FormControl>
       </Stack>
 
+      {tags.length > 0 && (
+        <Stack direction="row" spacing={0.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
+          <Chip
+            label="All Tags"
+            size="small"
+            variant={selectedTagId === null ? "filled" : "outlined"}
+            onClick={() => setSelectedTagId(null)}
+          />
+          {tags.map((t) => (
+            <Chip
+              key={t.id}
+              label={t.name}
+              size="small"
+              variant={selectedTagId === t.id ? "filled" : "outlined"}
+              sx={selectedTagId === t.id ? { bgcolor: t.color, color: "white" } : {}}
+              onClick={() => setSelectedTagId(selectedTagId === t.id ? null : t.id)}
+            />
+          ))}
+        </Stack>
+      )}
+
       {loading ? (
         <Grid container spacing={2}>
           {[1, 2, 3, 4].map((i) => (
@@ -226,17 +280,42 @@ export default function InventoryPage() {
             </Grid>
           ))}
         </Grid>
-      ) : (
-        <GameList
-          games={filtered}
-          onEdit={handleEdit}
-          onDelete={(id) => {
-            const game = games.find((g) => g.id === id);
-            if (game) setDeleteTarget(game);
-          }}
-          onRefresh={refresh}
-          onToggleFavorite={handleToggleFavorite}
+      ) : games.length === 0 ? (
+        <EmptyState
+          icon={<CasinoIcon sx={{ fontSize: "inherit" }} />}
+          title="No games yet"
+          description="Start building your collection by adding a game or importing from BoardGameGeek."
+          actions={[
+            { label: "Add Game", onClick: () => { setEditingGame(null); setFormOpen(true); } },
+            { label: "Import from BGG", onClick: () => setBggOpen(true), variant: "outlined" },
+            { label: "Seed Defaults", onClick: handleSeed, variant: "outlined" },
+          ]}
         />
+      ) : (
+        <>
+          <GameList
+            games={games}
+            onEdit={handleEdit}
+            onDelete={(id) => {
+              const game = games.find((g) => g.id === id);
+              if (game) setDeleteTarget(game);
+            }}
+            onRefresh={refresh}
+            onToggleFavorite={handleToggleFavorite}
+          />
+          <TablePagination
+            component="div"
+            count={total}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[10, 20, 50]}
+          />
+        </>
       )}
 
       <Fab

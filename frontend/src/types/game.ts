@@ -53,6 +53,13 @@ export interface Game {
   publishers: NamedEntity[];
   categories: NamedEntity[];
   mechanics: NamedEntity[];
+  tags: GameTag[];
+}
+
+export interface GameTag {
+  id: number;
+  name: string;
+  color: string;
 }
 
 export interface GameBrief {
@@ -86,4 +93,11 @@ export interface GameCreate {
 export interface ExpansionCreate {
   name: string;
   scoring_spec_patch?: ScoringSpec | null;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  offset: number;
+  limit: number;
 }

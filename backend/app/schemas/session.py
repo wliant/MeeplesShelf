@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, field_validator, model_validator
+
+HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
 class PlayerCreate(BaseModel):
@@ -14,8 +17,22 @@ class PlayerRead(BaseModel):
     id: int
     name: str
     created_at: datetime
+    avatar_url: str | None = None
+    color: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class PlayerUpdate(BaseModel):
+    avatar_url: str | None = None
+    color: str | None = None
+
+    @field_validator("color")
+    @classmethod
+    def validate_color(cls, v: str | None) -> str | None:
+        if v is not None and not HEX_COLOR_RE.match(v):
+            raise ValueError("Color must be hex format (#RRGGBB)")
+        return v
 
 
 class SessionPlayerCreate(BaseModel):
@@ -34,6 +51,33 @@ class SessionPlayerRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SessionPhotoCreate(BaseModel):
+    url: str
+    caption: str | None = None
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("URL must not be empty")
+        if len(v) > 500:
+            raise ValueError("URL too long (max 500 characters)")
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("URL must start with http:// or https://")
+        return v
+
+
+class SessionPhotoRead(BaseModel):
+    id: int
+    session_id: int
+    url: str
+    caption: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class GameSessionCreate(BaseModel):
     game_id: int
     played_at: datetime | None = None
@@ -43,6 +87,7 @@ class GameSessionCreate(BaseModel):
     duration_minutes: int | None = None
     is_cooperative: bool = False
     cooperative_result: str | None = None
+    location: str | None = None
 
     @model_validator(mode="after")
     def validate_cooperative(self):
@@ -62,6 +107,7 @@ class GameSessionUpdate(BaseModel):
     duration_minutes: int | None = None
     is_cooperative: bool = False
     cooperative_result: str | None = None
+    location: str | None = None
 
     @model_validator(mode="after")
     def validate_cooperative(self):
@@ -84,6 +130,8 @@ class GameSessionRead(BaseModel):
     duration_minutes: int | None = None
     is_cooperative: bool = False
     cooperative_result: str | None = None
+    location: str | None = None
+    photos: list[SessionPhotoRead] = []
 
     model_config = {"from_attributes": True}
 
@@ -104,3 +152,10 @@ class ExpansionBrief(BaseModel):
 
 # Rebuild models that use forward references
 GameSessionRead.model_rebuild()
+
+
+class PaginatedSessionResponse(BaseModel):
+    items: list[GameSessionRead]
+    total: int
+    offset: int
+    limit: int

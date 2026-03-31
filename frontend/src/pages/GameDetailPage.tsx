@@ -11,15 +11,17 @@ import {
   CardMedia,
 } from "@mui/material";
 import type { Game } from "../types/game";
-import type { GameStats } from "../types/stats";
+import type { GameStats, ScoreDistributionEntry } from "../types/stats";
 import { getGame } from "../api/games";
-import { getGameStats } from "../api/stats";
+import { getGameStats, getScoreDistribution } from "../api/stats";
+import ScoreDistributionChart from "../components/stats/ScoreDistributionChart";
 import { useNotify } from "../components/common/useNotify";
 
 export default function GameDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [game, setGame] = useState<Game | null>(null);
   const [stats, setStats] = useState<GameStats | null>(null);
+  const [scoreDist, setScoreDist] = useState<ScoreDistributionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const { error } = useNotify();
 
@@ -27,12 +29,14 @@ export default function GameDetailPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const [g, s] = await Promise.all([
+      const [g, s, sd] = await Promise.all([
         getGame(Number(id)),
         getGameStats(Number(id)).catch(() => null),
+        getScoreDistribution(Number(id)).catch(() => []),
       ]);
       setGame(g);
       setStats(s);
+      setScoreDist(sd);
     } catch {
       error("Failed to load game");
     } finally {
@@ -197,6 +201,12 @@ export default function GameDetailPage() {
             </Stack>
           )}
         </Paper>
+      )}
+
+      {scoreDist.length > 0 && (
+        <Box sx={{ mt: 3 }}>
+          <ScoreDistributionChart data={scoreDist} />
+        </Box>
       )}
     </Box>
   );

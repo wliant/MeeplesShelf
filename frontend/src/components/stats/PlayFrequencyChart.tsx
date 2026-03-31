@@ -1,4 +1,4 @@
-import { Paper, Typography } from "@mui/material";
+import { Paper, Typography, Stack, ToggleButtonGroup, ToggleButton } from "@mui/material";
 import {
   BarChart,
   Bar,
@@ -11,9 +11,11 @@ import type { PlayFrequencyEntry } from "../../types/stats";
 
 interface Props {
   data: PlayFrequencyEntry[];
+  period?: string;
+  onPeriodChange?: (period: string) => void;
 }
 
-export default function PlayFrequencyChart({ data }: Props) {
+export default function PlayFrequencyChart({ data, period, onPeriodChange }: Props) {
   const formatted = data.map((d) => ({
     ...d,
     label: new Date(d.period).toLocaleDateString(undefined, {
@@ -24,9 +26,21 @@ export default function PlayFrequencyChart({ data }: Props) {
 
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="subtitle1" gutterBottom>
-        Play Frequency
-      </Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+        <Typography variant="subtitle1">Play Frequency</Typography>
+        {onPeriodChange && (
+          <ToggleButtonGroup
+            value={period ?? "month"}
+            exclusive
+            onChange={(_, v) => v && onPeriodChange(v)}
+            size="small"
+          >
+            <ToggleButton value="day">Day</ToggleButton>
+            <ToggleButton value="week">Week</ToggleButton>
+            <ToggleButton value="month">Month</ToggleButton>
+          </ToggleButtonGroup>
+        )}
+      </Stack>
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={formatted}>
           <XAxis dataKey="label" fontSize={12} />

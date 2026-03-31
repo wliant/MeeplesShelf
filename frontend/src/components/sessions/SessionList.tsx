@@ -63,6 +63,9 @@ export default function SessionList({ sessions, onDelete, onSelect }: Props) {
                         label={`${p.player.name}${p.total_score != null ? ` (${p.total_score})` : ""}`}
                         size="small"
                         color={p.winner ? "primary" : "default"}
+                        sx={p.player.color ? {
+                          borderLeft: `4px solid ${p.player.color}`,
+                        } : undefined}
                       />
                     ))}
                   </Stack>

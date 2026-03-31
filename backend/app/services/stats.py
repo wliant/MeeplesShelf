@@ -190,6 +190,144 @@ async def get_play_frequency(
     ]
 
 
+async def get_h_index(db: AsyncSession) -> dict:
+    """Compute the H-index: largest h where h games have been played h+ times."""
+    rows = (
+        await db.execute(
+            select(
+                Game.id,
+                Game.name,
+                func.count(GameSession.id).label("cnt"),
+            )
+            .join(GameSession, Game.id == GameSession.game_id)
+            .group_by(Game.id, Game.name)
+            .order_by(func.count(GameSession.id).desc())
+        )
+    ).all()
+
+    h_index = 0
+    contributing = []
+    for i, row in enumerate(rows):
+        if row[2] >= i + 1:
+            h_index = i + 1
+            contributing.append(
+                {"game_id": row[0], "game_name": row[1], "play_count": row[2]}
+            )
+        else:
+            break
+
+    return {"h_index": h_index, "contributing_games": contributing}
+
+
+async def get_win_streaks(db: AsyncSession, player_id: int) -> dict | None:
+    """Compute current and longest win streak for a player."""
+    player = (
+        await db.execute(select(Player).where(Player.id == player_id))
+    ).scalar_one_or_none()
+    if not player:
+        return None
+
+    rows = (
+        await db.execute(
+            select(SessionPlayer.winner, GameSession.played_at)
+            .join(GameSession, SessionPlayer.session_id == GameSession.id)
+            .where(SessionPlayer.player_id == player_id)
+            .order_by(GameSession.played_at.asc())
+        )
+    ).all()
+
+    current_streak = 0
+    longest_streak = 0
+    streak = 0
+    for winner, _ in rows:
+        if winner:
+            streak += 1
+            longest_streak = max(longest_streak, streak)
+        else:
+            streak = 0
+    current_streak = streak
+
+    return {"current_streak": current_streak, "longest_streak": longest_streak}
+
+
+async def get_player_win_rates(db: AsyncSession) -> list[dict]:
+    """Get win rates for all players."""
+    rows = (
+        await db.execute(
+            select(
+                Player.id,
+                Player.name,
+                func.count(SessionPlayer.id).label("total"),
+                func.count(
+                    func.nullif(SessionPlayer.winner, False)
+                ).label("wins"),
+            )
+            .join(SessionPlayer, Player.id == SessionPlayer.player_id)
+            .group_by(Player.id, Player.name)
+            .order_by(func.count(SessionPlayer.id).desc())
+        )
+    ).all()
+
+    return [
+        {
+            "player_id": row[0],
+            "player_name": row[1],
+            "total_sessions": row[2],
+            "wins": row[3],
+            "win_rate": round(row[3] / row[2], 3) if row[2] > 0 else 0.0,
+        }
+        for row in rows
+    ]
+
+
+async def get_score_distribution(db: AsyncSession, game_id: int) -> list[dict]:
+    """Get score distribution for a game (histogram data)."""
+    rows = (
+        await db.execute(
+            select(SessionPlayer.total_score, func.count(SessionPlayer.id))
+            .join(GameSession, SessionPlayer.session_id == GameSession.id)
+            .where(GameSession.game_id == game_id)
+            .where(SessionPlayer.total_score.is_not(None))
+            .group_by(SessionPlayer.total_score)
+            .order_by(SessionPlayer.total_score)
+        )
+    ).all()
+
+    return [{"score": row[0], "count": row[1]} for row in rows]
+
+
+async def get_player_score_trends(db: AsyncSession, player_id: int) -> list[dict]:
+    """Get per-game score trends for a player over time."""
+    rows = (
+        await db.execute(
+            select(
+                Game.name,
+                GameSession.played_at,
+                SessionPlayer.total_score,
+            )
+            .join(GameSession, SessionPlayer.session_id == GameSession.id)
+            .join(Game, GameSession.game_id == Game.id)
+            .where(SessionPlayer.player_id == player_id)
+            .where(SessionPlayer.total_score.is_not(None))
+            .order_by(GameSession.played_at.asc())
+        )
+    ).all()
+
+    # Group by game
+    games: dict[str, list[dict]] = {}
+    for game_name, played_at, score in rows:
+        if game_name not in games:
+            games[game_name] = []
+        games[game_name].append(
+            {"played_at": played_at.strftime("%Y-%m-%d"), "score": score}
+        )
+
+    return [
+        {"game_name": name, "data_points": points}
+        for name, points in games.items()
+    ]
+
+
 async def get_top_games(db: AsyncSession, limit: int = 10) -> list[dict]:
     rows = (
         await db.execute(

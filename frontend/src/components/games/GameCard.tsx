@@ -114,6 +114,18 @@ export default function GameCard({
             ))}
           </Stack>
         )}
+        {game.tags?.length > 0 && (
+          <Stack direction="row" spacing={0.5} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+            {game.tags.map((t) => (
+              <Chip
+                key={`t-${t.id}`}
+                label={t.name}
+                size="small"
+                sx={{ bgcolor: t.color, color: "white" }}
+              />
+            ))}
+          </Stack>
+        )}
       </CardContent>
       <CardActions>
         <IconButton

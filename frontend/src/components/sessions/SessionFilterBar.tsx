@@ -4,12 +4,12 @@ import {
   Autocomplete,
   Button,
 } from "@mui/material";
-import type { Game } from "../../types/game";
+import type { GameBrief } from "../../types/game";
 import type { Player } from "../../types/session";
 import type { SessionFilters } from "../../pages/SessionsPage";
 
 interface Props {
-  games: Game[];
+  games: GameBrief[];
   players: Player[];
   filters: SessionFilters;
   onChange: (filters: SessionFilters) => void;

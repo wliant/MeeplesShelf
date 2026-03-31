@@ -16,14 +16,16 @@ import {
   Stack,
 } from "@mui/material";
 import type { GameSession } from "../../types/session";
+import PhotoGallery from "./PhotoGallery";
 
 interface Props {
   session: GameSession | null;
   onClose: () => void;
   onEdit: (session: GameSession) => void;
+  onRefresh?: () => void;
 }
 
-export default function SessionDetail({ session, onClose, onEdit }: Props) {
+export default function SessionDetail({ session, onClose, onEdit, onRefresh }: Props) {
   if (!session) return null;
 
   return (
@@ -40,6 +42,9 @@ export default function SessionDetail({ session, onClose, onEdit }: Props) {
                 label={`${session.duration_minutes} min`}
                 size="small"
               />
+            )}
+            {session.location && (
+              <Chip label={session.location} size="small" variant="outlined" />
             )}
             {session.is_cooperative && (
               <Chip
@@ -133,6 +138,12 @@ export default function SessionDetail({ session, onClose, onEdit }: Props) {
               </TableBody>
             </Table>
           </TableContainer>
+
+          <PhotoGallery
+            sessionId={session.id}
+            photos={session.photos ?? []}
+            onUpdate={() => onRefresh?.()}
+          />
         </Stack>
       </DialogContent>
       <DialogActions>

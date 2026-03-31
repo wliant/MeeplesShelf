@@ -21,7 +21,11 @@ async def test_list_games(client):
     await client.post("/api/games", json={"name": "B Game"})
     resp = await client.get("/api/games")
     assert resp.status_code == 200
-    assert len(resp.json()) == 2
+    data = resp.json()
+    assert data["total"] == 2
+    assert len(data["items"]) == 2
+    assert data["offset"] == 0
+    assert data["limit"] == 20
 
 
 @pytest.mark.asyncio
@@ -105,8 +109,8 @@ async def test_collection_status_filter(client):
     )
     resp = await client.get("/api/games", params={"collection_status": "wishlist"})
     data = resp.json()
-    assert len(data) == 1
-    assert data[0]["name"] == "Wishlist Game"
+    assert data["total"] == 1
+    assert data["items"][0]["name"] == "Wishlist Game"
 
 
 @pytest.mark.asyncio
@@ -127,3 +131,30 @@ async def test_game_options(client):
     data = resp.json()
     assert len(data) == 1
     assert "id" in data[0] and "name" in data[0]
+
+
+@pytest.mark.asyncio
+async def test_pagination(client):
+    for i in range(5):
+        await client.post("/api/games", json={"name": f"Game {i}"})
+    resp = await client.get("/api/games", params={"offset": 0, "limit": 2})
+    data = resp.json()
+    assert data["total"] == 5
+    assert len(data["items"]) == 2
+    assert data["offset"] == 0
+    assert data["limit"] == 2
+
+    resp2 = await client.get("/api/games", params={"offset": 4, "limit": 2})
+    data2 = resp2.json()
+    assert data2["total"] == 5
+    assert len(data2["items"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_sort_by(client):
+    await client.post("/api/games", json={"name": "Zebra", "min_players": 1, "max_players": 4})
+    await client.post("/api/games", json={"name": "Alpha", "min_players": 2, "max_players": 5})
+    resp = await client.get("/api/games", params={"sort_by": "name", "sort_dir": "desc"})
+    items = resp.json()["items"]
+    assert items[0]["name"] == "Zebra"
+    assert items[1]["name"] == "Alpha"

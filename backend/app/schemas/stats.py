@@ -45,3 +45,42 @@ class TopGame(BaseModel):
     game_name: str
     play_count: int
     thumbnail_url: str | None
+
+
+class HIndexGame(BaseModel):
+    game_id: int
+    game_name: str
+    play_count: int
+
+
+class HIndexResponse(BaseModel):
+    h_index: int
+    contributing_games: list[HIndexGame]
+
+
+class WinStreakResponse(BaseModel):
+    current_streak: int
+    longest_streak: int
+
+
+class PlayerWinRate(BaseModel):
+    player_id: int
+    player_name: str
+    total_sessions: int
+    wins: int
+    win_rate: float
+
+
+class ScoreDistributionEntry(BaseModel):
+    score: int
+    count: int
+
+
+class ScoreTrendPoint(BaseModel):
+    played_at: str
+    score: int
+
+
+class PlayerScoreTrend(BaseModel):
+    game_name: str
+    data_points: list[ScoreTrendPoint]

@@ -16,15 +16,18 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { useState, useEffect } from "react";
-import type { Game } from "../../types/game";
+import { useState, useEffect, useRef } from "react";
+import type { Game, GameBrief } from "../../types/game";
 import type { Player, GameSessionCreate, GameSession } from "../../types/session";
+import type { PlayerGroup } from "../../types/group";
 import { listPlayers, createPlayer } from "../../api/sessions";
+import { listGroups } from "../../api/groups";
+import { getGame } from "../../api/games";
 import ScoreSheet from "./ScoreSheet";
 
 interface Props {
   open: boolean;
-  games: Game[];
+  games: GameBrief[];
   session?: GameSession | null;
   onClose: () => void;
   onSave: (data: GameSessionCreate) => void;
@@ -51,21 +54,25 @@ export default function SessionForm({
   const [isCooperative, setIsCooperative] = useState(false);
   const [cooperativeResult, setCooperativeResult] = useState<string>("");
   const [newPlayerName, setNewPlayerName] = useState("");
+  const [location, setLocation] = useState("");
+  const [groups, setGroups] = useState<PlayerGroup[]>([]);
+  const gameSelectRef = useRef(0);
 
   useEffect(() => {
     if (open) {
-      listPlayers().then((players) => {
+      Promise.all([listPlayers(), listGroups()]).then(([players, grps]) => {
         setAllPlayers(players);
+        setGroups(grps);
 
         if (session) {
           // Pre-populate for editing
-          const game = games.find((g) => g.id === session.game_id) ?? null;
-          setSelectedGame(game);
+          getGame(session.game_id).then((g) => setSelectedGame(g)).catch(() => setSelectedGame(null));
           setPlayedAt(new Date(session.played_at).toISOString().slice(0, 16));
           setNotes(session.notes ?? "");
           setDurationMinutes(session.duration_minutes ?? "");
           setIsCooperative(session.is_cooperative ?? false);
           setCooperativeResult(session.cooperative_result ?? "");
+          setLocation(session.location ?? "");
 
           const sessionPlayerObjs = session.players.map((sp) => sp.player);
           setSelectedPlayers(sessionPlayerObjs);
@@ -84,6 +91,7 @@ export default function SessionForm({
           setDurationMinutes("");
           setIsCooperative(false);
           setCooperativeResult("");
+          setLocation("");
         }
       });
     }
@@ -137,6 +145,7 @@ export default function SessionForm({
       duration_minutes: durationMinutes || null,
       is_cooperative: isCooperative,
       cooperative_result: isCooperative && cooperativeResult ? cooperativeResult : null,
+      location: location || null,
     });
   };
 
@@ -152,8 +161,20 @@ export default function SessionForm({
           <Autocomplete
             options={games}
             getOptionLabel={(g) => g.name}
-            value={selectedGame}
-            onChange={(_, v) => setSelectedGame(v)}
+            value={games.find((g) => g.id === selectedGame?.id) ?? null}
+            onChange={async (_, v) => {
+              if (v) {
+                const requestId = ++gameSelectRef.current;
+                const full = await getGame(v.id);
+                if (gameSelectRef.current === requestId) {
+                  setSelectedGame(full);
+                }
+              } else {
+                ++gameSelectRef.current;
+                setSelectedGame(null);
+              }
+            }}
+            isOptionEqualToValue={(opt, val) => opt.id === val.id}
             renderInput={(params) => (
               <TextField {...params} label="Select Game" />
             )}
@@ -189,6 +210,31 @@ export default function SessionForm({
               Add
             </Button>
           </Stack>
+
+          {groups.length > 0 && (
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+              <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
+                Fill from group:
+              </Typography>
+              {groups.map((g) => (
+                <Chip
+                  key={g.id}
+                  label={g.name}
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    const newPlayers = [...selectedPlayers];
+                    for (const m of g.members) {
+                      if (!newPlayers.find((p) => p.id === m.id)) {
+                        newPlayers.push(m);
+                      }
+                    }
+                    setSelectedPlayers(newPlayers);
+                  }}
+                />
+              ))}
+            </Stack>
+          )}
 
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {selectedPlayers.map((p) => (
@@ -256,6 +302,13 @@ export default function SessionForm({
               </FormControl>
             )}
           </Stack>
+
+          <TextField
+            label="Location (optional)"
+            placeholder="e.g. Home, Game Store, Convention"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
 
           <TextField
             label="Notes (optional)"

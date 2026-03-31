@@ -74,6 +74,17 @@ game_mechanics = Table(
     ),
 )
 
+game_tag_assignments = Table(
+    "game_tag_assignments",
+    Base.metadata,
+    Column(
+        "game_id", ForeignKey("games.id", ondelete="CASCADE"), primary_key=True
+    ),
+    Column(
+        "tag_id", ForeignKey("game_tags.id", ondelete="CASCADE"), primary_key=True
+    ),
+)
+
 
 # --- Taxonomy models ---
 
@@ -154,6 +165,7 @@ class Game(Base):
     publishers = relationship("Publisher", secondary=game_publishers, lazy="joined")
     categories = relationship("Category", secondary=game_categories, lazy="joined")
     mechanics = relationship("Mechanic", secondary=game_mechanics, lazy="joined")
+    tags = relationship("GameTag", secondary=game_tag_assignments, lazy="joined")
 
 
 class Expansion(Base):
@@ -168,3 +180,11 @@ class Expansion(Base):
     )
 
     game: Mapped["Game"] = relationship(back_populates="expansions")
+
+
+class GameTag(Base):
+    __tablename__ = "game_tags"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    color: Mapped[str] = mapped_column(String(7), server_default="#666666")
