@@ -1,4 +1,4 @@
-import { ScoringSpec } from "../types/scoring";
+import type { ScoringSpec } from "../types/scoring";
 
 export function calculateTotal(
   spec: ScoringSpec,

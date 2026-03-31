@@ -13,11 +13,18 @@ import {
   FormControl,
   InputLabel,
   Box,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
-import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  ExpandMore as ExpandMoreIcon,
+} from "@mui/icons-material";
 import { useState, useEffect } from "react";
-import { Game, GameCreate } from "../../types/game";
-import { ScoringField } from "../../types/scoring";
+import type { Game, GameCreate, CollectionStatus } from "../../types/game";
+import type { ScoringField } from "../../types/scoring";
 
 interface Props {
   open: boolean;
@@ -32,6 +39,16 @@ const FIELD_TYPE_OPTIONS = [
   { value: "boolean", label: "Boolean (checkbox)" },
   { value: "enum_count", label: "Enum Count (variants)" },
   { value: "set_collection", label: "Set Collection (lookup table)" },
+];
+
+const STATUS_OPTIONS: { value: CollectionStatus; label: string }[] = [
+  { value: "owned", label: "Owned" },
+  { value: "wishlist", label: "Wishlist" },
+  { value: "want_to_play", label: "Want to Play" },
+  { value: "previously_owned", label: "Previously Owned" },
+  { value: "want_to_trade", label: "Want to Trade" },
+  { value: "for_trade", label: "For Trade" },
+  { value: "preordered", label: "Preordered" },
 ];
 
 function emptyField(type: string): ScoringField {
@@ -60,27 +77,84 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [fields, setFields] = useState<ScoringField[]>([]);
 
+  // Metadata
+  const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [minPlaytime, setMinPlaytime] = useState<number | "">("");
+  const [maxPlaytime, setMaxPlaytime] = useState<number | "">("");
+  const [minAge, setMinAge] = useState<number | "">("");
+  const [weight, setWeight] = useState<number | "">("");
+  const [yearPublished, setYearPublished] = useState<number | "">("");
+  const [collectionStatus, setCollectionStatus] =
+    useState<CollectionStatus>("owned");
+  const [designerNames, setDesignerNames] = useState("");
+  const [publisherNames, setPublisherNames] = useState("");
+  const [categoryNames, setCategoryNames] = useState("");
+  const [mechanicNames, setMechanicNames] = useState("");
+
   useEffect(() => {
     if (game) {
       setName(game.name);
       setMinPlayers(game.min_players);
       setMaxPlayers(game.max_players);
       setFields(game.scoring_spec?.fields ?? []);
+      setDescription(game.description ?? "");
+      setImageUrl(game.image_url ?? "");
+      setMinPlaytime(game.min_playtime ?? "");
+      setMaxPlaytime(game.max_playtime ?? "");
+      setMinAge(game.min_age ?? "");
+      setWeight(game.weight ?? "");
+      setYearPublished(game.year_published ?? "");
+      setCollectionStatus(game.collection_status);
+      setDesignerNames(game.designers.map((d) => d.name).join(", "));
+      setPublisherNames(game.publishers.map((p) => p.name).join(", "));
+      setCategoryNames(game.categories.map((c) => c.name).join(", "));
+      setMechanicNames(game.mechanics.map((m) => m.name).join(", "));
     } else {
       setName("");
       setMinPlayers(1);
       setMaxPlayers(4);
       setFields([]);
+      setDescription("");
+      setImageUrl("");
+      setMinPlaytime("");
+      setMaxPlaytime("");
+      setMinAge("");
+      setWeight("");
+      setYearPublished("");
+      setCollectionStatus("owned");
+      setDesignerNames("");
+      setPublisherNames("");
+      setCategoryNames("");
+      setMechanicNames("");
     }
   }, [game, open]);
+
+  const splitNames = (s: string) =>
+    s
+      .split(",")
+      .map((n) => n.trim())
+      .filter(Boolean);
 
   const handleSubmit = () => {
     onSave({
       name,
       min_players: minPlayers,
       max_players: maxPlayers,
-      scoring_spec:
-        fields.length > 0 ? { version: 1, fields } : null,
+      scoring_spec: fields.length > 0 ? { version: 1, fields } : null,
+      description: description || null,
+      image_url: imageUrl || null,
+      thumbnail_url: imageUrl || null,
+      min_playtime: minPlaytime || null,
+      max_playtime: maxPlaytime || null,
+      min_age: minAge || null,
+      weight: weight || null,
+      year_published: yearPublished || null,
+      collection_status: collectionStatus,
+      designer_names: splitNames(designerNames),
+      publisher_names: splitNames(publisherNames),
+      category_names: splitNames(categoryNames),
+      mechanic_names: splitNames(mechanicNames),
     });
   };
 
@@ -127,7 +201,117 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
               onChange={(e) => setMaxPlayers(Number(e.target.value))}
               slotProps={{ htmlInput: { min: 1 } }}
             />
+            <FormControl sx={{ minWidth: 160 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={collectionStatus}
+                label="Status"
+                onChange={(e) =>
+                  setCollectionStatus(e.target.value as CollectionStatus)
+                }
+              >
+                {STATUS_OPTIONS.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>
+                    {o.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Stack>
+
+          <Accordion variant="outlined">
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography>Game Details</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack spacing={2}>
+                <TextField
+                  label="Description"
+                  multiline
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+                <TextField
+                  label="Image URL"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                />
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    label="Min Playtime (min)"
+                    type="number"
+                    value={minPlaytime}
+                    onChange={(e) =>
+                      setMinPlaytime(e.target.value ? Number(e.target.value) : "")
+                    }
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    label="Max Playtime (min)"
+                    type="number"
+                    value={maxPlaytime}
+                    onChange={(e) =>
+                      setMaxPlaytime(e.target.value ? Number(e.target.value) : "")
+                    }
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    label="Min Age"
+                    type="number"
+                    value={minAge}
+                    onChange={(e) =>
+                      setMinAge(e.target.value ? Number(e.target.value) : "")
+                    }
+                    sx={{ flex: 1 }}
+                  />
+                </Stack>
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    label="Weight (1-5)"
+                    type="number"
+                    value={weight}
+                    onChange={(e) =>
+                      setWeight(e.target.value ? Number(e.target.value) : "")
+                    }
+                    slotProps={{ htmlInput: { min: 1, max: 5, step: 0.1 } }}
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    label="Year Published"
+                    type="number"
+                    value={yearPublished}
+                    onChange={(e) =>
+                      setYearPublished(
+                        e.target.value ? Number(e.target.value) : ""
+                      )
+                    }
+                    sx={{ flex: 1 }}
+                  />
+                </Stack>
+                <TextField
+                  label="Designers (comma-separated)"
+                  value={designerNames}
+                  onChange={(e) => setDesignerNames(e.target.value)}
+                />
+                <TextField
+                  label="Publishers (comma-separated)"
+                  value={publisherNames}
+                  onChange={(e) => setPublisherNames(e.target.value)}
+                />
+                <TextField
+                  label="Categories (comma-separated)"
+                  value={categoryNames}
+                  onChange={(e) => setCategoryNames(e.target.value)}
+                />
+                <TextField
+                  label="Mechanics (comma-separated)"
+                  value={mechanicNames}
+                  onChange={(e) => setMechanicNames(e.target.value)}
+                />
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
 
           <Typography variant="subtitle1" sx={{ pt: 1 }}>
             Scoring Specification
@@ -136,7 +320,7 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
           {fields.map((field, i) => (
             <Box
               key={i}
-              sx={{ p: 2, border: "1px solid #ddd", borderRadius: 1 }}
+              sx={{ p: 2, border: 1, borderColor: "divider", borderRadius: 1 }}
             >
               <Stack spacing={1}>
                 <Stack direction="row" spacing={1} alignItems="center">

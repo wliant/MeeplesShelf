@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class PlayerCreate(BaseModel):
@@ -40,6 +40,36 @@ class GameSessionCreate(BaseModel):
     notes: str | None = None
     expansion_ids: list[int] = []
     players: list[SessionPlayerCreate] = []
+    duration_minutes: int | None = None
+    is_cooperative: bool = False
+    cooperative_result: str | None = None
+
+    @model_validator(mode="after")
+    def validate_cooperative(self):
+        if self.cooperative_result and not self.is_cooperative:
+            raise ValueError("cooperative_result requires is_cooperative=True")
+        if self.cooperative_result and self.cooperative_result not in ("win", "loss"):
+            raise ValueError("cooperative_result must be 'win' or 'loss'")
+        return self
+
+
+class GameSessionUpdate(BaseModel):
+    game_id: int
+    played_at: datetime | None = None
+    notes: str | None = None
+    expansion_ids: list[int] = []
+    players: list[SessionPlayerCreate] = []
+    duration_minutes: int | None = None
+    is_cooperative: bool = False
+    cooperative_result: str | None = None
+
+    @model_validator(mode="after")
+    def validate_cooperative(self):
+        if self.cooperative_result and not self.is_cooperative:
+            raise ValueError("cooperative_result requires is_cooperative=True")
+        if self.cooperative_result and self.cooperative_result not in ("win", "loss"):
+            raise ValueError("cooperative_result must be 'win' or 'loss'")
+        return self
 
 
 class GameSessionRead(BaseModel):
@@ -51,6 +81,9 @@ class GameSessionRead(BaseModel):
     created_at: datetime
     players: list[SessionPlayerRead]
     expansions: list[ExpansionBrief] = []
+    duration_minutes: int | None = None
+    is_cooperative: bool = False
+    cooperative_result: str | None = None
 
     model_config = {"from_attributes": True}
 

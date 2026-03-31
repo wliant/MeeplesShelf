@@ -2,6 +2,7 @@ import {
   Card,
   CardContent,
   CardActions,
+  CardMedia,
   Typography,
   IconButton,
   Chip,
@@ -13,9 +14,12 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon,
   ExpandMore as ExpandMoreIcon,
+  Star as StarIcon,
+  StarBorder as StarBorderIcon,
 } from "@mui/icons-material";
 import { useState } from "react";
-import { Game } from "../../types/game";
+import { Link } from "react-router-dom";
+import type { Game } from "../../types/game";
 import ExpansionList from "./ExpansionList";
 
 interface Props {
@@ -23,22 +27,69 @@ interface Props {
   onEdit: (game: Game) => void;
   onDelete: (id: number) => void;
   onRefresh: () => void;
+  onToggleFavorite: (id: number) => void;
 }
 
-export default function GameCard({ game, onEdit, onDelete, onRefresh }: Props) {
+export default function GameCard({
+  game,
+  onEdit,
+  onDelete,
+  onRefresh,
+  onToggleFavorite,
+}: Props) {
   const [expanded, setExpanded] = useState(false);
+
+  const playtimeLabel =
+    game.min_playtime && game.max_playtime
+      ? game.min_playtime === game.max_playtime
+        ? `${game.min_playtime} min`
+        : `${game.min_playtime}-${game.max_playtime} min`
+      : game.min_playtime
+        ? `${game.min_playtime}+ min`
+        : null;
 
   return (
     <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          {game.name}
-        </Typography>
-        <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+      {game.thumbnail_url && (
+        <CardMedia
+          component="img"
+          height="140"
+          image={game.thumbnail_url}
+          alt={game.name}
+          sx={{ objectFit: "contain", bgcolor: "grey.100" }}
+        />
+      )}
+      <CardContent sx={{ pb: 1 }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography
+            variant="h6"
+            sx={{ flexGrow: 1 }}
+            noWrap
+            component={Link}
+            to={`/games/${game.id}`}
+            color="inherit"
+          >
+            {game.name}
+          </Typography>
+          {game.year_published && (
+            <Typography variant="caption" color="text.secondary">
+              ({game.year_published})
+            </Typography>
+          )}
+        </Stack>
+        <Stack direction="row" spacing={0.5} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
           <Chip
             label={`${game.min_players}-${game.max_players} players`}
             size="small"
           />
+          {playtimeLabel && <Chip label={playtimeLabel} size="small" />}
+          {game.weight != null && (
+            <Chip
+              label={`Weight ${game.weight.toFixed(1)}`}
+              size="small"
+              color="secondary"
+            />
+          )}
           {game.scoring_spec && (
             <Chip
               label={`${game.scoring_spec.fields.length} scoring fields`}
@@ -50,12 +101,28 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh }: Props) {
             <Chip
               label={`${game.expansions.length} expansion${game.expansions.length > 1 ? "s" : ""}`}
               size="small"
-              color="secondary"
             />
           )}
         </Stack>
+        {(game.categories.length > 0 || game.mechanics.length > 0) && (
+          <Stack direction="row" spacing={0.5} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+            {game.categories.map((c) => (
+              <Chip key={`c-${c.id}`} label={c.name} size="small" variant="outlined" />
+            ))}
+            {game.mechanics.slice(0, 3).map((m) => (
+              <Chip key={`m-${m.id}`} label={m.name} size="small" variant="outlined" />
+            ))}
+          </Stack>
+        )}
       </CardContent>
       <CardActions>
+        <IconButton
+          size="small"
+          onClick={() => onToggleFavorite(game.id)}
+          color={game.is_favorite ? "warning" : "default"}
+        >
+          {game.is_favorite ? <StarIcon /> : <StarBorderIcon />}
+        </IconButton>
         <IconButton size="small" onClick={() => onEdit(game)}>
           <EditIcon />
         </IconButton>

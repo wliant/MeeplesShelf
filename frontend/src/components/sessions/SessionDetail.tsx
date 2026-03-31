@@ -15,14 +15,15 @@ import {
   Chip,
   Stack,
 } from "@mui/material";
-import { GameSession } from "../../types/session";
+import type { GameSession } from "../../types/session";
 
 interface Props {
   session: GameSession | null;
   onClose: () => void;
+  onEdit: (session: GameSession) => void;
 }
 
-export default function SessionDetail({ session, onClose }: Props) {
+export default function SessionDetail({ session, onClose, onEdit }: Props) {
   if (!session) return null;
 
   return (
@@ -33,6 +34,32 @@ export default function SessionDetail({ session, onClose }: Props) {
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
+          <Stack direction="row" spacing={2}>
+            {session.duration_minutes && (
+              <Chip
+                label={`${session.duration_minutes} min`}
+                size="small"
+              />
+            )}
+            {session.is_cooperative && (
+              <Chip
+                label={
+                  session.cooperative_result
+                    ? `Co-op: ${session.cooperative_result.toUpperCase()}`
+                    : "Cooperative"
+                }
+                size="small"
+                color={
+                  session.cooperative_result === "win"
+                    ? "success"
+                    : session.cooperative_result === "loss"
+                      ? "error"
+                      : "default"
+                }
+              />
+            )}
+          </Stack>
+
           {session.notes && (
             <Typography variant="body2" color="text.secondary">
               {session.notes}
@@ -109,6 +136,7 @@ export default function SessionDetail({ session, onClose }: Props) {
         </Stack>
       </DialogContent>
       <DialogActions>
+        <Button onClick={() => onEdit(session)}>Edit</Button>
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>

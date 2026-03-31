@@ -6,7 +6,7 @@ import {
   Typography,
   Tooltip,
 } from "@mui/material";
-import { ScoringField } from "../../types/scoring";
+import type { ScoringField } from "../../types/scoring";
 
 interface Props {
   field: ScoringField;
