@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Box, Typography, Fab, Stack } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import { Game } from "../types/game";
-import { GameSession, GameSessionCreate } from "../types/session";
+import type { Game } from "../types/game";
+import type { GameSession, GameSessionCreate } from "../types/session";
 import { listGames } from "../api/games";
 import {
   listSessions,

@@ -1,4 +1,4 @@
-import { ScoringSpec } from "./scoring";
+import type { ScoringSpec } from "./scoring";
 
 export interface Expansion {
   id: number;

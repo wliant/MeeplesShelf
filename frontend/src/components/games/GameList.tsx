@@ -1,5 +1,5 @@
 import { Grid } from "@mui/material";
-import { Game } from "../../types/game";
+import type { Game } from "../../types/game";
 import GameCard from "./GameCard";
 
 interface Props {

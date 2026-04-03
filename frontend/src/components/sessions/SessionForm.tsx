@@ -11,8 +11,8 @@ import {
   Typography,
 } from "@mui/material";
 import { useState, useEffect } from "react";
-import { Game } from "../../types/game";
-import { Player, GameSessionCreate } from "../../types/session";
+import type { Game } from "../../types/game";
+import type { Player, GameSessionCreate } from "../../types/session";
 import { listPlayers, createPlayer } from "../../api/sessions";
 import ScoreSheet from "./ScoreSheet";
 
@@ -124,11 +124,11 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
               options={players.filter(
                 (p) => !selectedPlayers.find((sp) => sp.id === p.id)
               )}
-              getOptionLabel={(p) => p.name}
+              getOptionLabel={(p) => typeof p === "string" ? p : p.name}
               inputValue={newPlayerName}
               onInputChange={(_, v) => setNewPlayerName(v)}
               onChange={(_, v) => {
-                if (v) {
+                if (v && typeof v !== "string") {
                   setSelectedPlayers([...selectedPlayers, v]);
                   setNewPlayerName("");
                 }

@@ -8,8 +8,8 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
-import { ScoringSpec } from "../../types/scoring";
-import { Player } from "../../types/session";
+import type { ScoringSpec } from "../../types/scoring";
+import type { Player } from "../../types/session";
 import { calculateTotal } from "../../utils/scoring";
 import ScoreFieldRenderer from "./ScoreFieldRenderer";
 

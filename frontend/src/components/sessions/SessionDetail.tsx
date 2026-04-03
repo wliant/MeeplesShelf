@@ -15,7 +15,7 @@ import {
   Chip,
   Stack,
 } from "@mui/material";
-import { GameSession } from "../../types/session";
+import type { GameSession } from "../../types/session";
 
 interface Props {
   session: GameSession | null;

@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
 import { useState } from "react";
-import { Game } from "../../types/game";
+import type { Game } from "../../types/game";
 import { addExpansion, deleteExpansion } from "../../api/games";
 
 interface Props {

@@ -15,7 +15,7 @@ import {
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import { useState } from "react";
-import { Game } from "../../types/game";
+import type { Game } from "../../types/game";
 import ExpansionList from "./ExpansionList";
 
 interface Props {

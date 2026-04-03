@@ -1,6 +1,5 @@
 import client from "./client";
-import { GameSession, GameSessionCreate } from "../types/session";
-import { Player } from "../types/session";
+import type { GameSession, GameSessionCreate, Player } from "../types/session";
 
 export const listSessions = (gameId?: number) =>
   client

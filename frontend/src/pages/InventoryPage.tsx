@@ -7,7 +7,7 @@ import {
   Stack,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import { Game, GameCreate } from "../types/game";
+import type { Game, GameCreate } from "../types/game";
 import {
   listGames,
   createGame,
