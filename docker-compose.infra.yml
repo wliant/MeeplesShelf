@@ -1,7 +1,5 @@
-# Base compose file — includes infrastructure only (database).
-# Usage:
-#   Infrastructure only:  docker compose up -d
-#   Full stack:           docker compose -f docker-compose.yml -f docker-compose.app.yml up -d
+# Infrastructure only — database.
+# Usage: docker compose -f docker-compose.infra.yml up -d
 
 services:
   db:
