@@ -1,0 +1,14 @@
+[project]
+name = "meeplesshelf"
+version = "0.1.0"
+description = "MeeplesShelf board game tracker"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.115.6",
+    "uvicorn[standard]==0.34.0",
+    "sqlalchemy[asyncio]==2.0.36",
+    "asyncpg==0.30.0",
+    "alembic==1.14.1",
+    "pydantic-settings==2.7.1",
+    "aiofiles>=24.1.0",
+]

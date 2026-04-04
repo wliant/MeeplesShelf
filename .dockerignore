@@ -1,0 +1,12 @@
+**/__pycache__
+**/*.py[cod]
+**/.venv
+**/node_modules
+app/.env
+.env
+.env.local
+.git
+.claude
+.playwright-mcp
+e2e-test
+specs

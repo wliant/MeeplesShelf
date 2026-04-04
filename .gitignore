@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -7,15 +8,35 @@ build/
 .venv/
 venv/
 env/
+
+# Environment
 .env
 .env.local
+*.local
 
+# Node
 node_modules/
-frontend/dist/
-frontend/build/
+web/dist/
+web/build/
 
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Editor
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 *.swp
 *.swo
 .DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Claude Code
+.claude/settings.local.json
+.playwright-mcp/
