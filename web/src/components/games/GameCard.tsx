@@ -23,9 +23,10 @@ interface Props {
   onEdit: (game: Game) => void;
   onDelete: (id: number) => void;
   onRefresh: () => void;
+  isAdmin: boolean;
 }
 
-export default function GameCard({ game, onEdit, onDelete, onRefresh }: Props) {
+export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -56,12 +57,16 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh }: Props) {
         </Stack>
       </CardContent>
       <CardActions>
-        <IconButton size="small" onClick={() => onEdit(game)}>
-          <EditIcon />
-        </IconButton>
-        <IconButton size="small" onClick={() => onDelete(game.id)}>
-          <DeleteIcon />
-        </IconButton>
+        {isAdmin && (
+          <IconButton size="small" onClick={() => onEdit(game)}>
+            <EditIcon />
+          </IconButton>
+        )}
+        {isAdmin && (
+          <IconButton size="small" onClick={() => onDelete(game.id)}>
+            <DeleteIcon />
+          </IconButton>
+        )}
         <Box sx={{ flexGrow: 1 }} />
         <IconButton
           size="small"
@@ -76,7 +81,7 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh }: Props) {
       </CardActions>
       <Collapse in={expanded}>
         <Box sx={{ px: 2, pb: 2 }}>
-          <ExpansionList game={game} onRefresh={onRefresh} />
+          <ExpansionList game={game} onRefresh={onRefresh} isAdmin={isAdmin} />
         </Box>
       </Collapse>
     </Card>

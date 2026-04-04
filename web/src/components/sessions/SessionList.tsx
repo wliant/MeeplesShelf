@@ -18,9 +18,10 @@ interface Props {
   sessions: GameSession[];
   onDelete: (id: number) => void;
   onSelect: (session: GameSession) => void;
+  isAdmin: boolean;
 }
 
-export default function SessionList({ sessions, onDelete, onSelect }: Props) {
+export default function SessionList({ sessions, onDelete, onSelect, isAdmin }: Props) {
   if (sessions.length === 0) {
     return (
       <Typography color="text.secondary" sx={{ mt: 2 }}>
@@ -38,7 +39,7 @@ export default function SessionList({ sessions, onDelete, onSelect }: Props) {
             <TableCell>Game</TableCell>
             <TableCell>Players</TableCell>
             <TableCell>Winner</TableCell>
-            <TableCell align="right">Actions</TableCell>
+            {isAdmin && <TableCell align="right">Actions</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -70,17 +71,19 @@ export default function SessionList({ sessions, onDelete, onSelect }: Props) {
                 <TableCell>
                   {winners.map((w) => w.player.name).join(", ") || "-"}
                 </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(s.id);
-                    }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
+                {isAdmin && (
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(s.id);
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                )}
               </TableRow>
             );
           })}

@@ -16,9 +16,10 @@ import { addExpansion, deleteExpansion } from "../../api/games";
 interface Props {
   game: Game;
   onRefresh: () => void;
+  isAdmin: boolean;
 }
 
-export default function ExpansionList({ game, onRefresh }: Props) {
+export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
   const [name, setName] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -50,45 +51,49 @@ export default function ExpansionList({ game, onRefresh }: Props) {
           <ListItem
             key={exp.id}
             secondaryAction={
-              <IconButton
-                edge="end"
-                size="small"
-                onClick={() => handleDelete(exp.id)}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
+              isAdmin ? (
+                <IconButton
+                  edge="end"
+                  size="small"
+                  onClick={() => handleDelete(exp.id)}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              ) : undefined
             }
           >
             <ListItemText primary={exp.name} />
           </ListItem>
         ))}
       </List>
-      {adding ? (
-        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-          <TextField
+      {isAdmin && (
+        adding ? (
+          <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+            <TextField
+              size="small"
+              label="Expansion name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              autoFocus
+            />
+            <Button size="small" onClick={handleAdd}>
+              Add
+            </Button>
+            <Button size="small" onClick={() => setAdding(false)}>
+              Cancel
+            </Button>
+          </Stack>
+        ) : (
+          <Button
             size="small"
-            label="Expansion name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            autoFocus
-          />
-          <Button size="small" onClick={handleAdd}>
-            Add
+            startIcon={<AddIcon />}
+            onClick={() => setAdding(true)}
+            sx={{ mt: 1 }}
+          >
+            Add Expansion
           </Button>
-          <Button size="small" onClick={() => setAdding(false)}>
-            Cancel
-          </Button>
-        </Stack>
-      ) : (
-        <Button
-          size="small"
-          startIcon={<AddIcon />}
-          onClick={() => setAdding(true)}
-          sx={{ mt: 1 }}
-        >
-          Add Expansion
-        </Button>
+        )
       )}
     </>
   );

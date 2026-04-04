@@ -17,8 +17,10 @@ import {
 } from "../api/games";
 import GameList from "../components/games/GameList";
 import GameForm from "../components/games/GameForm";
+import { useAuth } from "../context/AuthContext";
 
 export default function InventoryPage() {
+  const { isAdmin } = useAuth();
   const [games, setGames] = useState<Game[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
@@ -66,7 +68,7 @@ export default function InventoryPage() {
         sx={{ mb: 3 }}
       >
         <Typography variant="h4">Game Inventory</Typography>
-        {games.length === 0 && (
+        {isAdmin && games.length === 0 && (
           <Button variant="outlined" onClick={handleSeed}>
             Seed Default Games
           </Button>
@@ -78,18 +80,21 @@ export default function InventoryPage() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onRefresh={refresh}
+        isAdmin={isAdmin}
       />
 
-      <Fab
-        color="primary"
-        sx={{ position: "fixed", bottom: 24, right: 24 }}
-        onClick={() => {
-          setEditingGame(null);
-          setFormOpen(true);
-        }}
-      >
-        <AddIcon />
-      </Fab>
+      {isAdmin && (
+        <Fab
+          color="primary"
+          sx={{ position: "fixed", bottom: 24, right: 24 }}
+          onClick={() => {
+            setEditingGame(null);
+            setFormOpen(true);
+          }}
+        >
+          <AddIcon />
+        </Fab>
+      )}
 
       <GameForm
         open={formOpen}

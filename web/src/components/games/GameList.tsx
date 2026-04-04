@@ -7,9 +7,10 @@ interface Props {
   onEdit: (game: Game) => void;
   onDelete: (id: number) => void;
   onRefresh: () => void;
+  isAdmin: boolean;
 }
 
-export default function GameList({ games, onEdit, onDelete, onRefresh }: Props) {
+export default function GameList({ games, onEdit, onDelete, onRefresh, isAdmin }: Props) {
   return (
     <Grid container spacing={2}>
       {games.map((game) => (
@@ -19,6 +20,7 @@ export default function GameList({ games, onEdit, onDelete, onRefresh }: Props) 
             onEdit={onEdit}
             onDelete={onDelete}
             onRefresh={onRefresh}
+            isAdmin={isAdmin}
           />
         </Grid>
       ))}

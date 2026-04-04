@@ -12,8 +12,10 @@ import {
 import SessionList from "../components/sessions/SessionList";
 import SessionForm from "../components/sessions/SessionForm";
 import SessionDetail from "../components/sessions/SessionDetail";
+import { useAuth } from "../context/AuthContext";
 
 export default function SessionsPage() {
+  const { isAdmin } = useAuth();
   const [sessions, setSessions] = useState<GameSession[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [formOpen, setFormOpen] = useState(false);
@@ -54,15 +56,18 @@ export default function SessionsPage() {
         sessions={sessions}
         onDelete={handleDelete}
         onSelect={setDetailSession}
+        isAdmin={isAdmin}
       />
 
-      <Fab
-        color="primary"
-        sx={{ position: "fixed", bottom: 24, right: 24 }}
-        onClick={() => setFormOpen(true)}
-      >
-        <AddIcon />
-      </Fab>
+      {isAdmin && (
+        <Fab
+          color="primary"
+          sx={{ position: "fixed", bottom: 24, right: 24 }}
+          onClick={() => setFormOpen(true)}
+        >
+          <AddIcon />
+        </Fab>
+      )}
 
       <SessionForm
         open={formOpen}
