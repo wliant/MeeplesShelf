@@ -9,6 +9,8 @@ services:
     restart: unless-stopped
     environment:
       APP_DATABASE_URL: ${APP_DATABASE_URL}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
+      APP_SECRET_KEY: ${APP_SECRET_KEY}
     ports:
       - "${APP_PORT:-8000}:8000"
     depends_on:

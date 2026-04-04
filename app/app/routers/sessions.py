@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.dependencies import require_admin
 from app.models.game import Expansion, Game
 from app.models.session import GameSession, Player, SessionPlayer
 from app.schemas.session import (
@@ -27,7 +28,11 @@ async def list_players(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/players", response_model=PlayerRead, status_code=201)
-async def create_player(payload: PlayerCreate, db: AsyncSession = Depends(get_db)):
+async def create_player(
+    payload: PlayerCreate,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
+):
     existing = await db.execute(select(Player).where(Player.name == payload.name))
     if existing.scalar_one_or_none():
         raise HTTPException(409, "Player already exists")
@@ -62,7 +67,9 @@ async def list_sessions(
 
 @router.post("/sessions", response_model=GameSessionRead, status_code=201)
 async def create_session(
-    payload: GameSessionCreate, db: AsyncSession = Depends(get_db)
+    payload: GameSessionCreate,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
 ):
     # Fetch game with scoring spec
     result = await db.execute(select(Game).where(Game.id == payload.game_id))
@@ -145,7 +152,11 @@ async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/sessions/{session_id}", status_code=204)
-async def delete_session(session_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_session(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
+):
     result = await db.execute(
         select(GameSession).where(GameSession.id == session_id)
     )

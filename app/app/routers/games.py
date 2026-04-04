@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.dependencies import require_admin
 from app.models.game import Expansion, Game
 from app.schemas.game import (
     ExpansionCreate,
@@ -26,7 +27,11 @@ async def list_games(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/games", response_model=GameRead, status_code=201)
-async def create_game(payload: GameCreate, db: AsyncSession = Depends(get_db)):
+async def create_game(
+    payload: GameCreate,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
+):
     game = Game(
         name=payload.name,
         min_players=payload.min_players,
@@ -54,7 +59,10 @@ async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.put("/games/{game_id}", response_model=GameRead)
 async def update_game(
-    game_id: int, payload: GameUpdate, db: AsyncSession = Depends(get_db)
+    game_id: int,
+    payload: GameUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
 ):
     result = await db.execute(
         select(Game).options(selectinload(Game.expansions)).where(Game.id == game_id)
@@ -75,7 +83,11 @@ async def update_game(
 
 
 @router.delete("/games/{game_id}", status_code=204)
-async def delete_game(game_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_game(
+    game_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
+):
     result = await db.execute(select(Game).where(Game.id == game_id))
     game = result.scalar_one_or_none()
     if not game:
@@ -91,7 +103,10 @@ async def delete_game(game_id: int, db: AsyncSession = Depends(get_db)):
     "/games/{game_id}/expansions", response_model=ExpansionRead, status_code=201
 )
 async def add_expansion(
-    game_id: int, payload: ExpansionCreate, db: AsyncSession = Depends(get_db)
+    game_id: int,
+    payload: ExpansionCreate,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
 ):
     result = await db.execute(select(Game).where(Game.id == game_id))
     if not result.scalar_one_or_none():
@@ -114,7 +129,10 @@ async def add_expansion(
 
 @router.delete("/games/{game_id}/expansions/{expansion_id}", status_code=204)
 async def delete_expansion(
-    game_id: int, expansion_id: int, db: AsyncSession = Depends(get_db)
+    game_id: int,
+    expansion_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
 ):
     result = await db.execute(
         select(Expansion).where(
@@ -132,7 +150,10 @@ async def delete_expansion(
 
 
 @router.post("/seed", status_code=201)
-async def seed_games(db: AsyncSession = Depends(get_db)):
+async def seed_games(
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
+):
     created = []
     for data in SEED_GAMES:
         existing = await db.execute(select(Game).where(Game.name == data["name"]))

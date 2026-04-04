@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routers import games, sessions
+from app.routers import auth, games, sessions
 
 
 class SPAStaticFiles(StaticFiles):
@@ -31,6 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router, prefix="/api")
 app.include_router(games.router, prefix="/api")
 app.include_router(sessions.router, prefix="/api")
 
