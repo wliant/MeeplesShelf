@@ -105,19 +105,26 @@ in the database but is never surfaced analytically.
 
 ---
 
-### Gap 4 — Search and Filtering
+### ~~Gap 4 — Search and Filtering~~ (Done)
 
-**Description.** All list views (inventory, sessions) return the full unfiltered dataset.
-There is no search box in the game inventory, no way to filter sessions by game or player,
-and no way to sort by any column other than the server-side default. Discoverability
-degrades linearly as the collection grows.
+**Status.** Implemented. `GET /api/games` now accepts an optional `name` query parameter for
+case-insensitive substring matching. `GET /api/sessions` now accepts `player_id`, `date_from`,
+and `date_to` query parameters in addition to the existing `game_id`. The `InventoryPage` has
+a search bar that filters games client-side by name using `filterGamesByName()` from
+`web/src/utils/filters.ts`. The `SessionsPage` has a filter bar with game dropdown (server-side),
+date range pickers (server-side), player name search (client-side via `filterSessionsByPlayerName()`),
+and a Clear Filters button. Both pages show contextual empty-state messages when filters match
+nothing. Covered by frontend unit tests (`web/src/utils/filters.test.ts`) and e2e integration
+tests (`e2e-test/tests/test_search_filter.py`). Files changed: `app/app/routers/games.py`,
+`app/app/routers/sessions.py`, `web/src/api/sessions.ts`, `web/src/utils/filters.ts`,
+`web/src/pages/InventoryPage.tsx`, `web/src/pages/SessionsPage.tsx`.
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — a collection of 30+ games or 100+ sessions becomes unwieldy to navigate without filtering |
 | **Technical Complexity** | Low — add optional query parameters (`name`, `game_id`, `player_id`, date range) to `GET /api/games` and `GET /api/sessions`; add a filter/search bar to `InventoryPage` and `SessionsPage` |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P1 |
+| **Suggested Priority** | ~~P1~~ Done |
 
 ---
 
@@ -464,7 +471,7 @@ enter or how to obtain it.
 | 1 | ~~Expansion Scoring Patches~~ | ~~P0~~ Done | Low | — |
 | 2 | ~~Session Editing~~ | ~~P0~~ Done | Medium | — |
 | 3 | Statistics and Analytics | P1 | Medium | Gap 2 |
-| 4 | Search and Filtering | P1 | Low | — |
+| 4 | ~~Search and Filtering~~ | ~~P1~~ Done | Low | — |
 | 5 | Pagination | P1 | Low | Gap 4 (ideally) |
 | 6 | Data Export and Backup | P1 | Low-Medium | — |
 | 7 | Per-Player Profiles | P2 | Medium | Gap 3 |

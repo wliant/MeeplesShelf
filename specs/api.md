@@ -209,9 +209,10 @@ Obtain a JWT by supplying the admin password.
 
 ### `GET /api/games`
 
-List all games, ordered by name ascending. Expansions are eager-loaded.
+List games, ordered by name ascending. Expansions are eager-loaded. Optionally filter by name.
 
 **Auth required:** No  
+**Query parameter:** `name: string` (optional) — case-insensitive substring match on game name  
 **Response:** `200 OK` → `GameRead[]`
 
 ---
@@ -377,10 +378,20 @@ Create a new player. Player names are globally unique.
 
 ### `GET /api/sessions`
 
-List all sessions, ordered by `played_at` descending (most recent first). Game, players, and expansions are eager-loaded. Optionally filter by game.
+List sessions, ordered by `played_at` descending (most recent first). Game, players, and expansions are eager-loaded. Supports filtering by game, player, and date range.
 
 **Auth required:** No  
-**Query parameter:** `game_id: integer` (optional)  
+**Query parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `game_id` | integer (optional) | Filter sessions for a specific game |
+| `player_id` | integer (optional) | Filter sessions that include a specific player |
+| `date_from` | date (optional, ISO 8601 `YYYY-MM-DD`) | Include sessions played on or after this date (start of day UTC) |
+| `date_to` | date (optional, ISO 8601 `YYYY-MM-DD`) | Include sessions played on or before this date (end of day UTC) |
+
+All filters are combined with AND. Omitted filters are ignored.
+
 **Response:** `200 OK` → `GameSessionRead[]`
 
 ---

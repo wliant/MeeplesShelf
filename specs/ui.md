@@ -91,16 +91,22 @@ Centered card (width 360px) on a grey background (`grey.100`).
 
 **Data fetched on mount:** `GET /api/games` → `Game[]`
 
+### Search bar
+
+A `TextField` (small, full-width) with a search icon appears below the heading when not loading. Placeholder: "Search games...". Filters the game list client-side by case-insensitive substring match on game name using `filterGamesByName()` from `utils/filters.ts`. When the search matches no games but games exist, a "No games match your search" message is shown instead of the grid.
+
 ### Admin view
 
 - Heading: "Game Inventory" (h4)
 - **Seed button** (outlined): visible only when `isAdmin && games.length === 0`. Calls `POST /api/seed`.
-- `GameList` grid of `GameCard` components
+- Search bar (see above)
+- `GameList` grid of `GameCard` components (filtered by search)
 - Floating Action Button (FAB, primary, fixed bottom-right, `+` icon): opens `GameForm` in "add" mode
 
 ### Guest view
 
 - Heading: "Game Inventory" (h4)
+- Search bar (see above)
 - `GameList` grid (read-only — no edit/delete controls, no FAB, no seed button)
 
 ---
@@ -207,15 +213,28 @@ Renders one `GameCard` per game.
 - `GET /api/sessions` → `GameSession[]`
 - `GET /api/games` → `Game[]` (for session form dropdown)
 
+### Filter bar
+
+A responsive `Stack` (column on mobile, row on desktop) below the heading with:
+1. **Game filter** — `Autocomplete` (small) populated from loaded games. Filters sessions server-side via `game_id` query param.
+2. **From date** — `TextField` (type=date, label "From"). Filters sessions server-side via `date_from` query param.
+3. **To date** �� `TextField` (type=date, label "To"). Filters sessions server-side via `date_to` query param.
+4. **Player search** — `TextField` (small) with search icon, placeholder "Search by player...". Filters sessions client-side by case-insensitive substring match on player names using `filterSessionsByPlayerName()` from `utils/filters.ts`.
+5. **Clear Filters** button — visible only when any filter is active. Resets all filters to defaults.
+
+Server-side filters (game, dates) trigger an API re-fetch. Player search is instant (client-side). When filters match no sessions, "No sessions match your filters." is shown.
+
 ### Admin view
 
 - Heading: "Game Sessions" (h4)
-- `SessionList` table with Actions column
+- Filter bar (see above)
+- `SessionList` table with Actions column (showing filtered results)
 - FAB (primary, fixed bottom-right, `+` icon): opens `SessionForm`
 
 ### Guest view
 
 - Heading: "Game Sessions" (h4)
+- Filter bar (see above)
 - `SessionList` table — no Actions column, no FAB
 
 ---
