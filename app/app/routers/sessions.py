@@ -16,6 +16,8 @@ from app.schemas.session import (
     GameSessionUpdate,
     PlayerCreate,
     PlayerRead,
+    PlayerReadWithCount,
+    PlayerUpdate,
 )
 from app.services.scoring import calculate_total, merge_scoring_spec
 
@@ -25,10 +27,24 @@ router = APIRouter(tags=["sessions"])
 # --- Players ---
 
 
-@router.get("/players", response_model=list[PlayerRead])
+@router.get("/players", response_model=list[PlayerReadWithCount])
 async def list_players(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Player).order_by(Player.name))
-    return result.scalars().all()
+    count_subq = (
+        select(SessionPlayer.player_id, func.count().label("session_count"))
+        .group_by(SessionPlayer.player_id)
+        .subquery()
+    )
+    result = await db.execute(
+        select(Player, func.coalesce(count_subq.c.session_count, 0).label("session_count"))
+        .outerjoin(count_subq, Player.id == count_subq.c.player_id)
+        .order_by(Player.name)
+    )
+    return [
+        PlayerReadWithCount(
+            id=p.id, name=p.name, created_at=p.created_at, session_count=sc,
+        )
+        for p, sc in result.all()
+    ]
 
 
 @router.post("/players", response_model=PlayerRead, status_code=201)
@@ -45,6 +61,42 @@ async def create_player(
     await db.commit()
     await db.refresh(player)
     return player
+
+
+@router.put("/players/{player_id}", response_model=PlayerRead)
+async def update_player(
+    player_id: int,
+    payload: PlayerUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
+):
+    result = await db.execute(select(Player).where(Player.id == player_id))
+    player = result.scalar_one_or_none()
+    if not player:
+        raise HTTPException(404, "Player not found")
+    existing = await db.execute(
+        select(Player).where(Player.name == payload.name, Player.id != player_id)
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(409, "A player with that name already exists")
+    player.name = payload.name
+    await db.commit()
+    await db.refresh(player)
+    return player
+
+
+@router.delete("/players/{player_id}", status_code=204)
+async def delete_player(
+    player_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
+):
+    result = await db.execute(select(Player).where(Player.id == player_id))
+    player = result.scalar_one_or_none()
+    if not player:
+        raise HTTPException(404, "Player not found")
+    await db.delete(player)
+    await db.commit()
 
 
 # --- Sessions ---

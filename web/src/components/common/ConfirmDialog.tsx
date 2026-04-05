@@ -69,3 +69,13 @@ export function buildExpansionDeleteMessage(
 ): string {
   return `Delete the expansion "${expansionName}" from ${gameName}? This cannot be undone.`;
 }
+
+export function buildPlayerDeleteMessage(
+  name: string,
+  sessionCount: number,
+): string {
+  if (sessionCount > 0) {
+    return `Delete "${name}"? This player appears in ${sessionCount} session${sessionCount !== 1 ? "s" : ""}. Their scores will be removed from those sessions. This cannot be undone.`;
+  }
+  return `Delete "${name}"? This player has no session history. This cannot be undone.`;
+}

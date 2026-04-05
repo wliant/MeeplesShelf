@@ -4,6 +4,10 @@ export interface Player {
   created_at: string;
 }
 
+export interface PlayerWithCount extends Player {
+  session_count: number;
+}
+
 export interface SessionPlayer {
   id: number;
   player_id: number;

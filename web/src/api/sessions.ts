@@ -1,5 +1,5 @@
 import client from "./client";
-import type { GameSession, GameSessionCreate, GameSessionUpdate, Player } from "../types/session";
+import type { GameSession, GameSessionCreate, GameSessionUpdate, Player, PlayerWithCount } from "../types/session";
 import type { PaginatedResponse } from "../types/pagination";
 
 export interface SessionFilters {
@@ -31,7 +31,13 @@ export const deleteSession = (id: number) =>
   client.delete(`/sessions/${id}`);
 
 export const listPlayers = () =>
-  client.get<Player[]>("/players").then((r) => r.data);
+  client.get<PlayerWithCount[]>("/players").then((r) => r.data);
 
 export const createPlayer = (name: string) =>
   client.post<Player>("/players", { name }).then((r) => r.data);
+
+export const renamePlayer = (id: number, name: string) =>
+  client.put<Player>(`/players/${id}`, { name }).then((r) => r.data);
+
+export const deletePlayer = (id: number) =>
+  client.delete(`/players/${id}`);

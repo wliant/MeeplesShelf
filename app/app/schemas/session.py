@@ -10,10 +10,23 @@ class PlayerCreate(BaseModel):
     name: str
 
 
+class PlayerUpdate(BaseModel):
+    name: str
+
+
 class PlayerRead(BaseModel):
     id: int
     name: str
     created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PlayerReadWithCount(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
+    session_count: int
 
     model_config = {"from_attributes": True}
 

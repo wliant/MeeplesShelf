@@ -7,6 +7,7 @@ import AppShell from "./components/layout/AppShell";
 import LoginPage from "./pages/LoginPage";
 import InventoryPage from "./pages/InventoryPage";
 import SessionsPage from "./pages/SessionsPage";
+import PlayersPage from "./pages/PlayersPage";
 
 const theme = createTheme({
   palette: {
@@ -28,6 +29,7 @@ function App() {
                 <Route element={<AppShell />}>
                   <Route path="/inventory" element={<InventoryPage />} />
                   <Route path="/sessions" element={<SessionsPage />} />
+                  <Route path="/players" element={<PlayersPage />} />
                   <Route path="*" element={<Navigate to="/inventory" replace />} />
                 </Route>
               </Route>
