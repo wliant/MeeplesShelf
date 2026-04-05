@@ -422,20 +422,27 @@ hover tooltips.
 
 ---
 
-### Gap 21 — Player Management (Rename / Delete)
+### ~~Gap 21 — Player Management (Rename / Delete)~~ (Done)
 
-**Description.** Players can be created on-the-fly during session entry, but there is no UI
-or API to rename or delete a player. A misspelled name (e.g., "Alic" instead of "Alice")
-stays forever and pollutes the autocomplete. There is no `GET /api/players/{id}`,
-`PUT /api/players/{id}`, or `DELETE /api/players/{id}` endpoint, and no player management
-page in the frontend.
+**Status.** Implemented. `PUT /api/players/{player_id}` (rename, 409 on duplicate) and
+`DELETE /api/players/{player_id}` (cascade to session_players) endpoints added to
+`app/app/routers/sessions.py`. `GET /api/players` now returns `PlayerReadWithCount` with a
+`session_count` field via a subquery join. New schemas `PlayerUpdate` and `PlayerReadWithCount`
+in `app/app/schemas/session.py`. Frontend: new `/players` route with `PlayersPage`
+(`web/src/pages/PlayersPage.tsx`) showing a responsive `PlayerList`
+(`web/src/components/players/PlayerList.tsx`) — table on desktop, cards on mobile. Admin users
+can inline-rename (click edit → TextField → Enter/Escape) and delete players with a cascade
+warning via `ConfirmDialog`. Guest view is read-only. "Players" nav link added to `AppShell`
+(desktop toolbar and mobile drawer with `PeopleIcon`). Covered by 10 E2E integration tests
+(`e2e-test/tests/test_player_management.py`) and 3 frontend unit tests for
+`buildPlayerDeleteMessage` in `web/src/components/common/ConfirmDialog.test.ts`.
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — typos accumulate over time; duplicate or stale player names clutter the session form; no way to merge two entries for the same person |
 | **Technical Complexity** | Medium — new API endpoints for player CRUD; a player management section (could be inline on a settings page or a dedicated route); cascade/reassign logic for sessions when a player is renamed or deleted |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P1 |
+| **Suggested Priority** | ~~P1~~ Done |
 
 ---
 
@@ -513,7 +520,7 @@ enter or how to obtain it.
 | 18 | ~~Mobile Navigation Bar Overflow~~ | ~~P1~~ Done | Medium | — |
 | 19 | ~~Sessions Table Not Responsive~~ | ~~P1~~ Done | Medium | — |
 | 20 | Accessibility (a11y) Support | P2 | Low-Medium | — |
-| 21 | Player Management (Rename/Delete) | P1 | Medium | — |
+| 21 | ~~Player Management (Rename/Delete)~~ | ~~P1~~ Done | Medium | — |
 | 22 | Session Detail Modal Lacks Context | P2 | Low | — |
 | 23 | Game Card Shows No Session History | P2 | Low-Medium | — |
 | 24 | Password Field UX / Onboarding | P2 | Low | — |

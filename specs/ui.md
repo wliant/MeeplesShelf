@@ -19,6 +19,7 @@
 | `/login` | `LoginPage` | Public | Redirect destination after logout |
 | `/inventory` | `InventoryPage` inside `AppShell` | `RequireAuth` | Default landing page |
 | `/sessions` | `SessionsPage` inside `AppShell` | `RequireAuth` | — |
+| `/players` | `PlayersPage` inside `AppShell` | `RequireAuth` | — |
 | `*` (any other) | — | `RequireAuth` | Redirects to `/inventory` |
 
 `RequireAuth` redirects to `/login` when `role === null`. Both `admin` and `guest` pass through.
@@ -39,6 +40,7 @@
             <Route element={<AppShell />}>
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/sessions"  element={<SessionsPage />} />
+              <Route path="/players"   element={<PlayersPage />} />
               <Route path="*"          element={<Navigate to="/inventory" />} />
             </Route>
           </Route>
@@ -60,6 +62,7 @@ Persistent layout component rendered for all authenticated routes. Responsive: u
   - App name: "MeeplesShelf" (h6 Typography)
   - Nav button: "Inventory" → `/inventory`
   - Nav button: "Sessions" → `/sessions`
+  - Nav button: "Players" → `/players`
   - Export button (admin only): `FileDownload` icon button → opens a `Menu` dropdown with:
     - "Export JSON (Full Backup)" → downloads `GET /api/export` as blob, saves as `meeplesshelf-export-YYYY-MM-DD.json`
     - "Export Sessions CSV" → downloads `GET /api/export/sessions/csv` as blob, saves as `meeplesshelf-sessions-YYYY-MM-DD.csv`
@@ -73,7 +76,7 @@ Persistent layout component rendered for all authenticated routes. Responsive: u
 - Right-anchored temporary `Drawer` (width 260px) containing:
   - Role chip ("Admin" / "Guest") centered at top (outlined, primary colour)
   - Divider
-  - Navigation list: "Inventory" (`SportsEsportsIcon`) and "Sessions" (`HistoryIcon`) — clicking navigates and closes drawer
+  - Navigation list: "Inventory" (`SportsEsportsIcon`), "Sessions" (`HistoryIcon`), and "Players" (`PeopleIcon`) — clicking navigates and closes drawer
   - Divider
   - Export list (admin only): "Export JSON (Full Backup)" and "Export Sessions CSV" (`FileDownloadIcon`) — disabled with `CircularProgress` during export
   - Divider
@@ -336,6 +339,57 @@ Read-only detail view. Opens when a row is clicked in `SessionList`.
 
 ---
 
+## PlayersPage
+
+**URL:** `/players`
+
+**Data fetched on mount:** `GET /api/players` → `PlayerReadWithCount[]`
+
+### Search bar
+
+A `TextField` (small) with a search icon appears below the heading when not loading. Placeholder: "Search players...". Filters the player list client-side by case-insensitive name substring match.
+
+### Admin view
+
+- Heading: "Players" (h4)
+- Search bar (see above)
+- `PlayerList` (responsive table/cards with inline rename and delete)
+
+### Guest view
+
+- Heading: "Players" (h4)
+- Search bar (see above)
+- `PlayerList` (read-only — no edit/delete controls)
+
+---
+
+## PlayerList
+
+**Props:** `players`, `onRename`, `onDelete`, `isAdmin`
+
+**Empty state:** Typography "No players yet. Players are created when you log a game session." (secondary colour)
+
+**Responsive layout:** Uses `useMediaQuery(theme.breakpoints.down("sm"))` to switch between desktop table and mobile card layouts at the 600px breakpoint.
+
+### Desktop layout (≥ 600px) — Table
+
+| Column | Guest | Admin |
+|---|---|---|
+| Name | ✓ | ✓ (inline-editable) |
+| Sessions | ✓ | ✓ |
+| Created | ✓ | ✓ |
+| Actions | — | ✓ |
+
+**Inline rename (admin only):** Clicking the edit icon replaces the name cell with a TextField (auto-focused, text selected). Enter or blur saves the change; Escape cancels. If the name is unchanged, no API call is made. A 409 error shows an error snackbar.
+
+**Actions column (admin only):** Edit (pencil) and Delete (trash) icon buttons. Delete opens a `ConfirmDialog` ("Delete Player") with a cascade warning built by `buildPlayerDeleteMessage()`.
+
+### Mobile layout (< 600px) — Cards
+
+Each card shows player name, session count, and creation date. Admin cards include edit and delete icon buttons in the header row.
+
+---
+
 ## SessionForm (modal dialog, admin only)
 
 **Props:** `open`, `games`, `onClose`, `onSave`, `editSession?`, `saving?`
@@ -408,6 +462,7 @@ Reusable confirmation dialog used before all destructive operations. Uses `maxWi
 - `buildGameDeleteMessage(name, expansionCount)` — warns about cascade to expansions and sessions
 - `buildSessionDeleteMessage(gameName, playedAt)` — identifies the session by game and date
 - `buildExpansionDeleteMessage(expansionName, gameName)` — identifies the expansion and its parent game
+- `buildPlayerDeleteMessage(name, sessionCount)` — warns about cascade to session scores when count > 0
 
 ---
 
@@ -424,6 +479,8 @@ Reusable confirmation dialog used before all destructive operations. Uses `maxWi
 | "Actions" column in SessionList | Visible | Hidden |
 | Edit button in SessionDetail | Visible | Hidden |
 | Delete icon on session row | Visible | Hidden |
+| Edit/Delete icons in PlayerList | Visible | Hidden |
+| Inline rename in PlayerList | Accessible | Not accessible |
 | FAB on SessionsPage | Visible | Hidden |
 | SessionForm dialog | Accessible | Not accessible |
 | Export button in AppShell | Visible | Hidden |

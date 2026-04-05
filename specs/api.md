@@ -369,10 +369,19 @@ The `seeded` array lists only the games that were newly created. If all games al
 
 ### `GET /api/players`
 
-List all players, ordered by name ascending.
+List all players, ordered by name ascending. Each player includes a `session_count` field indicating how many sessions they have participated in.
 
 **Auth required:** No  
-**Response:** `200 OK` → `PlayerRead[]`
+**Response:** `200 OK` → `PlayerReadWithCount[]`
+
+**`PlayerReadWithCount` schema:**
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | integer | Player ID |
+| `name` | string | Player name |
+| `created_at` | datetime | Creation timestamp |
+| `session_count` | integer | Number of sessions this player appears in |
 
 ---
 
@@ -391,6 +400,44 @@ Create a new player. Player names are globally unique.
 | `401` | — | Missing or invalid token |
 | `403` | — | Not admin |
 | `409` | `"Player already exists"` | A player with that name already exists |
+
+---
+
+### `PUT /api/players/{player_id}` 🔒
+
+Rename a player. The new name must not conflict with an existing player.
+
+**Auth required:** Yes (admin)  
+**Path parameters:** `player_id` (integer)  
+**Request body:** `PlayerUpdate` (`{ "name": "string" }`)  
+**Response:** `200 OK` → `PlayerRead`
+
+**Errors:**
+
+| Status | `detail` | Condition |
+|---|---|---|
+| `401` | — | Missing or invalid token |
+| `403` | — | Not admin |
+| `404` | `"Player not found"` | No player with that ID exists |
+| `409` | `"A player with that name already exists"` | Name collision with another player |
+
+---
+
+### `DELETE /api/players/{player_id}` 🔒
+
+Delete a player. All `session_players` records referencing this player are cascade-deleted (the sessions themselves survive but lose that player's scores).
+
+**Auth required:** Yes (admin)  
+**Path parameters:** `player_id` (integer)  
+**Response:** `204 No Content`
+
+**Errors:**
+
+| Status | `detail` | Condition |
+|---|---|---|
+| `401` | — | Missing or invalid token |
+| `403` | — | Not admin |
+| `404` | `"Player not found"` | No player with that ID exists |
 
 ---
 
