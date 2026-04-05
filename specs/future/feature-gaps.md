@@ -50,21 +50,22 @@ A self-hosted board game tracking platform that:
 
 ## Feature Gaps
 
-### Gap 1 — Expansion Scoring Patches
+### ~~Gap 1 — Expansion Scoring Patches~~ (Done)
 
-**Description.** The `expansions` table stores a `scoring_spec_patch` JSONB column that is
-intended to add or override scoring fields when an expansion is used in a session. This
-column is populated and tracked in `session_expansions` but is completely ignored by
-`calculate_total()` in both `app/app/services/scoring.py` and `web/src/utils/scoring.ts`.
-Expansions that introduce new scoring categories (extra VP cards, new resource types) are
-silently unscored.
+**Status.** Implemented. `merge_scoring_spec()` added to both backend (`app/app/services/scoring.py`)
+and frontend (`web/src/utils/scoring.ts`). The `create_session()` route now merges active expansion
+patches into the scoring spec before calculating totals. The `SessionForm` component includes
+expansion checkboxes and computes an effective spec for live score preview. Expansion IDs are
+validated against the game (HTTP 400 if mismatched). Covered by backend unit tests
+(`app/tests/test_scoring.py`), frontend unit tests (`web/src/utils/scoring.test.ts`), and e2e
+integration tests (`e2e-test/tests/test_expansion_scoring.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — sessions logged with scoring expansions will have incorrect totals, silently undermining data accuracy |
 | **Technical Complexity** | Low — the data model is already in place; change is limited to merging active expansion patches into the spec before calling `calculate_total()`, and mirroring the same logic in the TypeScript client |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P0 — already partially built; the gap between intent and behaviour is a correctness bug |
+| **Suggested Priority** | ~~P0~~ Done |
 
 ---
 
@@ -444,7 +445,7 @@ enter or how to obtain it.
 
 | # | Feature | Priority | Complexity | Depends On |
 |---|---|---|---|---|
-| 1 | Expansion Scoring Patches | P0 | Low | — |
+| 1 | ~~Expansion Scoring Patches~~ | ~~P0~~ Done | Low | — |
 | 2 | Session Editing | P0 | Medium | — |
 | 3 | Statistics and Analytics | P1 | Medium | Gap 2 |
 | 4 | Search and Filtering | P1 | Low | — |
