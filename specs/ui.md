@@ -30,20 +30,22 @@
 ```
 <ThemeProvider>
   <CssBaseline />
-  <AuthProvider>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<RequireAuth />}>
-          <Route element={<AppShell />}>
-            <Route path="/inventory" element={<InventoryPage />} />
-            <Route path="/sessions"  element={<SessionsPage />} />
-            <Route path="*"          element={<Navigate to="/inventory" />} />
+  <SnackbarProvider>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route element={<RequireAuth />}>
+            <Route element={<AppShell />}>
+              <Route path="/inventory" element={<InventoryPage />} />
+              <Route path="/sessions"  element={<SessionsPage />} />
+              <Route path="*"          element={<Navigate to="/inventory" />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  </AuthProvider>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  </SnackbarProvider>
 </ThemeProvider>
 ```
 
@@ -375,6 +377,7 @@ Reading data (games, expansions, sessions, session details) is available to both
 - **Inline expansion add:** The add-expansion form is toggled within the expanded GameCard — no modal.
 - **Live score totals:** `calculateTotal` runs on every score input change; totals update in real time.
 - **Free-solo player creation:** Typing a new name in the player autocomplete and clicking "Add" creates the player via API before adding to the session.
+- **Toast notifications:** All create, update, delete, and seed operations show a success toast (green filled `Alert`) on completion and an error toast (red filled `Alert`) on failure. Toasts auto-dismiss after 4 seconds and are anchored bottom-center. Error messages are extracted from Axios response `detail` fields (string or validation array) with a fallback to `Error.message`. The `SnackbarProvider` context wraps the entire app; components access it via `useSnackbar()`.
 - **Auth persists across reloads:** Role and token are read from `localStorage` on every page load.
 - **SPA routing:** All paths not handled by the API fall through to `index.html`; React Router handles the rest.
 - **Vite dev proxy:** In development, `vite.config.ts` proxies `/api` requests to `http://localhost:8000`.

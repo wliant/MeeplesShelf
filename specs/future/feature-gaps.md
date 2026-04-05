@@ -322,20 +322,23 @@ cleared. Files changed: `web/src/pages/InventoryPage.tsx`, `web/src/pages/Sessio
 
 ---
 
-### Gap 17 — No Success/Error Feedback (Toast Notifications)
+### ~~Gap 17 — No Success/Error Feedback (Toast Notifications)~~ (Done)
 
-**Description.** There are no toast or snackbar notifications anywhere in the application.
-When a game is created, a session is saved, or a deletion succeeds, the dialog simply closes
-and the list refreshes. There is no visible confirmation of success. API errors fail silently
-— if a session save returns a 500, the user sees nothing; the dialog stays open with no
-message.
+**Status.** Implemented. A `SnackbarProvider` context (`web/src/context/SnackbarContext.tsx`) wraps the
+entire application in `App.tsx`, exposing a `useSnackbar()` hook with `showSnackbar(message, severity)`.
+All create, update, delete, and seed operations in `InventoryPage`, `SessionsPage`, and `ExpansionList`
+now show a success toast on completion and an error toast with a user-friendly message on failure.
+Error messages are extracted from Axios responses via `extractErrorMessage()` (`web/src/utils/errors.ts`),
+which handles FastAPI string details, validation error arrays, and generic `Error` instances. The snackbar
+uses MUI `Alert` (filled variant) with auto-hide after 4 seconds, anchored bottom-center. Covered by
+frontend unit tests (`web/src/utils/errors.test.ts`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | High — silent failures mean corrupted or lost data goes unnoticed; users cannot distinguish success from failure |
 | **Technical Complexity** | Low — add a global MUI `<Snackbar>` provider with success/error variants; fire it after every create/update/delete operation |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P1 |
+| **Suggested Priority** | ~~P1~~ Done |
 
 ---
 
@@ -474,7 +477,7 @@ enter or how to obtain it.
 | 14 | AI Image-Based Scoring | P3 | Very High | Gaps 2, 10 |
 | 15 | ~~Delete Confirmation Dialogs~~ | ~~P0~~ Done | Low | — |
 | 16 | ~~Loading States / Spinners~~ | ~~P1~~ Done | Low | — |
-| 17 | Success/Error Toast Notifications | P1 | Low | — |
+| 17 | ~~Success/Error Toast Notifications~~ | ~~P1~~ Done | Low | — |
 | 18 | Mobile Navigation Bar Overflow | P1 | Medium | — |
 | 19 | Sessions Table Not Responsive | P1 | Medium | — |
 | 20 | Accessibility (a11y) Support | P2 | Low-Medium | — |
