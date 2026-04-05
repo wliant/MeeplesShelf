@@ -3,6 +3,7 @@ import {
   buildGameDeleteMessage,
   buildSessionDeleteMessage,
   buildExpansionDeleteMessage,
+  buildPlayerDeleteMessage,
 } from "./ConfirmDialog";
 
 describe("buildGameDeleteMessage", () => {
@@ -44,6 +45,29 @@ describe("buildExpansionDeleteMessage", () => {
     const msg = buildExpansionDeleteMessage("Seafarers", "Catan");
     expect(msg).toContain('"Seafarers"');
     expect(msg).toContain("Catan");
+    expect(msg).toContain("cannot be undone");
+  });
+});
+
+describe("buildPlayerDeleteMessage", () => {
+  it("warns about session count when player has sessions", () => {
+    const msg = buildPlayerDeleteMessage("Alice", 5);
+    expect(msg).toContain('"Alice"');
+    expect(msg).toContain("5 sessions");
+    expect(msg).toContain("scores will be removed");
+    expect(msg).toContain("cannot be undone");
+  });
+
+  it("uses singular for one session", () => {
+    const msg = buildPlayerDeleteMessage("Bob", 1);
+    expect(msg).toContain("1 session");
+    expect(msg).not.toContain("1 sessions");
+  });
+
+  it("shows no-history message when player has zero sessions", () => {
+    const msg = buildPlayerDeleteMessage("Charlie", 0);
+    expect(msg).toContain('"Charlie"');
+    expect(msg).toContain("no session history");
     expect(msg).toContain("cannot be undone");
   });
 });
