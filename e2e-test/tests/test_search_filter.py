@@ -133,14 +133,14 @@ class TestGameSearch:
     def test_no_filter_returns_all(self, client: httpx.Client, two_games: list):
         resp = client.get("/games")
         assert resp.status_code == 200
-        names = [g["name"] for g in resp.json()]
+        names = [g["name"] for g in resp.json()["items"]]
         assert "E2E Filter Alpha" in names
         assert "E2E Filter Beta" in names
 
     def test_filter_by_exact_name(self, client: httpx.Client, two_games: list):
         resp = client.get("/games", params={"name": "E2E Filter Alpha"})
         assert resp.status_code == 200
-        names = [g["name"] for g in resp.json()]
+        names = [g["name"] for g in resp.json()["items"]]
         assert "E2E Filter Alpha" in names
         assert "E2E Filter Beta" not in names
 
@@ -149,21 +149,21 @@ class TestGameSearch:
     ):
         resp = client.get("/games", params={"name": "filter alpha"})
         assert resp.status_code == 200
-        names = [g["name"] for g in resp.json()]
+        names = [g["name"] for g in resp.json()["items"]]
         assert "E2E Filter Alpha" in names
         assert "E2E Filter Beta" not in names
 
     def test_filter_no_match(self, client: httpx.Client, two_games: list):
         resp = client.get("/games", params={"name": "NonexistentXYZ123"})
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json()["items"] == []
 
     def test_filter_empty_string_returns_all(
         self, client: httpx.Client, two_games: list
     ):
         resp = client.get("/games", params={"name": ""})
         assert resp.status_code == 200
-        names = [g["name"] for g in resp.json()]
+        names = [g["name"] for g in resp.json()["items"]]
         assert "E2E Filter Alpha" in names
         assert "E2E Filter Beta" in names
 
@@ -178,7 +178,7 @@ class TestSessionFilter:
         game_a = two_games[0]
         resp = client.get("/sessions", params={"game_id": game_a["id"]})
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         assert all(s["game_id"] == game_a["id"] for s in data)
         assert len(data) == 2  # sessions 1 and 3
 
@@ -191,7 +191,7 @@ class TestSessionFilter:
         py = two_players[1]  # Player Y is in sessions 2 and 3
         resp = client.get("/sessions", params={"player_id": py["id"]})
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         assert len(data) == 2
         for s in data:
             player_ids = [p["player_id"] for p in s["players"]]
@@ -204,7 +204,7 @@ class TestSessionFilter:
     ):
         resp = client.get("/sessions", params={"date_from": "2025-03-01"})
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         # Sessions 2 (March 20) and 3 (June 10) match
         session_ids = {s["id"] for s in data}
         assert sessions_for_filter[1]["id"] in session_ids
@@ -218,7 +218,7 @@ class TestSessionFilter:
     ):
         resp = client.get("/sessions", params={"date_to": "2025-03-20"})
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         session_ids = {s["id"] for s in data}
         # Sessions 1 (Jan 15) and 2 (March 20) match
         assert sessions_for_filter[0]["id"] in session_ids
@@ -235,7 +235,7 @@ class TestSessionFilter:
             params={"date_from": "2025-02-01", "date_to": "2025-05-01"},
         )
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         # Only session 2 (March 20) is in range
         assert len(data) >= 1
         session_ids = {s["id"] for s in data}
@@ -258,7 +258,7 @@ class TestSessionFilter:
             params={"game_id": game_a["id"], "player_id": py["id"]},
         )
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         assert len(data) == 1
         assert data[0]["id"] == sessions_for_filter[2]["id"]
 
@@ -272,9 +272,9 @@ class TestSessionFilter:
             params={"date_from": "2030-01-01", "date_to": "2030-12-31"},
         )
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json()["items"] == []
 
     def test_filter_player_id_nonexistent(self, client: httpx.Client):
         resp = client.get("/sessions", params={"player_id": 999999})
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json()["items"] == []
