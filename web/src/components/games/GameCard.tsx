@@ -21,7 +21,7 @@ import ExpansionList from "./ExpansionList";
 interface Props {
   game: Game;
   onEdit: (game: Game) => void;
-  onDelete: (id: number) => void;
+  onDelete: (game: Game) => void;
   onRefresh: () => void;
   isAdmin: boolean;
 }
@@ -63,7 +63,7 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }:
           </IconButton>
         )}
         {isAdmin && (
-          <IconButton size="small" onClick={() => onDelete(game.id)}>
+          <IconButton size="small" onClick={() => onDelete(game)}>
             <DeleteIcon />
           </IconButton>
         )}

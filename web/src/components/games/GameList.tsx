@@ -5,7 +5,7 @@ import GameCard from "./GameCard";
 interface Props {
   games: Game[];
   onEdit: (game: Game) => void;
-  onDelete: (id: number) => void;
+  onDelete: (game: Game) => void;
   onRefresh: () => void;
   isAdmin: boolean;
 }

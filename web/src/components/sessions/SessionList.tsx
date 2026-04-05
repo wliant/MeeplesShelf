@@ -16,7 +16,7 @@ import type { GameSession } from "../../types/session";
 
 interface Props {
   sessions: GameSession[];
-  onDelete: (id: number) => void;
+  onDelete: (session: GameSession) => void;
   onSelect: (session: GameSession) => void;
   isAdmin: boolean;
 }
@@ -77,7 +77,7 @@ export default function SessionList({ sessions, onDelete, onSelect, isAdmin }: P
                       size="small"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDelete(s.id);
+                        onDelete(s);
                       }}
                     >
                       <DeleteIcon />

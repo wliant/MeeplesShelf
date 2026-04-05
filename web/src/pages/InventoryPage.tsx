@@ -17,6 +17,7 @@ import {
 } from "../api/games";
 import GameList from "../components/games/GameList";
 import GameForm from "../components/games/GameForm";
+import ConfirmDialog, { buildGameDeleteMessage } from "../components/common/ConfirmDialog";
 import { useAuth } from "../context/AuthContext";
 
 export default function InventoryPage() {
@@ -24,6 +25,7 @@ export default function InventoryPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
+  const [pendingDeleteGame, setPendingDeleteGame] = useState<Game | null>(null);
 
   const refresh = useCallback(() => {
     listGames().then(setGames);
@@ -49,9 +51,16 @@ export default function InventoryPage() {
     setFormOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    await deleteGame(id);
-    refresh();
+  const handleDeleteClick = (game: Game) => {
+    setPendingDeleteGame(game);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (pendingDeleteGame) {
+      await deleteGame(pendingDeleteGame.id);
+      setPendingDeleteGame(null);
+      refresh();
+    }
   };
 
   const handleSeed = async () => {
@@ -78,7 +87,7 @@ export default function InventoryPage() {
       <GameList
         games={games}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDelete={handleDeleteClick}
         onRefresh={refresh}
         isAdmin={isAdmin}
       />
@@ -95,6 +104,18 @@ export default function InventoryPage() {
           <AddIcon />
         </Fab>
       )}
+
+      <ConfirmDialog
+        open={pendingDeleteGame !== null}
+        title="Delete Game"
+        message={
+          pendingDeleteGame
+            ? buildGameDeleteMessage(pendingDeleteGame.name, pendingDeleteGame.expansions.length)
+            : ""
+        }
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPendingDeleteGame(null)}
+      />
 
       <GameForm
         open={formOpen}

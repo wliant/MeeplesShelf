@@ -10,8 +10,9 @@ import {
 } from "@mui/material";
 import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
 import { useState } from "react";
-import type { Game } from "../../types/game";
+import type { Game, Expansion } from "../../types/game";
 import { addExpansion, deleteExpansion } from "../../api/games";
+import ConfirmDialog, { buildExpansionDeleteMessage } from "../common/ConfirmDialog";
 
 interface Props {
   game: Game;
@@ -22,6 +23,7 @@ interface Props {
 export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
   const [name, setName] = useState("");
   const [adding, setAdding] = useState(false);
+  const [pendingDeleteExpansion, setPendingDeleteExpansion] = useState<Expansion | null>(null);
 
   const handleAdd = async () => {
     if (!name.trim()) return;
@@ -31,9 +33,12 @@ export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
     onRefresh();
   };
 
-  const handleDelete = async (expansionId: number) => {
-    await deleteExpansion(game.id, expansionId);
-    onRefresh();
+  const handleDeleteConfirm = async () => {
+    if (pendingDeleteExpansion) {
+      await deleteExpansion(game.id, pendingDeleteExpansion.id);
+      setPendingDeleteExpansion(null);
+      onRefresh();
+    }
   };
 
   return (
@@ -55,7 +60,7 @@ export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
                 <IconButton
                   edge="end"
                   size="small"
-                  onClick={() => handleDelete(exp.id)}
+                  onClick={() => setPendingDeleteExpansion(exp)}
                 >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
@@ -95,6 +100,17 @@ export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
           </Button>
         )
       )}
+      <ConfirmDialog
+        open={pendingDeleteExpansion !== null}
+        title="Delete Expansion"
+        message={
+          pendingDeleteExpansion
+            ? buildExpansionDeleteMessage(pendingDeleteExpansion.name, game.name)
+            : ""
+        }
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPendingDeleteExpansion(null)}
+      />
     </>
   );
 }
