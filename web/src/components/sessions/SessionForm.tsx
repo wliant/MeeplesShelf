@@ -9,11 +9,15 @@ import {
   Stack,
   Chip,
   Typography,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Game } from "../../types/game";
 import type { Player, GameSessionCreate } from "../../types/session";
 import { listPlayers, createPlayer } from "../../api/sessions";
+import { mergeScoringSpec } from "../../utils/scoring";
 import ScoreSheet from "./ScoreSheet";
 
 interface Props {
@@ -36,6 +40,20 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
   );
   const [notes, setNotes] = useState("");
   const [newPlayerName, setNewPlayerName] = useState("");
+  const [selectedExpansionIds, setSelectedExpansionIds] = useState<Set<number>>(
+    new Set()
+  );
+
+  const effectiveSpec = useMemo(() => {
+    if (!selectedGame?.scoring_spec) return null;
+    if (selectedExpansionIds.size === 0) return selectedGame.scoring_spec;
+
+    const patches = selectedGame.expansions
+      .filter((exp) => selectedExpansionIds.has(exp.id))
+      .map((exp) => exp.scoring_spec_patch);
+
+    return mergeScoringSpec(selectedGame.scoring_spec, patches);
+  }, [selectedGame, selectedExpansionIds]);
 
   useEffect(() => {
     if (open) {
@@ -43,6 +61,7 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
       setSelectedGame(null);
       setSelectedPlayers([]);
       setScoreData({});
+      setSelectedExpansionIds(new Set());
       setPlayedAt(new Date().toISOString().slice(0, 16));
       setNotes("");
     }
@@ -51,6 +70,11 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
   useEffect(() => {
     setPlayers(allPlayers);
   }, [allPlayers]);
+
+  useEffect(() => {
+    setSelectedExpansionIds(new Set());
+    setScoreData({});
+  }, [selectedGame]);
 
   const handleAddPlayer = async () => {
     if (!newPlayerName.trim()) return;
@@ -89,6 +113,7 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
       game_id: selectedGame.id,
       played_at: new Date(playedAt).toISOString(),
       notes: notes || undefined,
+      expansion_ids: [...selectedExpansionIds],
       players: selectedPlayers.map((p) => ({
         player_id: p.id,
         score_data: scoreData[p.id] ?? {},
@@ -118,6 +143,33 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
             onChange={(e) => setPlayedAt(e.target.value)}
             slotProps={{ inputLabel: { shrink: true } }}
           />
+
+          {selectedGame && selectedGame.expansions.length > 0 && (
+            <>
+              <Typography variant="subtitle2">Expansions</Typography>
+              <FormGroup row>
+                {selectedGame.expansions.map((exp) => (
+                  <FormControlLabel
+                    key={exp.id}
+                    control={
+                      <Checkbox
+                        checked={selectedExpansionIds.has(exp.id)}
+                        onChange={(e) => {
+                          setSelectedExpansionIds((prev) => {
+                            const next = new Set(prev);
+                            if (e.target.checked) next.add(exp.id);
+                            else next.delete(exp.id);
+                            return next;
+                          });
+                        }}
+                      />
+                    }
+                    label={exp.name}
+                  />
+                ))}
+              </FormGroup>
+            </>
+          )}
 
           <Stack direction="row" spacing={1} alignItems="center">
             <Autocomplete
@@ -158,11 +210,11 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
             ))}
           </Stack>
 
-          {selectedGame?.scoring_spec && selectedPlayers.length > 0 && (
+          {effectiveSpec && selectedPlayers.length > 0 && (
             <>
               <Typography variant="subtitle1">Score Entry</Typography>
               <ScoreSheet
-                spec={selectedGame.scoring_spec}
+                spec={effectiveSpec}
                 players={selectedPlayers}
                 scoreData={scoreData}
                 onChange={handleScoreChange}

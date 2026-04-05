@@ -1,4 +1,34 @@
-import type { ScoringSpec } from "../types/scoring";
+import type { ScoringSpec, ScoringField } from "../types/scoring";
+
+/**
+ * Merge expansion scoring_spec_patch objects into a base scoring spec.
+ *
+ * Patch semantics:
+ * - If a patch field has the same `id` as a base field, it replaces that field.
+ * - If a patch field has a new `id`, it is appended.
+ * - Multiple patches are applied sequentially in list order.
+ */
+export function mergeScoringSpec(
+  baseSpec: ScoringSpec,
+  patches: (ScoringSpec | null)[],
+): ScoringSpec {
+  let mergedFields: ScoringField[] = baseSpec.fields.map((f) => ({ ...f }));
+
+  for (const patch of patches) {
+    if (!patch || patch.fields.length === 0) continue;
+
+    for (const pf of patch.fields) {
+      const existingIdx = mergedFields.findIndex((f) => f.id === pf.id);
+      if (existingIdx !== -1) {
+        mergedFields[existingIdx] = { ...pf };
+      } else {
+        mergedFields = [...mergedFields, { ...pf }];
+      }
+    }
+  }
+
+  return { ...baseSpec, fields: mergedFields };
+}
 
 export function calculateTotal(
   spec: ScoringSpec,

@@ -13,7 +13,7 @@ from app.schemas.session import (
     PlayerCreate,
     PlayerRead,
 )
-from app.services.scoring import calculate_total
+from app.services.scoring import calculate_total, merge_scoring_spec
 
 router = APIRouter(tags=["sessions"])
 
@@ -83,18 +83,30 @@ async def create_session(
         notes=payload.notes,
     )
 
-    # Attach expansions
+    # Attach expansions and collect scoring patches
+    active_expansions: list[Expansion] = []
     if payload.expansion_ids:
         exp_result = await db.execute(
-            select(Expansion).where(Expansion.id.in_(payload.expansion_ids))
+            select(Expansion).where(
+                Expansion.id.in_(payload.expansion_ids),
+                Expansion.game_id == payload.game_id,
+            )
         )
-        session.expansions = list(exp_result.scalars().all())
+        active_expansions = list(exp_result.scalars().all())
+        if len(active_expansions) != len(payload.expansion_ids):
+            raise HTTPException(
+                400, "One or more expansion_ids do not belong to this game"
+            )
+        session.expansions = active_expansions
 
     db.add(session)
     await db.flush()
 
     # Add players with score calculation
     scoring_spec = game.scoring_spec
+    if scoring_spec and active_expansions:
+        patches = [exp.scoring_spec_patch for exp in active_expansions]
+        scoring_spec = merge_scoring_spec(scoring_spec, patches)
     max_score = None
     session_players = []
 
