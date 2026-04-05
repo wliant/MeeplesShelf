@@ -277,19 +277,23 @@ Five Tribes.
 
 ---
 
-### Gap 15 — No Delete Confirmation Dialogs
+### ~~Gap 15 — No Delete Confirmation Dialogs~~ (Done)
 
-**Description.** Clicking the delete (trash) icon on a game card or session row immediately
-deletes the record with no confirmation prompt. A single misclick permanently destroys data.
-This is especially dangerous because sessions cannot be re-created with their original
-timestamp (Gap 2), and games cascade-delete all associated sessions.
+**Status.** Implemented. A reusable `ConfirmDialog` component (`web/src/components/common/ConfirmDialog.tsx`)
+is now shown before all destructive operations. Game deletion warns about cascade-deleted expansions and
+sessions. Session deletion identifies the game and date. Expansion deletion identifies the expansion and
+parent game. The confirm button is red (`color="error"`). Message-building logic is extracted into pure
+helper functions (`buildGameDeleteMessage`, `buildSessionDeleteMessage`, `buildExpansionDeleteMessage`)
+covered by frontend unit tests (`web/src/components/common/ConfirmDialog.test.ts`). Wired into
+`InventoryPage`, `SessionsPage`, and `ExpansionList`. `GameCard`/`GameList` and `SessionList` prop
+signatures updated to pass full objects instead of bare IDs.
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | High — accidental deletion of a game wipes its entire session history irreversibly; users learn to distrust the interface |
 | **Technical Complexity** | Low — add a standard MUI `<Dialog>` confirmation ("Delete Catan and all 12 sessions?") before calling the API |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P0 — destructive operations without confirmation are a fundamental UX safety issue |
+| **Suggested Priority** | ~~P0~~ Done |
 
 ---
 
@@ -459,7 +463,7 @@ enter or how to obtain it.
 | 12 | ~~Multiple Admin Accounts~~ | ~~P3~~ Will Not Do | High | — |
 | 13 | ~~PWA and Offline Support~~ | ~~P3~~ Will Not Do | High | — |
 | 14 | AI Image-Based Scoring | P3 | Very High | Gaps 2, 10 |
-| 15 | Delete Confirmation Dialogs | P0 | Low | — |
+| 15 | ~~Delete Confirmation Dialogs~~ | ~~P0~~ Done | Low | — |
 | 16 | Loading States / Spinners | P1 | Low | — |
 | 17 | Success/Error Toast Notifications | P1 | Low | — |
 | 18 | Mobile Navigation Bar Overflow | P1 | Medium | — |

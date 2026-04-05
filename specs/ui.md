@@ -127,7 +127,7 @@ Renders one `GameCard` per game.
 - Scoring fields chip: e.g. "5 scoring fields" (primary colour, filled) — only if `scoring_spec` exists and has fields
 - Admin-only row:
   - Edit icon button (pencil) → opens `GameForm` in "edit" mode with game pre-populated
-  - Delete icon button (trash) → calls `DELETE /api/games/{id}`, no confirmation dialog
+  - Delete icon button (trash) → opens a `ConfirmDialog` ("Delete Game") with cascade warning; on confirm calls `DELETE /api/games/{id}`
 - Expand/collapse chevron button (always visible)
 
 **Collapsible section (expansion list):**
@@ -146,7 +146,7 @@ Renders one `GameCard` per game.
 - "No expansions" text if empty
 
 **Admin view (adds):**
-- Delete icon button (small) next to each expansion name
+- Delete icon button (small) next to each expansion name → opens a `ConfirmDialog` ("Delete Expansion"); on confirm calls `DELETE /api/games/{id}/expansions/{eid}`
 - Below the list:
   - **Default state:** "Add Expansion" button (small, with `+` icon) → toggles to add form
   - **Add form state:** text field "Expansion name" + "Add" button + "Cancel" button
@@ -242,7 +242,7 @@ Renders one `GameCard` per game.
 
 **Winner column:** comma-separated names of winner(s), or "—" if none
 
-**Actions column (admin only):** delete icon button per row — calls `DELETE /api/sessions/{id}`, no confirmation dialog
+**Actions column (admin only):** delete icon button per row — opens a `ConfirmDialog` ("Delete Session") identifying the game name and date; on confirm calls `DELETE /api/sessions/{id}`
 
 **Row click:** calls `onSelect(session)` to open `SessionDetail` modal. Clicking the delete button stops propagation so it doesn't also open the detail modal.
 
@@ -327,6 +327,21 @@ If `field.description` is set, the entire widget is wrapped in a MUI `Tooltip` s
 
 ---
 
+## ConfirmDialog (shared component)
+
+**File:** `web/src/components/common/ConfirmDialog.tsx`
+
+**Props:** `open`, `title`, `message`, `confirmLabel` (default "Delete"), `cancelLabel` (default "Cancel"), `onConfirm`, `onCancel`
+
+Reusable confirmation dialog used before all destructive operations. Uses `maxWidth="sm"`, `DialogContentText` for the body, and a red confirm button (`variant="contained" color="error"`).
+
+**Message helpers** (exported from the same file):
+- `buildGameDeleteMessage(name, expansionCount)` — warns about cascade to expansions and sessions
+- `buildSessionDeleteMessage(gameName, playedAt)` — identifies the session by game and date
+- `buildExpansionDeleteMessage(expansionName, gameName)` — identifies the expansion and its parent game
+
+---
+
 ## Role-Gating Summary
 
 | UI Element | Admin | Guest |
@@ -349,7 +364,7 @@ Reading data (games, expansions, sessions, session details) is available to both
 
 ## Key UX Behaviours
 
-- **No confirmation dialogs:** All deletes (games, expansions, sessions) execute immediately on button click.
+- **Delete confirmation dialogs:** All deletes (games, expansions, sessions) show a `ConfirmDialog` before executing. The game-delete dialog warns about cascade-deleted expansions and sessions. The confirm button is red (`color="error"`).
 - **Inline expansion add:** The add-expansion form is toggled within the expanded GameCard — no modal.
 - **Live score totals:** `calculateTotal` runs on every score input change; totals update in real time.
 - **Free-solo player creation:** Typing a new name in the player autocomplete and clicking "Add" creates the player via API before adding to the session.
