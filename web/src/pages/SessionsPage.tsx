@@ -2,11 +2,12 @@ import { useEffect, useState, useCallback } from "react";
 import { Box, Typography, Fab, Stack } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import type { Game } from "../types/game";
-import type { GameSession, GameSessionCreate } from "../types/session";
+import type { GameSession, GameSessionCreate, GameSessionUpdate } from "../types/session";
 import { listGames } from "../api/games";
 import {
   listSessions,
   createSession,
+  updateSession,
   deleteSession,
 } from "../api/sessions";
 import SessionList from "../components/sessions/SessionList";
@@ -21,6 +22,7 @@ export default function SessionsPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [detailSession, setDetailSession] = useState<GameSession | null>(null);
+  const [editSession, setEditSession] = useState<GameSession | null>(null);
   const [pendingDeleteSession, setPendingDeleteSession] = useState<GameSession | null>(null);
 
   const refresh = useCallback(() => {
@@ -32,10 +34,20 @@ export default function SessionsPage() {
     refresh();
   }, [refresh]);
 
-  const handleSave = async (data: GameSessionCreate) => {
-    await createSession(data);
-    setFormOpen(false);
+  const handleSave = async (data: GameSessionCreate | GameSessionUpdate) => {
+    if (editSession) {
+      await updateSession(editSession.id, data as GameSessionUpdate);
+      setEditSession(null);
+    } else {
+      await createSession(data as GameSessionCreate);
+      setFormOpen(false);
+    }
     refresh();
+  };
+
+  const handleEdit = (session: GameSession) => {
+    setDetailSession(null);
+    setEditSession(session);
   };
 
   const handleDeleteClick = (session: GameSession) => {
@@ -91,15 +103,18 @@ export default function SessionsPage() {
       />
 
       <SessionForm
-        open={formOpen}
+        open={formOpen || editSession !== null}
         games={games}
-        onClose={() => setFormOpen(false)}
+        onClose={() => { setFormOpen(false); setEditSession(null); }}
         onSave={handleSave}
+        editSession={editSession}
       />
 
       <SessionDetail
         session={detailSession}
         onClose={() => setDetailSession(null)}
+        onEdit={handleEdit}
+        isAdmin={isAdmin}
       />
     </Box>
   );

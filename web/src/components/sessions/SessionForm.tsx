@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { useState, useEffect, useMemo } from "react";
 import type { Game } from "../../types/game";
-import type { Player, GameSessionCreate } from "../../types/session";
+import type { Player, GameSession, GameSessionCreate, GameSessionUpdate } from "../../types/session";
 import { listPlayers, createPlayer } from "../../api/sessions";
 import { mergeScoringSpec } from "../../utils/scoring";
 import ScoreSheet from "./ScoreSheet";
@@ -24,10 +24,12 @@ interface Props {
   open: boolean;
   games: Game[];
   onClose: () => void;
-  onSave: (data: GameSessionCreate) => void;
+  onSave: (data: GameSessionCreate | GameSessionUpdate) => void;
+  editSession?: GameSession | null;
 }
 
-export default function SessionForm({ open, games, onClose, onSave }: Props) {
+export default function SessionForm({ open, games, onClose, onSave, editSession }: Props) {
+  const isEditMode = !!editSession;
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
@@ -58,22 +60,43 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
   useEffect(() => {
     if (open) {
       listPlayers().then(setAllPlayers);
-      setSelectedGame(null);
-      setSelectedPlayers([]);
-      setScoreData({});
-      setSelectedExpansionIds(new Set());
-      setPlayedAt(new Date().toISOString().slice(0, 16));
-      setNotes("");
+      if (editSession) {
+        const game = games.find((g) => g.id === editSession.game_id) ?? null;
+        setSelectedGame(game);
+        setPlayedAt(new Date(editSession.played_at).toISOString().slice(0, 16));
+        setNotes(editSession.notes ?? "");
+        setSelectedExpansionIds(new Set(editSession.expansions.map((e) => e.id)));
+      } else {
+        setSelectedGame(null);
+        setSelectedPlayers([]);
+        setScoreData({});
+        setSelectedExpansionIds(new Set());
+        setPlayedAt(new Date().toISOString().slice(0, 16));
+        setNotes("");
+      }
     }
   }, [open]);
 
   useEffect(() => {
     setPlayers(allPlayers);
+    if (open && editSession && allPlayers.length > 0) {
+      const selected = editSession.players
+        .map((sp) => allPlayers.find((p) => p.id === sp.player_id))
+        .filter((p): p is Player => p !== undefined);
+      setSelectedPlayers(selected);
+      const scores: Record<number, Record<string, unknown>> = {};
+      for (const sp of editSession.players) {
+        scores[sp.player_id] = { ...sp.score_data };
+      }
+      setScoreData(scores);
+    }
   }, [allPlayers]);
 
   useEffect(() => {
-    setSelectedExpansionIds(new Set());
-    setScoreData({});
+    if (!isEditMode) {
+      setSelectedExpansionIds(new Set());
+      setScoreData({});
+    }
   }, [selectedGame]);
 
   const handleAddPlayer = async () => {
@@ -109,21 +132,31 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
 
   const handleSubmit = () => {
     if (!selectedGame) return;
-    onSave({
-      game_id: selectedGame.id,
-      played_at: new Date(playedAt).toISOString(),
-      notes: notes || undefined,
-      expansion_ids: [...selectedExpansionIds],
-      players: selectedPlayers.map((p) => ({
-        player_id: p.id,
-        score_data: scoreData[p.id] ?? {},
-      })),
-    });
+    const playerData = selectedPlayers.map((p) => ({
+      player_id: p.id,
+      score_data: scoreData[p.id] ?? {},
+    }));
+    if (isEditMode) {
+      onSave({
+        played_at: new Date(playedAt).toISOString(),
+        notes: notes || undefined,
+        expansion_ids: [...selectedExpansionIds],
+        players: playerData,
+      } as GameSessionUpdate);
+    } else {
+      onSave({
+        game_id: selectedGame.id,
+        played_at: new Date(playedAt).toISOString(),
+        notes: notes || undefined,
+        expansion_ids: [...selectedExpansionIds],
+        players: playerData,
+      });
+    }
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>Log Game Session</DialogTitle>
+      <DialogTitle>{isEditMode ? "Edit Game Session" : "Log Game Session"}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Autocomplete
@@ -131,6 +164,7 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
             getOptionLabel={(g) => g.name}
             value={selectedGame}
             onChange={(_, v) => setSelectedGame(v)}
+            disabled={isEditMode}
             renderInput={(params) => (
               <TextField {...params} label="Select Game" />
             )}
@@ -238,7 +272,7 @@ export default function SessionForm({ open, games, onClose, onSave }: Props) {
           onClick={handleSubmit}
           disabled={!selectedGame || selectedPlayers.length === 0}
         >
-          Save Session
+          {isEditMode ? "Update Session" : "Save Session"}
         </Button>
       </DialogActions>
     </Dialog>

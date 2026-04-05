@@ -1,5 +1,5 @@
 import client from "./client";
-import type { GameSession, GameSessionCreate, Player } from "../types/session";
+import type { GameSession, GameSessionCreate, GameSessionUpdate, Player } from "../types/session";
 
 export const listSessions = (gameId?: number) =>
   client
@@ -13,6 +13,9 @@ export const getSession = (id: number) =>
 
 export const createSession = (data: GameSessionCreate) =>
   client.post<GameSession>("/sessions", data).then((r) => r.data);
+
+export const updateSession = (id: number, data: GameSessionUpdate) =>
+  client.put<GameSession>(`/sessions/${id}`, data).then((r) => r.data);
 
 export const deleteSession = (id: number) =>
   client.delete(`/sessions/${id}`);

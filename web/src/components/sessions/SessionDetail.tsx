@@ -20,9 +20,11 @@ import type { GameSession } from "../../types/session";
 interface Props {
   session: GameSession | null;
   onClose: () => void;
+  onEdit?: (session: GameSession) => void;
+  isAdmin?: boolean;
 }
 
-export default function SessionDetail({ session, onClose }: Props) {
+export default function SessionDetail({ session, onClose, onEdit, isAdmin }: Props) {
   if (!session) return null;
 
   return (
@@ -109,6 +111,9 @@ export default function SessionDetail({ session, onClose }: Props) {
         </Stack>
       </DialogContent>
       <DialogActions>
+        {isAdmin && onEdit && (
+          <Button onClick={() => onEdit(session)}>Edit</Button>
+        )}
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>

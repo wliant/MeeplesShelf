@@ -42,6 +42,13 @@ class GameSessionCreate(BaseModel):
     players: list[SessionPlayerCreate] = []
 
 
+class GameSessionUpdate(BaseModel):
+    played_at: datetime | None = None
+    notes: str | None = None
+    expansion_ids: list[int] = []
+    players: list[SessionPlayerCreate] = []
+
+
 class GameSessionRead(BaseModel):
     id: int
     game_id: int

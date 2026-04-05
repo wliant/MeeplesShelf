@@ -46,3 +46,10 @@ export interface GameSessionCreate {
   expansion_ids?: number[];
   players: SessionPlayerCreate[];
 }
+
+export interface GameSessionUpdate {
+  played_at?: string;
+  notes?: string | null;
+  expansion_ids?: number[];
+  players: SessionPlayerCreate[];
+}
