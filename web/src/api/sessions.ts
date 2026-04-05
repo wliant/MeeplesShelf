@@ -1,10 +1,17 @@
 import client from "./client";
 import type { GameSession, GameSessionCreate, GameSessionUpdate, Player } from "../types/session";
 
-export const listSessions = (gameId?: number) =>
+export interface SessionFilters {
+  game_id?: number;
+  player_id?: number;
+  date_from?: string;
+  date_to?: string;
+}
+
+export const listSessions = (filters?: SessionFilters) =>
   client
     .get<GameSession[]>("/sessions", {
-      params: gameId ? { game_id: gameId } : undefined,
+      params: filters,
     })
     .then((r) => r.data);
 

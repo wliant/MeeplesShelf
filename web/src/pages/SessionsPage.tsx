@@ -1,6 +1,16 @@
-import { useEffect, useState, useCallback } from "react";
-import { Box, Typography, Fab, Stack, CircularProgress } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  Box,
+  Typography,
+  Fab,
+  Stack,
+  CircularProgress,
+  Autocomplete,
+  TextField,
+  InputAdornment,
+  Button,
+} from "@mui/material";
+import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
 import type { Game } from "../types/game";
 import type { GameSession, GameSessionCreate, GameSessionUpdate } from "../types/session";
 import { listGames } from "../api/games";
@@ -10,6 +20,7 @@ import {
   updateSession,
   deleteSession,
 } from "../api/sessions";
+import type { SessionFilters } from "../api/sessions";
 import SessionList from "../components/sessions/SessionList";
 import SessionForm from "../components/sessions/SessionForm";
 import SessionDetail from "../components/sessions/SessionDetail";
@@ -17,6 +28,7 @@ import ConfirmDialog, { buildSessionDeleteMessage } from "../components/common/C
 import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
 import { extractErrorMessage } from "../utils/errors";
+import { filterSessionsByPlayerName } from "../utils/filters";
 
 export default function SessionsPage() {
   const { isAdmin } = useAuth();
@@ -29,13 +41,28 @@ export default function SessionsPage() {
   const [pendingDeleteSession, setPendingDeleteSession] = useState<GameSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [filterGameId, setFilterGameId] = useState<number | undefined>(undefined);
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [playerSearch, setPlayerSearch] = useState("");
+
+  const filteredSessions = useMemo(
+    () => filterSessionsByPlayerName(sessions, playerSearch),
+    [sessions, playerSearch],
+  );
+
+  const hasFilters = filterGameId !== undefined || filterDateFrom !== "" || filterDateTo !== "" || playerSearch !== "";
 
   const refresh = useCallback(() => {
     setLoading(true);
-    Promise.all([listSessions(), listGames()])
+    const filters: SessionFilters = {};
+    if (filterGameId !== undefined) filters.game_id = filterGameId;
+    if (filterDateFrom) filters.date_from = filterDateFrom;
+    if (filterDateTo) filters.date_to = filterDateTo;
+    Promise.all([listSessions(Object.keys(filters).length > 0 ? filters : undefined), listGames()])
       .then(([s, g]) => { setSessions(s); setGames(g); })
       .finally(() => setLoading(false));
-  }, []);
+  }, [filterGameId, filterDateFrom, filterDateTo]);
 
   useEffect(() => {
     refresh();
@@ -97,13 +124,85 @@ export default function SessionsPage() {
         <Typography variant="h4">Game Sessions</Typography>
       </Stack>
 
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={1.5}
+        sx={{ mb: 2 }}
+        alignItems={{ sm: "center" }}
+        flexWrap="wrap"
+        useFlexGap
+      >
+        <Autocomplete
+          size="small"
+          options={games}
+          getOptionLabel={(g) => g.name}
+          value={games.find((g) => g.id === filterGameId) ?? null}
+          onChange={(_, g) => setFilterGameId(g?.id ?? undefined)}
+          renderInput={(params) => (
+            <TextField {...params} placeholder="Filter by game" />
+          )}
+          sx={{ minWidth: 200 }}
+        />
+        <TextField
+          size="small"
+          type="date"
+          label="From"
+          value={filterDateFrom}
+          onChange={(e) => setFilterDateFrom(e.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+          sx={{ width: 160 }}
+        />
+        <TextField
+          size="small"
+          type="date"
+          label="To"
+          value={filterDateTo}
+          onChange={(e) => setFilterDateTo(e.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+          sx={{ width: 160 }}
+        />
+        <TextField
+          size="small"
+          placeholder="Search by player..."
+          value={playerSearch}
+          onChange={(e) => setPlayerSearch(e.target.value)}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
+          }}
+          sx={{ minWidth: 180 }}
+        />
+        {hasFilters && (
+          <Button
+            size="small"
+            onClick={() => {
+              setFilterGameId(undefined);
+              setFilterDateFrom("");
+              setFilterDateTo("");
+              setPlayerSearch("");
+            }}
+          >
+            Clear Filters
+          </Button>
+        )}
+      </Stack>
+
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
           <CircularProgress />
         </Box>
+      ) : filteredSessions.length === 0 && hasFilters ? (
+        <Typography color="text.secondary" sx={{ mt: 2 }}>
+          No sessions match your filters.
+        </Typography>
       ) : (
         <SessionList
-          sessions={sessions}
+          sessions={filteredSessions}
           onDelete={handleDeleteClick}
           onSelect={setDetailSession}
           isAdmin={isAdmin}

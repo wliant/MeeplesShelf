@@ -19,10 +19,11 @@ router = APIRouter(tags=["games"])
 
 
 @router.get("/games", response_model=list[GameRead])
-async def list_games(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Game).options(selectinload(Game.expansions)).order_by(Game.name)
-    )
+async def list_games(name: str | None = None, db: AsyncSession = Depends(get_db)):
+    query = select(Game).options(selectinload(Game.expansions)).order_by(Game.name)
+    if name:
+        query = query.where(Game.name.ilike(f"%{name}%"))
+    result = await db.execute(query)
     return result.scalars().all()
 
 

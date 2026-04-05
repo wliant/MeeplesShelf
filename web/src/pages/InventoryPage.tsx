@@ -1,13 +1,15 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
   Fab,
   Button,
   Stack,
+  TextField,
+  InputAdornment,
   CircularProgress,
 } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
 import type { Game, GameCreate } from "../types/game";
 import {
   listGames,
@@ -22,6 +24,7 @@ import ConfirmDialog, { buildGameDeleteMessage } from "../components/common/Conf
 import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
 import { extractErrorMessage } from "../utils/errors";
+import { filterGamesByName } from "../utils/filters";
 
 export default function InventoryPage() {
   const { isAdmin } = useAuth();
@@ -32,6 +35,12 @@ export default function InventoryPage() {
   const [pendingDeleteGame, setPendingDeleteGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredGames = useMemo(
+    () => filterGamesByName(games, searchQuery),
+    [games, searchQuery],
+  );
 
   const refresh = useCallback(() => {
     setLoading(true);
@@ -116,13 +125,37 @@ export default function InventoryPage() {
         )}
       </Stack>
 
+      {!loading && (
+        <TextField
+          size="small"
+          fullWidth
+          placeholder="Search games..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ mb: 2 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+      )}
+
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
           <CircularProgress />
         </Box>
+      ) : filteredGames.length === 0 && games.length > 0 ? (
+        <Typography color="text.secondary" sx={{ mt: 2 }}>
+          No games match your search.
+        </Typography>
       ) : (
         <GameList
-          games={games}
+          games={filteredGames}
           onEdit={handleEdit}
           onDelete={handleDeleteClick}
           onRefresh={refresh}

@@ -1,3 +1,5 @@
+from datetime import date, datetime, time, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -49,7 +51,11 @@ async def create_player(
 
 @router.get("/sessions", response_model=list[GameSessionRead])
 async def list_sessions(
-    game_id: int | None = None, db: AsyncSession = Depends(get_db)
+    game_id: int | None = None,
+    player_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    db: AsyncSession = Depends(get_db),
 ):
     query = (
         select(GameSession)
@@ -62,6 +68,24 @@ async def list_sessions(
     )
     if game_id is not None:
         query = query.where(GameSession.game_id == game_id)
+    if player_id is not None:
+        query = query.where(
+            GameSession.id.in_(
+                select(SessionPlayer.session_id).where(
+                    SessionPlayer.player_id == player_id
+                )
+            )
+        )
+    if date_from is not None:
+        query = query.where(
+            GameSession.played_at
+            >= datetime.combine(date_from, time.min, tzinfo=timezone.utc)
+        )
+    if date_to is not None:
+        query = query.where(
+            GameSession.played_at
+            < datetime.combine(date_to + timedelta(days=1), time.min, tzinfo=timezone.utc)
+        )
     result = await db.execute(query)
     return result.scalars().unique().all()
 
