@@ -30,10 +30,14 @@ import { useSnackbar } from "../context/SnackbarContext";
 import { extractErrorMessage } from "../utils/errors";
 import { filterSessionsByPlayerName } from "../utils/filters";
 
+const PAGE_SIZE = 20;
+
 export default function SessionsPage() {
   const { isAdmin } = useAuth();
   const { showSnackbar } = useSnackbar();
   const [sessions, setSessions] = useState<GameSession[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [games, setGames] = useState<Game[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [detailSession, setDetailSession] = useState<GameSession | null>(null);
@@ -53,16 +57,28 @@ export default function SessionsPage() {
 
   const hasFilters = filterGameId !== undefined || filterDateFrom !== "" || filterDateTo !== "" || playerSearch !== "";
 
+  // Reset page when server-side filters change
+  useEffect(() => {
+    setPage(0);
+  }, [filterGameId, filterDateFrom, filterDateTo]);
+
   const refresh = useCallback(() => {
     setLoading(true);
-    const filters: SessionFilters = {};
+    const filters: SessionFilters = {
+      skip: page * PAGE_SIZE,
+      limit: PAGE_SIZE,
+    };
     if (filterGameId !== undefined) filters.game_id = filterGameId;
     if (filterDateFrom) filters.date_from = filterDateFrom;
     if (filterDateTo) filters.date_to = filterDateTo;
-    Promise.all([listSessions(Object.keys(filters).length > 0 ? filters : undefined), listGames()])
-      .then(([s, g]) => { setSessions(s); setGames(g); })
+    Promise.all([listSessions(filters), listGames({ limit: 100 })])
+      .then(([s, g]) => {
+        setSessions(s.items);
+        setTotal(s.total);
+        setGames(g.items);
+      })
       .finally(() => setLoading(false));
-  }, [filterGameId, filterDateFrom, filterDateTo]);
+  }, [filterGameId, filterDateFrom, filterDateTo, page]);
 
   useEffect(() => {
     refresh();
@@ -206,6 +222,10 @@ export default function SessionsPage() {
           onDelete={handleDeleteClick}
           onSelect={setDetailSession}
           isAdmin={isAdmin}
+          total={total}
+          page={page}
+          rowsPerPage={PAGE_SIZE}
+          onPageChange={setPage}
         />
       )}
 

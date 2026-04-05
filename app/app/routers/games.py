@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,18 +13,36 @@ from app.schemas.game import (
     GameRead,
     GameUpdate,
 )
+from app.schemas.pagination import PaginatedResponse
 from app.services.seed import SEED_GAMES
 
 router = APIRouter(tags=["games"])
 
 
-@router.get("/games", response_model=list[GameRead])
-async def list_games(name: str | None = None, db: AsyncSession = Depends(get_db)):
-    query = select(Game).options(selectinload(Game.expansions)).order_by(Game.name)
+@router.get("/games", response_model=PaginatedResponse[GameRead])
+async def list_games(
+    name: str | None = None,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    conditions = []
     if name:
-        query = query.where(Game.name.ilike(f"%{name}%"))
+        conditions.append(Game.name.ilike(f"%{name}%"))
+
+    count_query = select(func.count()).select_from(Game)
+    for cond in conditions:
+        count_query = count_query.where(cond)
+    total = (await db.execute(count_query)).scalar_one()
+
+    query = select(Game).options(selectinload(Game.expansions)).order_by(Game.name)
+    for cond in conditions:
+        query = query.where(cond)
+    query = query.offset(skip).limit(limit)
     result = await db.execute(query)
-    return result.scalars().all()
+    items = list(result.scalars().all())
+
+    return PaginatedResponse(items=items, total=total, skip=skip, limit=limit)
 
 
 @router.post("/games", response_model=GameRead, status_code=201)

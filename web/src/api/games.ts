@@ -1,7 +1,15 @@
 import client from "./client";
 import type { Game, GameCreate, ExpansionCreate, Expansion } from "../types/game";
+import type { PaginatedResponse } from "../types/pagination";
 
-export const listGames = () => client.get<Game[]>("/games").then((r) => r.data);
+export interface GameListParams {
+  name?: string;
+  skip?: number;
+  limit?: number;
+}
+
+export const listGames = (params?: GameListParams) =>
+  client.get<PaginatedResponse<Game>>("/games", { params }).then((r) => r.data);
 
 export const getGame = (id: number) =>
   client.get<Game>(`/games/${id}`).then((r) => r.data);

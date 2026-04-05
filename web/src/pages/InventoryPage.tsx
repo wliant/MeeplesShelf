@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -8,6 +8,7 @@ import {
   TextField,
   InputAdornment,
   CircularProgress,
+  Pagination,
 } from "@mui/material";
 import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
 import type { Game, GameCreate } from "../types/game";
@@ -24,28 +25,45 @@ import ConfirmDialog, { buildGameDeleteMessage } from "../components/common/Conf
 import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
 import { extractErrorMessage } from "../utils/errors";
-import { filterGamesByName } from "../utils/filters";
+
+const PAGE_SIZE = 20;
 
 export default function InventoryPage() {
   const { isAdmin } = useAuth();
   const { showSnackbar } = useSnackbar();
   const [games, setGames] = useState<Game[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [pendingDeleteGame, setPendingDeleteGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const filteredGames = useMemo(
-    () => filterGamesByName(games, searchQuery),
-    [games, searchQuery],
-  );
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const refresh = useCallback(() => {
     setLoading(true);
-    listGames().then(setGames).finally(() => setLoading(false));
-  }, []);
+    listGames({
+      name: debouncedSearch || undefined,
+      skip: page * PAGE_SIZE,
+      limit: PAGE_SIZE,
+    })
+      .then((res) => {
+        setGames(res.items);
+        setTotal(res.total);
+      })
+      .finally(() => setLoading(false));
+  }, [debouncedSearch, page]);
 
   useEffect(() => {
     refresh();
@@ -118,7 +136,7 @@ export default function InventoryPage() {
         sx={{ mb: 3 }}
       >
         <Typography variant="h4">Game Inventory</Typography>
-        {isAdmin && games.length === 0 && !loading && (
+        {isAdmin && total === 0 && !loading && !debouncedSearch && (
           <Button variant="outlined" onClick={handleSeed} disabled={saving}>
             Seed Default Games
           </Button>
@@ -149,18 +167,29 @@ export default function InventoryPage() {
         <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
           <CircularProgress />
         </Box>
-      ) : filteredGames.length === 0 && games.length > 0 ? (
+      ) : games.length === 0 && debouncedSearch ? (
         <Typography color="text.secondary" sx={{ mt: 2 }}>
           No games match your search.
         </Typography>
       ) : (
-        <GameList
-          games={filteredGames}
-          onEdit={handleEdit}
-          onDelete={handleDeleteClick}
-          onRefresh={refresh}
-          isAdmin={isAdmin}
-        />
+        <>
+          <GameList
+            games={games}
+            onEdit={handleEdit}
+            onDelete={handleDeleteClick}
+            onRefresh={refresh}
+            isAdmin={isAdmin}
+          />
+          {total > PAGE_SIZE && (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+              <Pagination
+                count={Math.ceil(total / PAGE_SIZE)}
+                page={page + 1}
+                onChange={(_, value) => setPage(value - 1)}
+              />
+            </Box>
+          )}
+        </>
       )}
 
       {isAdmin && (

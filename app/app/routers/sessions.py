@@ -1,7 +1,7 @@
 from datetime import date, datetime, time, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -9,6 +9,7 @@ from app.database import get_db
 from app.dependencies import require_admin
 from app.models.game import Expansion, Game
 from app.models.session import GameSession, Player, SessionPlayer
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.session import (
     GameSessionCreate,
     GameSessionRead,
@@ -49,14 +50,43 @@ async def create_player(
 # --- Sessions ---
 
 
-@router.get("/sessions", response_model=list[GameSessionRead])
+@router.get("/sessions", response_model=PaginatedResponse[GameSessionRead])
 async def list_sessions(
     game_id: int | None = None,
     player_id: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
+    conditions = []
+    if game_id is not None:
+        conditions.append(GameSession.game_id == game_id)
+    if player_id is not None:
+        conditions.append(
+            GameSession.id.in_(
+                select(SessionPlayer.session_id).where(
+                    SessionPlayer.player_id == player_id
+                )
+            )
+        )
+    if date_from is not None:
+        conditions.append(
+            GameSession.played_at
+            >= datetime.combine(date_from, time.min, tzinfo=timezone.utc)
+        )
+    if date_to is not None:
+        conditions.append(
+            GameSession.played_at
+            < datetime.combine(date_to + timedelta(days=1), time.min, tzinfo=timezone.utc)
+        )
+
+    count_query = select(func.count()).select_from(GameSession)
+    for cond in conditions:
+        count_query = count_query.where(cond)
+    total = (await db.execute(count_query)).scalar_one()
+
     query = (
         select(GameSession)
         .options(
@@ -66,28 +96,13 @@ async def list_sessions(
         )
         .order_by(GameSession.played_at.desc())
     )
-    if game_id is not None:
-        query = query.where(GameSession.game_id == game_id)
-    if player_id is not None:
-        query = query.where(
-            GameSession.id.in_(
-                select(SessionPlayer.session_id).where(
-                    SessionPlayer.player_id == player_id
-                )
-            )
-        )
-    if date_from is not None:
-        query = query.where(
-            GameSession.played_at
-            >= datetime.combine(date_from, time.min, tzinfo=timezone.utc)
-        )
-    if date_to is not None:
-        query = query.where(
-            GameSession.played_at
-            < datetime.combine(date_to + timedelta(days=1), time.min, tzinfo=timezone.utc)
-        )
+    for cond in conditions:
+        query = query.where(cond)
+    query = query.offset(skip).limit(limit)
     result = await db.execute(query)
-    return result.scalars().unique().all()
+    items = list(result.scalars().unique().all())
+
+    return PaginatedResponse(items=items, total=total, skip=skip, limit=limit)
 
 
 @router.post("/sessions", response_model=GameSessionRead, status_code=201)

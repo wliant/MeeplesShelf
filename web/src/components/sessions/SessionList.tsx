@@ -5,6 +5,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Paper,
   IconButton,
   Chip,
@@ -19,9 +20,22 @@ interface Props {
   onDelete: (session: GameSession) => void;
   onSelect: (session: GameSession) => void;
   isAdmin: boolean;
+  total: number;
+  page: number;
+  rowsPerPage: number;
+  onPageChange: (page: number) => void;
 }
 
-export default function SessionList({ sessions, onDelete, onSelect, isAdmin }: Props) {
+export default function SessionList({
+  sessions,
+  onDelete,
+  onSelect,
+  isAdmin,
+  total,
+  page,
+  rowsPerPage,
+  onPageChange,
+}: Props) {
   if (sessions.length === 0) {
     return (
       <Typography color="text.secondary" sx={{ mt: 2 }}>
@@ -89,6 +103,16 @@ export default function SessionList({ sessions, onDelete, onSelect, isAdmin }: P
           })}
         </TableBody>
       </Table>
+      {total > rowsPerPage && (
+        <TablePagination
+          component="div"
+          count={total}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          rowsPerPageOptions={[rowsPerPage]}
+          onPageChange={(_, newPage) => onPageChange(newPage)}
+        />
+      )}
     </TableContainer>
   );
 }
