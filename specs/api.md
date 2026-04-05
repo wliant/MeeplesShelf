@@ -506,3 +506,78 @@ Delete a session and its session players.
 | `401` | — | Missing or invalid token |
 | `403` | — | Not admin |
 | `404` | `"Session not found"` | No session with that ID |
+
+---
+
+## Export Endpoints
+
+### `ExportMeta`
+```json
+{
+  "exported_at": "datetime (ISO 8601, UTC)",
+  "version":     "string"
+}
+```
+
+### `FullExport`
+```json
+{
+  "meta":     "ExportMeta",
+  "games":    "GameRead[]",
+  "players":  "PlayerRead[]",
+  "sessions": "GameSessionRead[]"
+}
+```
+
+---
+
+### `GET /api/export` 🔒
+
+Full JSON export of all data (games with expansions, players, sessions with scores). Intended for backup and migration.
+
+**Auth required:** Yes (admin)  
+**Response:** `200 OK` → `FullExport`  
+**Headers:** `Content-Disposition: attachment; filename="meeplesshelf-export-YYYY-MM-DD.json"`
+
+Games are ordered by name, players by name, sessions by `played_at` descending. All relationships are eagerly loaded (expansions, session players, player details).
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `401` | Missing or invalid token |
+| `403` | Not admin |
+
+---
+
+### `GET /api/export/sessions/csv` 🔒
+
+CSV export of sessions with one row per player-session. Useful for spreadsheet analysis.
+
+**Auth required:** Yes (admin)  
+**Response:** `200 OK` → CSV file  
+**Content-Type:** `text/csv`  
+**Headers:** `Content-Disposition: attachment; filename="meeplesshelf-sessions-YYYY-MM-DD.csv"`
+
+**CSV columns:**
+
+| Column | Description |
+|---|---|
+| `session_id` | Session ID |
+| `game_name` | Name of the game |
+| `played_at` | ISO 8601 datetime |
+| `notes` | Session notes (may be empty) |
+| `expansions` | Semicolon-separated expansion names |
+| `player_name` | Player name |
+| `total_score` | Calculated total score (may be empty if no scoring spec) |
+| `winner` | `True` or `False` |
+| `score_data` | JSON-serialized score data object |
+
+Sessions are ordered by `played_at` descending. Each session produces one row per participating player.
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `401` | Missing or invalid token |
+| `403` | Not admin |

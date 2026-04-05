@@ -153,19 +153,25 @@ client-side within the current page. Covered by E2E integration tests (`e2e-test
 
 ---
 
-### Gap 6 — Data Export and Backup
+### ~~Gap 6 — Data Export and Backup~~ (Done)
 
-**Description.** There is no mechanism to export data from the application. Users running a
-self-hosted instance have no way to take a portable backup of their game library and session
-history other than directly accessing the PostgreSQL container. This creates a single point
-of failure and makes migration to a new server difficult.
+**Status.** Implemented. Two admin-only export endpoints added: `GET /api/export` returns a full JSON
+backup of all games (with expansions), players, and sessions (with scores) wrapped in a `FullExport`
+schema with metadata (timestamp, version). `GET /api/export/sessions/csv` returns a flattened CSV with
+one row per session-player, suitable for spreadsheet analysis. Both endpoints set `Content-Disposition`
+attachment headers with dated filenames. The frontend `AppShell` nav bar includes an admin-only download
+icon button with a dropdown menu offering "Export JSON (Full Backup)" and "Export Sessions CSV" options,
+with loading state and snackbar feedback. Backend: `app/app/schemas/export.py`, `app/app/routers/export.py`,
+`app/app/main.py`. Frontend: `web/src/api/export.ts`, `web/src/utils/download.ts`,
+`web/src/components/layout/AppShell.tsx`. Covered by 12 E2E integration tests
+(`e2e-test/tests/test_export.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | High — data loss from a failed Docker volume is unrecoverable; export is also needed for sharing history (spreadsheet analysis, archival) |
 | **Technical Complexity** | Low-Medium — `GET /api/export` endpoints returning JSON (full fidelity) and optionally CSV (sessions and scores); a download button in the frontend settings or admin panel |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P1 |
+| **Suggested Priority** | ~~P1~~ Done |
 
 ---
 
@@ -482,7 +488,7 @@ enter or how to obtain it.
 | 3 | Statistics and Analytics | P1 | Medium | Gap 2 |
 | 4 | ~~Search and Filtering~~ | ~~P1~~ Done | Low | — |
 | 5 | ~~Pagination~~ | ~~P1~~ Done | Low | Gap 4 (ideally) |
-| 6 | Data Export and Backup | P1 | Low-Medium | — |
+| 6 | ~~Data Export and Backup~~ | ~~P1~~ Done | Low-Medium | — |
 | 7 | Per-Player Profiles | P2 | Medium | Gap 3 |
 | 8 | Game Ratings and Notes | P2 | Low | — |
 | 9 | Tags and Categories | P2 | Medium | Gap 4 |

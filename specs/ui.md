@@ -60,6 +60,10 @@ Persistent layout component rendered for all authenticated routes.
   - App name: "MeeplesShelf" (h6 Typography)
   - Nav button: "Inventory" → `/inventory`
   - Nav button: "Sessions" → `/sessions`
+  - Export button (admin only): `FileDownload` icon button → opens a `Menu` dropdown with:
+    - "Export JSON (Full Backup)" → downloads `GET /api/export` as blob, saves as `meeplesshelf-export-YYYY-MM-DD.json`
+    - "Export Sessions CSV" → downloads `GET /api/export/sessions/csv` as blob, saves as `meeplesshelf-sessions-YYYY-MM-DD.csv`
+    - Shows `CircularProgress` spinner on the icon while downloading. Success/error snackbar on completion.
   - Role chip: "Admin" or "Guest" (small, semi-transparent white background)
   - "Logout" button → calls `auth.logout()` + `navigate("/login")`
 - `Box` main content area (`flexGrow: 1, p: 3`) renders `<Outlet />`
@@ -392,6 +396,7 @@ Reusable confirmation dialog used before all destructive operations. Uses `maxWi
 | Delete icon on session row | Visible | Hidden |
 | FAB on SessionsPage | Visible | Hidden |
 | SessionForm dialog | Accessible | Not accessible |
+| Export button in AppShell | Visible | Hidden |
 | Role chip in AppShell | "Admin" | "Guest" |
 
 Reading data (games, expansions, sessions, session details) is available to both roles.
