@@ -270,6 +270,10 @@ Server-side filters (game, dates) trigger an API re-fetch and reset pagination t
 
 **Empty state:** Typography "No sessions logged yet." (secondary colour)
 
+**Responsive layout:** Uses `useMediaQuery(theme.breakpoints.down("sm"))` to switch between desktop table and mobile card layouts at the 600px breakpoint. Both layouts are wrapped in a shared `Paper variant="outlined"` with shared `TablePagination` below.
+
+### Desktop layout (≥ 600px) — Table
+
 **Table columns:**
 
 | Column | Guest | Admin |
@@ -291,6 +295,21 @@ Server-side filters (game, dates) trigger an API re-fetch and reset pagination t
 **Actions column (admin only):** delete icon button per row — opens a `ConfirmDialog` ("Delete Session") identifying the game name and date; on confirm calls `DELETE /api/sessions/{id}`
 
 **Row click:** calls `onSelect(session)` to open `SessionDetail` modal. Clicking the delete button stops propagation so it doesn't also open the detail modal.
+
+### Mobile layout (< 600px) — SessionCard
+
+On viewports below 600px, the table is replaced with a vertical `Stack` of `SessionCard` components separated by `Divider`s.
+
+**SessionCard** (`web/src/components/sessions/SessionCard.tsx`):
+
+**Props:** `session`, `onDelete`, `onSelect`, `isAdmin`
+
+Each card uses `CardActionArea` (click → `onSelect`) containing:
+- **Header row:** Game name (`subtitle1`, bold) on the left, date (`body2`, secondary) on the right
+- **Player chips:** Wrapping `Stack` of `Chip` components — same rendering as the table's Players column (winner chips use `color="primary"`)
+- **Winner line:** `Typography` (`body2`) showing "Winner: {names}" in primary colour, or "Winner: -" in secondary colour
+
+Admin cards include a `CardActions` section with a delete `IconButton`. Because `CardActions` is a sibling of `CardActionArea` (not nested), the delete click is naturally isolated without `stopPropagation`.
 
 ---
 

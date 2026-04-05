@@ -384,18 +384,24 @@ visibility) is preserved. File changed: `web/src/components/layout/AppShell.tsx`
 
 ---
 
-### Gap 19 — Sessions Table Not Responsive
+### ~~Gap 19 — Sessions Table Not Responsive~~ (Done)
 
-**Description.** The sessions list uses a `<Table>` layout that does not adapt to narrow
-screens. On mobile, the "Winner" and "Actions" columns are clipped off the right edge with
-no horizontal scroll affordance. Users cannot see who won or delete sessions on their phone.
+**Status.** Implemented. `SessionList.tsx` now uses `useMediaQuery(theme.breakpoints.down("sm"))` to
+conditionally render a card-based layout on viewports below 600px. A new `SessionCard` component
+(`web/src/components/sessions/SessionCard.tsx`) displays each session as an MUI `Card` with
+`CardActionArea` (click opens detail modal) showing the game name, date, player chips (winners
+highlighted with `color="primary"`), and an explicit winner line. Admin users see a delete
+`IconButton` in `CardActions`, naturally isolated from the card click area. On desktop (≥ 600px),
+the existing table layout is unchanged. Both layouts share a `Paper` wrapper and `TablePagination`.
+Files changed: `web/src/components/sessions/SessionCard.tsx` (new),
+`web/src/components/sessions/SessionList.tsx`.
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — session history is unreadable on mobile; delete is inaccessible |
 | **Technical Complexity** | Medium — either switch to a card-based layout on small screens, add visible horizontal scroll indicators, or use a responsive table pattern that stacks columns vertically |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P1 |
+| **Suggested Priority** | ~~P1~~ Done |
 
 ---
 
@@ -505,7 +511,7 @@ enter or how to obtain it.
 | 16 | ~~Loading States / Spinners~~ | ~~P1~~ Done | Low | — |
 | 17 | ~~Success/Error Toast Notifications~~ | ~~P1~~ Done | Low | — |
 | 18 | ~~Mobile Navigation Bar Overflow~~ | ~~P1~~ Done | Medium | — |
-| 19 | Sessions Table Not Responsive | P1 | Medium | — |
+| 19 | ~~Sessions Table Not Responsive~~ | ~~P1~~ Done | Medium | — |
 | 20 | Accessibility (a11y) Support | P2 | Low-Medium | — |
 | 21 | Player Management (Rename/Delete) | P1 | Medium | — |
 | 22 | Session Detail Modal Lacks Context | P2 | Low | — |

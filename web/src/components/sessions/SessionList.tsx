@@ -2,18 +2,21 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   TablePagination,
   Paper,
   IconButton,
   Chip,
+  Divider,
   Typography,
   Stack,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Delete as DeleteIcon } from "@mui/icons-material";
 import type { GameSession } from "../../types/session";
+import SessionCard from "./SessionCard";
 
 interface Props {
   sessions: GameSession[];
@@ -36,6 +39,9 @@ export default function SessionList({
   rowsPerPage,
   onPageChange,
 }: Props) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   if (sessions.length === 0) {
     return (
       <Typography color="text.secondary" sx={{ mt: 2 }}>
@@ -45,64 +51,78 @@ export default function SessionList({
   }
 
   return (
-    <TableContainer component={Paper} variant="outlined">
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Date</TableCell>
-            <TableCell>Game</TableCell>
-            <TableCell>Players</TableCell>
-            <TableCell>Winner</TableCell>
-            {isAdmin && <TableCell align="right">Actions</TableCell>}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {sessions.map((s) => {
-            const winners = s.players.filter((p) => p.winner);
-            return (
-              <TableRow
-                key={s.id}
-                hover
-                sx={{ cursor: "pointer" }}
-                onClick={() => onSelect(s)}
-              >
-                <TableCell>
-                  {new Date(s.played_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell>{s.game.name}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                    {s.players.map((p) => (
-                      <Chip
-                        key={p.id}
-                        label={`${p.player.name}${p.total_score != null ? ` (${p.total_score})` : ""}`}
-                        size="small"
-                        color={p.winner ? "primary" : "default"}
-                      />
-                    ))}
-                  </Stack>
-                </TableCell>
-                <TableCell>
-                  {winners.map((w) => w.player.name).join(", ") || "-"}
-                </TableCell>
-                {isAdmin && (
-                  <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(s);
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
+    <Paper variant="outlined">
+      {isMobile ? (
+        <Stack divider={<Divider />}>
+          {sessions.map((s) => (
+            <SessionCard
+              key={s.id}
+              session={s}
+              onDelete={onDelete}
+              onSelect={onSelect}
+              isAdmin={isAdmin}
+            />
+          ))}
+        </Stack>
+      ) : (
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Date</TableCell>
+              <TableCell>Game</TableCell>
+              <TableCell>Players</TableCell>
+              <TableCell>Winner</TableCell>
+              {isAdmin && <TableCell align="right">Actions</TableCell>}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sessions.map((s) => {
+              const winners = s.players.filter((p) => p.winner);
+              return (
+                <TableRow
+                  key={s.id}
+                  hover
+                  sx={{ cursor: "pointer" }}
+                  onClick={() => onSelect(s)}
+                >
+                  <TableCell>
+                    {new Date(s.played_at).toLocaleDateString()}
                   </TableCell>
-                )}
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  <TableCell>{s.game.name}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                      {s.players.map((p) => (
+                        <Chip
+                          key={p.id}
+                          label={`${p.player.name}${p.total_score != null ? ` (${p.total_score})` : ""}`}
+                          size="small"
+                          color={p.winner ? "primary" : "default"}
+                        />
+                      ))}
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    {winners.map((w) => w.player.name).join(", ") || "-"}
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell align="right">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(s);
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      )}
       {total > rowsPerPage && (
         <TablePagination
           component="div"
@@ -113,6 +133,6 @@ export default function SessionList({
           onPageChange={(_, newPage) => onPageChange(newPage)}
         />
       )}
-    </TableContainer>
+    </Paper>
   );
 }
