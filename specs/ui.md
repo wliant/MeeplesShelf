@@ -157,7 +157,7 @@ Renders one `GameCard` per game.
 
 ## GameForm (dialog)
 
-**Props:** `open`, `game` (null = create mode), `onClose`, `onSave`
+**Props:** `open`, `game` (null = create mode), `onClose`, `onSave`, `saving?`
 
 **Title:** "Add Game" (create) or "Edit Game" (edit)
 
@@ -273,7 +273,7 @@ Read-only detail view. Opens when a row is clicked in `SessionList`.
 
 ## SessionForm (modal dialog, admin only)
 
-**Props:** `open`, `games`, `onClose`, `onSave`, `editSession?`
+**Props:** `open`, `games`, `onClose`, `onSave`, `editSession?`, `saving?`
 
 Supports two modes:
 - **Create mode** (`editSession` is null/undefined): fresh form, title "Log Game Session", button "Save Session"
@@ -335,7 +335,7 @@ If `field.description` is set, the entire widget is wrapped in a MUI `Tooltip` s
 
 **File:** `web/src/components/common/ConfirmDialog.tsx`
 
-**Props:** `open`, `title`, `message`, `confirmLabel` (default "Delete"), `cancelLabel` (default "Cancel"), `onConfirm`, `onCancel`
+**Props:** `open`, `title`, `message`, `confirmLabel` (default "Delete"), `cancelLabel` (default "Cancel"), `loading` (default false), `onConfirm`, `onCancel`
 
 Reusable confirmation dialog used before all destructive operations. Uses `maxWidth="sm"`, `DialogContentText` for the body, and a red confirm button (`variant="contained" color="error"`).
 
@@ -369,6 +369,8 @@ Reading data (games, expansions, sessions, session details) is available to both
 
 ## Key UX Behaviours
 
+- **Loading spinners:** `InventoryPage` and `SessionsPage` show a centered `CircularProgress` while fetching data. Content replaces the spinner once loaded.
+- **Saving indicators:** Form dialogs (`GameForm`, `SessionForm`) and `ConfirmDialog` accept a `saving`/`loading` prop. When active, submit/confirm buttons show an inline `CircularProgress` and all dialog buttons are disabled. The backdrop close is also suppressed. `ExpansionList` manages its own local `saving` state for add/delete operations.
 - **Delete confirmation dialogs:** All deletes (games, expansions, sessions) show a `ConfirmDialog` before executing. The game-delete dialog warns about cascade-deleted expansions and sessions. The confirm button is red (`color="error"`).
 - **Inline expansion add:** The add-expansion form is toggled within the expanded GameCard — no modal.
 - **Live score totals:** `calculateTotal` runs on every score input change; totals update in real time.

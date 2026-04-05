@@ -301,19 +301,24 @@ signatures updated to pass full objects instead of bare IDs.
 
 ---
 
-### Gap 16 — No Loading States or Spinners
+### ~~Gap 16 — No Loading States or Spinners~~ (Done)
 
-**Description.** When navigating to the Inventory or Sessions page, data is fetched on mount
-with no visual feedback. The page renders empty and then pops in content once the API
-responds. Form submissions (create game, log session) also have no loading indicator — the
-user cannot tell whether a save is in progress, succeeded, or failed.
+**Status.** Implemented. `InventoryPage` and `SessionsPage` now show a centered `CircularProgress`
+spinner while data loads on mount. All form dialogs (`GameForm`, `SessionForm`) accept a `saving`
+prop that disables Cancel/Submit buttons and shows a spinner on the submit button during API calls.
+`ConfirmDialog` accepts a `loading` prop that disables both buttons and shows a spinner on the
+confirm button during delete operations. `ExpansionList` has its own local `saving` state for
+add/delete operations. All async handlers use try/finally to ensure loading states are always
+cleared. Files changed: `web/src/pages/InventoryPage.tsx`, `web/src/pages/SessionsPage.tsx`,
+`web/src/components/games/GameForm.tsx`, `web/src/components/sessions/SessionForm.tsx`,
+`web/src/components/common/ConfirmDialog.tsx`, `web/src/components/games/ExpansionList.tsx`.
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — users double-click save buttons, assume the app is broken on slow connections, and have no confidence that their action worked |
 | **Technical Complexity** | Low — add a `loading` boolean to each page/form; show an MUI `<CircularProgress>` or `<Skeleton>` while loading; disable submit buttons during requests |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P1 |
+| **Suggested Priority** | ~~P1~~ Done |
 
 ---
 
@@ -468,7 +473,7 @@ enter or how to obtain it.
 | 13 | ~~PWA and Offline Support~~ | ~~P3~~ Will Not Do | High | — |
 | 14 | AI Image-Based Scoring | P3 | Very High | Gaps 2, 10 |
 | 15 | ~~Delete Confirmation Dialogs~~ | ~~P0~~ Done | Low | — |
-| 16 | Loading States / Spinners | P1 | Low | — |
+| 16 | ~~Loading States / Spinners~~ | ~~P1~~ Done | Low | — |
 | 17 | Success/Error Toast Notifications | P1 | Low | — |
 | 18 | Mobile Navigation Bar Overflow | P1 | Medium | — |
 | 19 | Sessions Table Not Responsive | P1 | Medium | — |
