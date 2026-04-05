@@ -138,6 +138,17 @@ All fields optional (partial update).
 }
 ```
 
+### `GameSessionUpdate`
+```json
+{
+  "played_at":     "datetime | null",            // optional; if null, keeps existing value
+  "notes":         "string | null",              // optional
+  "expansion_ids": "integer[]",                  // optional, default []; full replacement
+  "players":       "SessionPlayerCreate[]"       // optional, default []; full replacement
+}
+```
+Note: `game_id` is not included — the game cannot be changed after session creation.
+
 ### `GameSessionRead`
 ```json
 {
@@ -385,7 +396,7 @@ Log a new game session. The server calculates `total_score` and `winner` for eac
 **Server behaviour:**
 1. Look up the game; raise 404 if not found.
 2. If `played_at` is null, PostgreSQL's `now()` server default is used.
-3. Attach expansions from `expansion_ids` (silently ignores IDs that don't exist).
+3. Attach expansions from `expansion_ids`; validate they belong to the game (400 if mismatched).
 4. For each player in `players`:
    - Compute `total_score = calculate_total(game.scoring_spec, score_data)` if `scoring_spec` is not null; otherwise `total_score = null`.
 5. Set `winner = True` for all players whose `total_score` equals the maximum across all players.
@@ -399,6 +410,7 @@ Log a new game session. The server calculates `total_score` and `winner` for eac
 | `401` | — | Missing or invalid token |
 | `403` | — | Not admin |
 | `404` | `"Game not found"` | `game_id` does not exist |
+| `400` | `"One or more expansion_ids do not belong to this game"` | Expansion mismatch |
 
 ---
 
@@ -415,6 +427,36 @@ Get a single session with full details.
 | Status | `detail` | Condition |
 |---|---|---|
 | `404` | `"Session not found"` | No session with that ID |
+
+---
+
+### `PUT /api/sessions/{session_id}` 🔒
+
+Update an existing session. The game cannot be changed (it is immutable once the session is created). Players and expansions are fully replaced — the old set is removed and the new set is inserted.
+
+**Auth required:** Yes (admin)  
+**Path parameter:** `session_id: integer`  
+**Request body:** `GameSessionUpdate`  
+**Response:** `200 OK` → `GameSessionRead`
+
+**Server behaviour:**
+1. Look up the session; raise 404 if not found.
+2. Update `played_at` (if provided) and `notes`.
+3. Replace expansions from `expansion_ids`; validate they belong to the session's game.
+4. Delete all existing session players.
+5. For each player in `players`:
+   - Merge the game's `scoring_spec` with active expansion patches.
+   - Compute `total_score = calculate_total(merged_spec, score_data)` if spec is not null.
+6. Set `winner = True` for players with the maximum `total_score`.
+
+**Errors:**
+
+| Status | `detail` | Condition |
+|---|---|---|
+| `401` | — | Missing or invalid token |
+| `403` | — | Not admin |
+| `404` | `"Session not found"` | No session with that ID |
+| `400` | `"One or more expansion_ids do not belong to this game"` | Expansion mismatch |
 
 ---
 

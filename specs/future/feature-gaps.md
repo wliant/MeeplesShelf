@@ -69,19 +69,23 @@ integration tests (`e2e-test/tests/test_expansion_scoring.py`).
 
 ---
 
-### Gap 2 — Session Editing
+### ~~Gap 2 — Session Editing~~ (Done)
 
-**Description.** There is no `PUT /api/sessions/{id}` endpoint and no edit path in the
-frontend. A user who logs a session with incorrect scores must delete the entire record and
-re-create it from scratch, losing any notes and the original timestamp. This is a significant
-data-integrity concern for groups maintaining an accurate long-term history.
+**Status.** Implemented. `PUT /api/sessions/{session_id}` endpoint added to the backend
+(`app/app/routers/sessions.py`) with `GameSessionUpdate` schema (`app/app/schemas/session.py`).
+The endpoint replaces players, scores, and expansions while recalculating totals and winners.
+The game is immutable on edit. The frontend `SessionForm` component (`web/src/components/sessions/SessionForm.tsx`)
+now supports an edit mode via an `editSession` prop, pre-populating all fields. `SessionDetail`
+(`web/src/components/sessions/SessionDetail.tsx`) has an "Edit" button for admins. `SessionsPage`
+(`web/src/pages/SessionsPage.tsx`) wires the detail → edit → save flow. Covered by 7 E2E
+integration tests (`e2e-test/tests/test_session_edit.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | High — entry mistakes are inevitable; forcing delete-and-recreate discourages accurate record-keeping and erodes trust in historical data |
 | **Technical Complexity** | Medium — requires a new `PUT` route that recalculates totals and winners, and pre-populating the existing `SessionForm` component for editing |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P0 — foundational data quality issue |
+| **Suggested Priority** | ~~P0~~ Done |
 
 ---
 
@@ -450,7 +454,7 @@ enter or how to obtain it.
 | # | Feature | Priority | Complexity | Depends On |
 |---|---|---|---|---|
 | 1 | ~~Expansion Scoring Patches~~ | ~~P0~~ Done | Low | — |
-| 2 | Session Editing | P0 | Medium | — |
+| 2 | ~~Session Editing~~ | ~~P0~~ Done | Medium | — |
 | 3 | Statistics and Analytics | P1 | Medium | Gap 2 |
 | 4 | Search and Filtering | P1 | Low | — |
 | 5 | Pagination | P1 | Low | Gap 4 (ideally) |

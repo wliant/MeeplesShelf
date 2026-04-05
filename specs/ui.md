@@ -250,9 +250,9 @@ Renders one `GameCard` per game.
 
 ## SessionDetail (modal dialog)
 
-Read-only. Opens when a row is clicked in `SessionList`.
+Read-only detail view. Opens when a row is clicked in `SessionList`.
 
-**Props:** `session`, `onClose`
+**Props:** `session`, `onClose`, `onEdit?`, `isAdmin?`
 
 **Title:** "{game.name} — {played_at toLocaleDateString()}"
 
@@ -267,32 +267,36 @@ Read-only. Opens when a row is clicked in `SessionList`.
    - Columns: Category | one column per player
    - Rows: one per key in `score_data` (displayed as-is)
    - Cell values formatted: booleans → "Yes"/"No", objects → JSON string, numbers → number
-6. "Close" button
+6. Actions: "Edit" button (admin only, calls `onEdit(session)`) + "Close" button
 
 ---
 
 ## SessionForm (modal dialog, admin only)
 
-**Props:** `open`, `games`, `onClose`, `onSave`
+**Props:** `open`, `games`, `onClose`, `onSave`, `editSession?`
 
-**Title:** "Log Game Session"
+Supports two modes:
+- **Create mode** (`editSession` is null/undefined): fresh form, title "Log Game Session", button "Save Session"
+- **Edit mode** (`editSession` provided): pre-populated from the existing session, title "Edit Game Session", button "Update Session". The game selector is disabled (game is immutable).
 
 **Fields (top to bottom):**
 
-1. **Select Game** — Autocomplete dropdown from `games[]`. Required.
-2. **Played At** — `datetime-local` input, defaults to current local time.
-3. **Add Player** row:
+1. **Select Game** — Autocomplete dropdown from `games[]`. Required. Disabled in edit mode.
+2. **Played At** — `datetime-local` input, defaults to current local time (create) or session's `played_at` (edit).
+3. **Expansions** — Checkboxes for each expansion of the selected game. Pre-checked from session in edit mode.
+4. **Add Player** row:
    - Autocomplete (free-solo) over existing players from `GET /api/players`
    - "Add" button: if typed name matches an existing player → use that player; if not → call `POST /api/players` to create, then add
    - Added players shown as removable chips below the input
-4. **ScoreSheet** — appears only when a game is selected AND at least one player has been added (see below)
-5. **Notes (optional)** — multiline text field
+   - In edit mode, pre-populated with the session's players
+5. **ScoreSheet** — appears only when a game is selected AND at least one player has been added (see below). In edit mode, pre-populated with existing score data.
+6. **Notes (optional)** — multiline text field
 
 **Actions:**
 - "Cancel" → closes dialog, resets form
-- "Save Session" — **disabled** until a game is selected and at least one player added
+- "Save Session" / "Update Session" — **disabled** until a game is selected and at least one player added
 
-**On save:** calls `POST /api/sessions` with `{ game_id, played_at, notes, expansion_ids: [], players: [{player_id, score_data}] }`, then calls `onSave()`.
+**On save:** In create mode calls `POST /api/sessions`. In edit mode calls `PUT /api/sessions/{id}` (without `game_id`). Then calls `onSave()`.
 
 ---
 
@@ -353,6 +357,7 @@ Reusable confirmation dialog used before all destructive operations. Uses `maxWi
 | FAB on InventoryPage | Visible | Hidden |
 | GameForm dialog | Accessible | Not accessible |
 | "Actions" column in SessionList | Visible | Hidden |
+| Edit button in SessionDetail | Visible | Hidden |
 | Delete icon on session row | Visible | Hidden |
 | FAB on SessionsPage | Visible | Hidden |
 | SessionForm dialog | Accessible | Not accessible |
