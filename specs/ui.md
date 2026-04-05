@@ -53,9 +53,9 @@
 
 ## AppShell
 
-Persistent layout component rendered for all authenticated routes.
+Persistent layout component rendered for all authenticated routes. Responsive: uses `useMediaQuery(theme.breakpoints.down("sm"))` to switch between desktop (inline nav) and mobile (hamburger + Drawer) layouts at the 600px breakpoint.
 
-**Structure:**
+**Desktop layout (≥ 600px):**
 - `AppBar` (position: static, primary colour)
   - App name: "MeeplesShelf" (h6 Typography)
   - Nav button: "Inventory" → `/inventory`
@@ -67,6 +67,17 @@ Persistent layout component rendered for all authenticated routes.
   - Role chip: "Admin" or "Guest" (small, semi-transparent white background)
   - "Logout" button → calls `auth.logout()` + `navigate("/login")`
 - `Box` main content area (`flexGrow: 1, p: 3`) renders `<Outlet />`
+
+**Mobile layout (< 600px):**
+- `AppBar` contains only app name and a hamburger `IconButton` (`MenuIcon`, `aria-label="Open navigation menu"`)
+- Right-anchored temporary `Drawer` (width 260px) containing:
+  - Role chip ("Admin" / "Guest") centered at top (outlined, primary colour)
+  - Divider
+  - Navigation list: "Inventory" (`SportsEsportsIcon`) and "Sessions" (`HistoryIcon`) — clicking navigates and closes drawer
+  - Divider
+  - Export list (admin only): "Export JSON (Full Backup)" and "Export Sessions CSV" (`FileDownloadIcon`) — disabled with `CircularProgress` during export
+  - Divider
+  - "Logout" (`LogoutIcon`) — closes drawer and logs out
 
 ---
 

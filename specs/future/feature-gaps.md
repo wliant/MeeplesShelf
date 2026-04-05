@@ -364,19 +364,23 @@ frontend unit tests (`web/src/utils/errors.test.ts`).
 
 ---
 
-### Gap 18 — Mobile Navigation Bar Overflow
+### ~~Gap 18 — Mobile Navigation Bar Overflow~~ (Done)
 
-**Description.** On viewports narrower than ~500px (typical phone), the AppBar items
-("MeeplesShelf", "INVENTORY", "SESSIONS", "Admin", "LOGOUT") overflow horizontally. Text
-overlaps and the "LOGOUT" button is clipped off-screen. The navigation is unusable on mobile
-without horizontal scrolling.
+**Status.** Implemented. `AppShell.tsx` now uses `useMediaQuery(theme.breakpoints.down("sm"))` to
+detect viewports below 600px. On mobile, the inline nav items are replaced with a hamburger
+`IconButton` (`MenuIcon`) that opens a right-anchored temporary `Drawer` (width 260px). The drawer
+contains: role chip (Admin/Guest) at top, navigation items (Inventory with `SportsEsportsIcon`,
+Sessions with `HistoryIcon`), export options (admin only, with `FileDownloadIcon` and loading state),
+and Logout (`LogoutIcon`). Clicking any nav item closes the drawer and navigates. The desktop layout
+(≥ 600px) is unchanged. All existing functionality (export with loading/snackbar, auth-based
+visibility) is preserved. File changed: `web/src/components/layout/AppShell.tsx`.
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | High — game night scoring is a primary mobile use case; the app is effectively broken on phones |
 | **Technical Complexity** | Medium — replace the inline link layout with a hamburger menu (`<Drawer>`) on small screens, or use MUI responsive AppBar patterns with `useMediaQuery` |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P1 |
+| **Suggested Priority** | ~~P1~~ Done |
 
 ---
 
@@ -500,7 +504,7 @@ enter or how to obtain it.
 | 15 | ~~Delete Confirmation Dialogs~~ | ~~P0~~ Done | Low | — |
 | 16 | ~~Loading States / Spinners~~ | ~~P1~~ Done | Low | — |
 | 17 | ~~Success/Error Toast Notifications~~ | ~~P1~~ Done | Low | — |
-| 18 | Mobile Navigation Bar Overflow | P1 | Medium | — |
+| 18 | ~~Mobile Navigation Bar Overflow~~ | ~~P1~~ Done | Medium | — |
 | 19 | Sessions Table Not Responsive | P1 | Medium | — |
 | 20 | Accessibility (a11y) Support | P2 | Low-Medium | — |
 | 21 | Player Management (Rename/Delete) | P1 | Medium | — |
