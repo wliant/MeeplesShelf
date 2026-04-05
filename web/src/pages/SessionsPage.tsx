@@ -15,9 +15,12 @@ import SessionForm from "../components/sessions/SessionForm";
 import SessionDetail from "../components/sessions/SessionDetail";
 import ConfirmDialog, { buildSessionDeleteMessage } from "../components/common/ConfirmDialog";
 import { useAuth } from "../context/AuthContext";
+import { useSnackbar } from "../context/SnackbarContext";
+import { extractErrorMessage } from "../utils/errors";
 
 export default function SessionsPage() {
   const { isAdmin } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const [sessions, setSessions] = useState<GameSession[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [formOpen, setFormOpen] = useState(false);
@@ -43,12 +46,16 @@ export default function SessionsPage() {
     try {
       if (editSession) {
         await updateSession(editSession.id, data as GameSessionUpdate);
+        showSnackbar("Session updated successfully");
         setEditSession(null);
       } else {
         await createSession(data as GameSessionCreate);
+        showSnackbar("Session created successfully");
         setFormOpen(false);
       }
       refresh();
+    } catch (err) {
+      showSnackbar(extractErrorMessage(err), "error");
     } finally {
       setSaving(false);
     }
@@ -68,8 +75,11 @@ export default function SessionsPage() {
       setSaving(true);
       try {
         await deleteSession(pendingDeleteSession.id);
+        showSnackbar("Session deleted successfully");
         setPendingDeleteSession(null);
         refresh();
+      } catch (err) {
+        showSnackbar(extractErrorMessage(err), "error");
       } finally {
         setSaving(false);
       }

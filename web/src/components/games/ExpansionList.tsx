@@ -13,6 +13,8 @@ import { useState } from "react";
 import type { Game, Expansion } from "../../types/game";
 import { addExpansion, deleteExpansion } from "../../api/games";
 import ConfirmDialog, { buildExpansionDeleteMessage } from "../common/ConfirmDialog";
+import { useSnackbar } from "../../context/SnackbarContext";
+import { extractErrorMessage } from "../../utils/errors";
 
 interface Props {
   game: Game;
@@ -21,6 +23,7 @@ interface Props {
 }
 
 export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
+  const { showSnackbar } = useSnackbar();
   const [name, setName] = useState("");
   const [adding, setAdding] = useState(false);
   const [pendingDeleteExpansion, setPendingDeleteExpansion] = useState<Expansion | null>(null);
@@ -31,9 +34,12 @@ export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
     setSaving(true);
     try {
       await addExpansion(game.id, { name: name.trim() });
+      showSnackbar("Expansion added successfully");
       setName("");
       setAdding(false);
       onRefresh();
+    } catch (err) {
+      showSnackbar(extractErrorMessage(err), "error");
     } finally {
       setSaving(false);
     }
@@ -44,8 +50,11 @@ export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
       setSaving(true);
       try {
         await deleteExpansion(game.id, pendingDeleteExpansion.id);
+        showSnackbar("Expansion deleted successfully");
         setPendingDeleteExpansion(null);
         onRefresh();
+      } catch (err) {
+        showSnackbar(extractErrorMessage(err), "error");
       } finally {
         setSaving(false);
       }

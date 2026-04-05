@@ -20,9 +20,12 @@ import GameList from "../components/games/GameList";
 import GameForm from "../components/games/GameForm";
 import ConfirmDialog, { buildGameDeleteMessage } from "../components/common/ConfirmDialog";
 import { useAuth } from "../context/AuthContext";
+import { useSnackbar } from "../context/SnackbarContext";
+import { extractErrorMessage } from "../utils/errors";
 
 export default function InventoryPage() {
   const { isAdmin } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const [games, setGames] = useState<Game[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
@@ -44,12 +47,16 @@ export default function InventoryPage() {
     try {
       if (editingGame) {
         await updateGame(editingGame.id, data);
+        showSnackbar("Game updated successfully");
       } else {
         await createGame(data);
+        showSnackbar("Game created successfully");
       }
       setFormOpen(false);
       setEditingGame(null);
       refresh();
+    } catch (err) {
+      showSnackbar(extractErrorMessage(err), "error");
     } finally {
       setSaving(false);
     }
@@ -69,8 +76,11 @@ export default function InventoryPage() {
       setSaving(true);
       try {
         await deleteGame(pendingDeleteGame.id);
+        showSnackbar("Game deleted successfully");
         setPendingDeleteGame(null);
         refresh();
+      } catch (err) {
+        showSnackbar(extractErrorMessage(err), "error");
       } finally {
         setSaving(false);
       }
@@ -81,7 +91,10 @@ export default function InventoryPage() {
     setSaving(true);
     try {
       await seedGames();
+      showSnackbar("Default games seeded successfully");
       refresh();
+    } catch (err) {
+      showSnackbar(extractErrorMessage(err), "error");
     } finally {
       setSaving(false);
     }

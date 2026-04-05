@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { AuthProvider } from "./context/AuthContext";
+import { SnackbarProvider } from "./context/SnackbarContext";
 import RequireAuth from "./components/auth/RequireAuth";
 import AppShell from "./components/layout/AppShell";
 import LoginPage from "./pages/LoginPage";
@@ -18,20 +19,22 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<RequireAuth />}>
-              <Route element={<AppShell />}>
-                <Route path="/inventory" element={<InventoryPage />} />
-                <Route path="/sessions" element={<SessionsPage />} />
-                <Route path="*" element={<Navigate to="/inventory" replace />} />
+      <SnackbarProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route element={<RequireAuth />}>
+                <Route element={<AppShell />}>
+                  <Route path="/inventory" element={<InventoryPage />} />
+                  <Route path="/sessions" element={<SessionsPage />} />
+                  <Route path="*" element={<Navigate to="/inventory" replace />} />
+                </Route>
               </Route>
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </SnackbarProvider>
     </ThemeProvider>
   );
 }
