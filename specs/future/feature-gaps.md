@@ -128,19 +128,28 @@ tests (`e2e-test/tests/test_search_filter.py`). Files changed: `app/app/routers/
 
 ---
 
-### Gap 5 — Pagination
+### ~~Gap 5 — Pagination~~ (Done)
 
-**Description.** All list endpoints fetch every row from the database in a single query.
-With a large session history (hundreds of records), this causes slow initial page loads and
-unnecessarily large API payloads. Sessions include eager-loaded relationships (game, players,
-expansions), amplifying the cost.
+**Status.** Implemented. `GET /api/games` and `GET /api/sessions` now accept `skip` (default 0, min 0) and
+`limit` (default 20, min 1, max 100) query parameters. Both endpoints return a `PaginatedResponse` wrapper
+(`{ items, total, skip, limit }`) instead of a bare array. A shared `PaginatedResponse` Pydantic schema
+(`app/app/schemas/pagination.py`) and TypeScript type (`web/src/types/pagination.ts`) support the generic
+wrapper. The `InventoryPage` uses server-side name filtering with a 300ms debounce and an MUI `Pagination`
+component. The `SessionsPage` passes pagination params alongside existing filters and resets to page 0 on
+filter changes; `SessionList` includes MUI `TablePagination`. Player name search on sessions remains
+client-side within the current page. Covered by E2E integration tests (`e2e-test/tests/test_pagination.py`,
+13 tests) and updated existing filter tests (`e2e-test/tests/test_search_filter.py`). Files changed:
+`app/app/schemas/pagination.py`, `app/app/routers/games.py`, `app/app/routers/sessions.py`,
+`web/src/types/pagination.ts`, `web/src/api/games.ts`, `web/src/api/sessions.ts`,
+`web/src/pages/InventoryPage.tsx`, `web/src/pages/SessionsPage.tsx`,
+`web/src/components/sessions/SessionList.tsx`.
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — performance degrades noticeably at scale; the problem grows silently over time |
 | **Technical Complexity** | Low — SQLAlchemy `offset`/`limit` on list queries; return `total` count alongside results; implement page controls or infinite scroll in the frontend |
 | **Dependencies / Prerequisites** | Search and Filtering (Gap 4) should be implemented together or after, as pagination and filtering are typically designed as a unit |
-| **Suggested Priority** | P1 |
+| **Suggested Priority** | ~~P1~~ Done |
 
 ---
 
@@ -472,7 +481,7 @@ enter or how to obtain it.
 | 2 | ~~Session Editing~~ | ~~P0~~ Done | Medium | — |
 | 3 | Statistics and Analytics | P1 | Medium | Gap 2 |
 | 4 | ~~Search and Filtering~~ | ~~P1~~ Done | Low | — |
-| 5 | Pagination | P1 | Low | Gap 4 (ideally) |
+| 5 | ~~Pagination~~ | ~~P1~~ Done | Low | Gap 4 (ideally) |
 | 6 | Data Export and Backup | P1 | Low-Medium | — |
 | 7 | Per-Player Profiles | P2 | Medium | Gap 3 |
 | 8 | Game Ratings and Notes | P2 | Low | — |

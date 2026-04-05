@@ -89,18 +89,23 @@ Centered card (width 360px) on a grey background (`grey.100`).
 
 **URL:** `/inventory`
 
-**Data fetched on mount:** `GET /api/games` → `Game[]`
+**Data fetched on mount:** `GET /api/games` → `PaginatedResponse[Game]` (page 1 of 20)
 
 ### Search bar
 
-A `TextField` (small, full-width) with a search icon appears below the heading when not loading. Placeholder: "Search games...". Filters the game list client-side by case-insensitive substring match on game name using `filterGamesByName()` from `utils/filters.ts`. When the search matches no games but games exist, a "No games match your search" message is shown instead of the grid.
+A `TextField` (small, full-width) with a search icon appears below the heading when not loading. Placeholder: "Search games...". Filters the game list server-side via the `name` query parameter with a 300ms debounce. Changing the search text resets pagination to page 1. When the search matches no games, a "No games match your search" message is shown instead of the grid.
+
+### Pagination
+
+An MUI `Pagination` component appears below the game grid when the total number of games exceeds the page size (20). Page changes trigger a server re-fetch with the appropriate `skip` offset.
 
 ### Admin view
 
 - Heading: "Game Inventory" (h4)
-- **Seed button** (outlined): visible only when `isAdmin && games.length === 0`. Calls `POST /api/seed`.
+- **Seed button** (outlined): visible only when `isAdmin && total === 0 && !searching`. Calls `POST /api/seed`.
 - Search bar (see above)
-- `GameList` grid of `GameCard` components (filtered by search)
+- `GameList` grid of `GameCard` components
+- Pagination controls (see above)
 - Floating Action Button (FAB, primary, fixed bottom-right, `+` icon): opens `GameForm` in "add" mode
 
 ### Guest view
@@ -108,6 +113,7 @@ A `TextField` (small, full-width) with a search icon appears below the heading w
 - Heading: "Game Inventory" (h4)
 - Search bar (see above)
 - `GameList` grid (read-only — no edit/delete controls, no FAB, no seed button)
+- Pagination controls (see above)
 
 ---
 
@@ -210,8 +216,8 @@ Renders one `GameCard` per game.
 **URL:** `/sessions`
 
 **Data fetched on mount:**
-- `GET /api/sessions` → `GameSession[]`
-- `GET /api/games` → `Game[]` (for session form dropdown)
+- `GET /api/sessions` → `PaginatedResponse[GameSession]` (page 1 of 20)
+- `GET /api/games?limit=100` → `PaginatedResponse[Game]` (for session form dropdown and game filter)
 
 ### Filter bar
 
@@ -222,26 +228,30 @@ A responsive `Stack` (column on mobile, row on desktop) below the heading with:
 4. **Player search** — `TextField` (small) with search icon, placeholder "Search by player...". Filters sessions client-side by case-insensitive substring match on player names using `filterSessionsByPlayerName()` from `utils/filters.ts`.
 5. **Clear Filters** button — visible only when any filter is active. Resets all filters to defaults.
 
-Server-side filters (game, dates) trigger an API re-fetch. Player search is instant (client-side). When filters match no sessions, "No sessions match your filters." is shown.
+Server-side filters (game, dates) trigger an API re-fetch and reset pagination to page 1. Player search is instant (client-side, within current page only). When filters match no sessions, "No sessions match your filters." is shown.
+
+### Pagination
+
+`SessionList` includes an MUI `TablePagination` component below the table rows when the total exceeds the page size (20). Page changes trigger a server re-fetch with the appropriate `skip` offset.
 
 ### Admin view
 
 - Heading: "Game Sessions" (h4)
 - Filter bar (see above)
-- `SessionList` table with Actions column (showing filtered results)
+- `SessionList` table with Actions column and pagination (showing filtered results)
 - FAB (primary, fixed bottom-right, `+` icon): opens `SessionForm`
 
 ### Guest view
 
 - Heading: "Game Sessions" (h4)
 - Filter bar (see above)
-- `SessionList` table — no Actions column, no FAB
+- `SessionList` table with pagination — no Actions column, no FAB
 
 ---
 
 ## SessionList
 
-**Props:** `sessions`, `onDelete`, `onSelect`, `isAdmin`
+**Props:** `sessions`, `onDelete`, `onSelect`, `isAdmin`, `total`, `page`, `rowsPerPage`, `onPageChange`
 
 **Empty state:** Typography "No sessions logged yet." (secondary colour)
 

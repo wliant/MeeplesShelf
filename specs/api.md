@@ -185,6 +185,17 @@ Note: `game_id` is not included — the game cannot be changed after session cre
 { "id": "integer", "name": "string" }
 ```
 
+### `PaginatedResponse[T]`
+```json
+{
+  "items": "T[]",
+  "total": "integer",
+  "skip":  "integer",
+  "limit": "integer"
+}
+```
+Generic wrapper used by paginated list endpoints. `total` is the full count matching any active filters (independent of `skip`/`limit`).
+
 ---
 
 ## Auth Endpoints
@@ -209,11 +220,18 @@ Obtain a JWT by supplying the admin password.
 
 ### `GET /api/games`
 
-List games, ordered by name ascending. Expansions are eager-loaded. Optionally filter by name.
+List games, ordered by name ascending. Expansions are eager-loaded. Supports filtering by name and pagination.
 
 **Auth required:** No  
-**Query parameter:** `name: string` (optional) — case-insensitive substring match on game name  
-**Response:** `200 OK` → `GameRead[]`
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `name` | string (optional) | — | Case-insensitive substring match on game name |
+| `skip` | integer (optional) | `0` | Number of records to skip (offset). Must be >= 0. |
+| `limit` | integer (optional) | `20` | Maximum number of records to return. Must be 1–100. |
+
+**Response:** `200 OK` → `PaginatedResponse[GameRead]`
 
 ---
 
@@ -378,21 +396,23 @@ Create a new player. Player names are globally unique.
 
 ### `GET /api/sessions`
 
-List sessions, ordered by `played_at` descending (most recent first). Game, players, and expansions are eager-loaded. Supports filtering by game, player, and date range.
+List sessions, ordered by `played_at` descending (most recent first). Game, players, and expansions are eager-loaded. Supports filtering by game, player, date range, and pagination.
 
 **Auth required:** No  
 **Query parameters:**
 
-| Parameter | Type | Description |
-|---|---|---|
-| `game_id` | integer (optional) | Filter sessions for a specific game |
-| `player_id` | integer (optional) | Filter sessions that include a specific player |
-| `date_from` | date (optional, ISO 8601 `YYYY-MM-DD`) | Include sessions played on or after this date (start of day UTC) |
-| `date_to` | date (optional, ISO 8601 `YYYY-MM-DD`) | Include sessions played on or before this date (end of day UTC) |
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `game_id` | integer (optional) | — | Filter sessions for a specific game |
+| `player_id` | integer (optional) | — | Filter sessions that include a specific player |
+| `date_from` | date (optional, ISO 8601 `YYYY-MM-DD`) | — | Include sessions played on or after this date (start of day UTC) |
+| `date_to` | date (optional, ISO 8601 `YYYY-MM-DD`) | — | Include sessions played on or before this date (end of day UTC) |
+| `skip` | integer (optional) | `0` | Number of records to skip (offset). Must be >= 0. |
+| `limit` | integer (optional) | `20` | Maximum number of records to return. Must be 1–100. |
 
-All filters are combined with AND. Omitted filters are ignored.
+All filters are combined with AND. Omitted filters are ignored. Pagination is applied after filtering.
 
-**Response:** `200 OK` → `GameSessionRead[]`
+**Response:** `200 OK` → `PaginatedResponse[GameSessionRead]`
 
 ---
 
