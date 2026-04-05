@@ -12,6 +12,7 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
+  CircularProgress,
 } from "@mui/material";
 import { useState, useEffect, useMemo } from "react";
 import type { Game } from "../../types/game";
@@ -26,9 +27,10 @@ interface Props {
   onClose: () => void;
   onSave: (data: GameSessionCreate | GameSessionUpdate) => void;
   editSession?: GameSession | null;
+  saving?: boolean;
 }
 
-export default function SessionForm({ open, games, onClose, onSave, editSession }: Props) {
+export default function SessionForm({ open, games, onClose, onSave, editSession, saving = false }: Props) {
   const isEditMode = !!editSession;
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -155,7 +157,7 @@ export default function SessionForm({ open, games, onClose, onSave, editSession 
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="lg" fullWidth>
       <DialogTitle>{isEditMode ? "Edit Game Session" : "Log Game Session"}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
@@ -266,13 +268,13 @@ export default function SessionForm({ open, games, onClose, onSave, editSession 
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} disabled={saving}>Cancel</Button>
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={!selectedGame || selectedPlayers.length === 0}
+          disabled={!selectedGame || selectedPlayers.length === 0 || saving}
         >
-          {isEditMode ? "Update Session" : "Save Session"}
+          {saving ? <CircularProgress size={20} color="inherit" /> : isEditMode ? "Update Session" : "Save Session"}
         </Button>
       </DialogActions>
     </Dialog>

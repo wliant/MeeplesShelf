@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Box, Typography, Fab, Stack } from "@mui/material";
+import { Box, Typography, Fab, Stack, CircularProgress } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import type { Game } from "../types/game";
 import type { GameSession, GameSessionCreate, GameSessionUpdate } from "../types/session";
@@ -24,10 +24,14 @@ export default function SessionsPage() {
   const [detailSession, setDetailSession] = useState<GameSession | null>(null);
   const [editSession, setEditSession] = useState<GameSession | null>(null);
   const [pendingDeleteSession, setPendingDeleteSession] = useState<GameSession | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const refresh = useCallback(() => {
-    listSessions().then(setSessions);
-    listGames().then(setGames);
+    setLoading(true);
+    Promise.all([listSessions(), listGames()])
+      .then(([s, g]) => { setSessions(s); setGames(g); })
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -35,14 +39,19 @@ export default function SessionsPage() {
   }, [refresh]);
 
   const handleSave = async (data: GameSessionCreate | GameSessionUpdate) => {
-    if (editSession) {
-      await updateSession(editSession.id, data as GameSessionUpdate);
-      setEditSession(null);
-    } else {
-      await createSession(data as GameSessionCreate);
-      setFormOpen(false);
+    setSaving(true);
+    try {
+      if (editSession) {
+        await updateSession(editSession.id, data as GameSessionUpdate);
+        setEditSession(null);
+      } else {
+        await createSession(data as GameSessionCreate);
+        setFormOpen(false);
+      }
+      refresh();
+    } finally {
+      setSaving(false);
     }
-    refresh();
   };
 
   const handleEdit = (session: GameSession) => {
@@ -56,9 +65,14 @@ export default function SessionsPage() {
 
   const handleDeleteConfirm = async () => {
     if (pendingDeleteSession) {
-      await deleteSession(pendingDeleteSession.id);
-      setPendingDeleteSession(null);
-      refresh();
+      setSaving(true);
+      try {
+        await deleteSession(pendingDeleteSession.id);
+        setPendingDeleteSession(null);
+        refresh();
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
@@ -73,12 +87,18 @@ export default function SessionsPage() {
         <Typography variant="h4">Game Sessions</Typography>
       </Stack>
 
-      <SessionList
-        sessions={sessions}
-        onDelete={handleDeleteClick}
-        onSelect={setDetailSession}
-        isAdmin={isAdmin}
-      />
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <SessionList
+          sessions={sessions}
+          onDelete={handleDeleteClick}
+          onSelect={setDetailSession}
+          isAdmin={isAdmin}
+        />
+      )}
 
       {isAdmin && (
         <Fab
@@ -100,6 +120,7 @@ export default function SessionsPage() {
         }
         onConfirm={handleDeleteConfirm}
         onCancel={() => setPendingDeleteSession(null)}
+        loading={saving}
       />
 
       <SessionForm
@@ -108,6 +129,7 @@ export default function SessionsPage() {
         onClose={() => { setFormOpen(false); setEditSession(null); }}
         onSave={handleSave}
         editSession={editSession}
+        saving={saving}
       />
 
       <SessionDetail

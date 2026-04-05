@@ -5,6 +5,7 @@ import {
   Fab,
   Button,
   Stack,
+  CircularProgress,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import type { Game, GameCreate } from "../types/game";
@@ -26,9 +27,12 @@ export default function InventoryPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [pendingDeleteGame, setPendingDeleteGame] = useState<Game | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const refresh = useCallback(() => {
-    listGames().then(setGames);
+    setLoading(true);
+    listGames().then(setGames).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -36,14 +40,19 @@ export default function InventoryPage() {
   }, [refresh]);
 
   const handleSave = async (data: GameCreate) => {
-    if (editingGame) {
-      await updateGame(editingGame.id, data);
-    } else {
-      await createGame(data);
+    setSaving(true);
+    try {
+      if (editingGame) {
+        await updateGame(editingGame.id, data);
+      } else {
+        await createGame(data);
+      }
+      setFormOpen(false);
+      setEditingGame(null);
+      refresh();
+    } finally {
+      setSaving(false);
     }
-    setFormOpen(false);
-    setEditingGame(null);
-    refresh();
   };
 
   const handleEdit = (game: Game) => {
@@ -57,15 +66,25 @@ export default function InventoryPage() {
 
   const handleDeleteConfirm = async () => {
     if (pendingDeleteGame) {
-      await deleteGame(pendingDeleteGame.id);
-      setPendingDeleteGame(null);
-      refresh();
+      setSaving(true);
+      try {
+        await deleteGame(pendingDeleteGame.id);
+        setPendingDeleteGame(null);
+        refresh();
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
   const handleSeed = async () => {
-    await seedGames();
-    refresh();
+    setSaving(true);
+    try {
+      await seedGames();
+      refresh();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -77,20 +96,26 @@ export default function InventoryPage() {
         sx={{ mb: 3 }}
       >
         <Typography variant="h4">Game Inventory</Typography>
-        {isAdmin && games.length === 0 && (
-          <Button variant="outlined" onClick={handleSeed}>
+        {isAdmin && games.length === 0 && !loading && (
+          <Button variant="outlined" onClick={handleSeed} disabled={saving}>
             Seed Default Games
           </Button>
         )}
       </Stack>
 
-      <GameList
-        games={games}
-        onEdit={handleEdit}
-        onDelete={handleDeleteClick}
-        onRefresh={refresh}
-        isAdmin={isAdmin}
-      />
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <GameList
+          games={games}
+          onEdit={handleEdit}
+          onDelete={handleDeleteClick}
+          onRefresh={refresh}
+          isAdmin={isAdmin}
+        />
+      )}
 
       {isAdmin && (
         <Fab
@@ -115,6 +140,7 @@ export default function InventoryPage() {
         }
         onConfirm={handleDeleteConfirm}
         onCancel={() => setPendingDeleteGame(null)}
+        loading={saving}
       />
 
       <GameForm
@@ -125,6 +151,7 @@ export default function InventoryPage() {
           setEditingGame(null);
         }}
         onSave={handleSave}
+        saving={saving}
       />
     </Box>
   );

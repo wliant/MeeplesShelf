@@ -13,6 +13,7 @@ import {
   FormControl,
   InputLabel,
   Box,
+  CircularProgress,
 } from "@mui/material";
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { useState, useEffect } from "react";
@@ -24,6 +25,7 @@ interface Props {
   game: Game | null;
   onClose: () => void;
   onSave: (data: GameCreate) => void;
+  saving?: boolean;
 }
 
 const FIELD_TYPE_OPTIONS = [
@@ -54,7 +56,7 @@ function emptyField(type: string): ScoringField {
   }
 }
 
-export default function GameForm({ open, game, onClose, onSave }: Props) {
+export default function GameForm({ open, game, onClose, onSave, saving = false }: Props) {
   const [name, setName] = useState("");
   const [minPlayers, setMinPlayers] = useState(1);
   const [maxPlayers, setMaxPlayers] = useState(4);
@@ -102,7 +104,7 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth>
       <DialogTitle>{game ? "Edit Game" : "Add Game"}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
@@ -330,9 +332,9 @@ export default function GameForm({ open, game, onClose, onSave }: Props) {
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={!name}>
-          {game ? "Update" : "Create"}
+        <Button onClick={onClose} disabled={saving}>Cancel</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={!name || saving}>
+          {saving ? <CircularProgress size={20} color="inherit" /> : game ? "Update" : "Create"}
         </Button>
       </DialogActions>
     </Dialog>

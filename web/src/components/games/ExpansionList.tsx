@@ -24,20 +24,31 @@ export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
   const [name, setName] = useState("");
   const [adding, setAdding] = useState(false);
   const [pendingDeleteExpansion, setPendingDeleteExpansion] = useState<Expansion | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const handleAdd = async () => {
     if (!name.trim()) return;
-    await addExpansion(game.id, { name: name.trim() });
-    setName("");
-    setAdding(false);
-    onRefresh();
+    setSaving(true);
+    try {
+      await addExpansion(game.id, { name: name.trim() });
+      setName("");
+      setAdding(false);
+      onRefresh();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDeleteConfirm = async () => {
     if (pendingDeleteExpansion) {
-      await deleteExpansion(game.id, pendingDeleteExpansion.id);
-      setPendingDeleteExpansion(null);
-      onRefresh();
+      setSaving(true);
+      try {
+        await deleteExpansion(game.id, pendingDeleteExpansion.id);
+        setPendingDeleteExpansion(null);
+        onRefresh();
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
@@ -82,10 +93,10 @@ export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
               autoFocus
             />
-            <Button size="small" onClick={handleAdd}>
+            <Button size="small" onClick={handleAdd} disabled={saving}>
               Add
             </Button>
-            <Button size="small" onClick={() => setAdding(false)}>
+            <Button size="small" onClick={() => setAdding(false)} disabled={saving}>
               Cancel
             </Button>
           </Stack>
@@ -110,6 +121,7 @@ export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
         }
         onConfirm={handleDeleteConfirm}
         onCancel={() => setPendingDeleteExpansion(null)}
+        loading={saving}
       />
     </>
   );
