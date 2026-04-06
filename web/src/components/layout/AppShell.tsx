@@ -24,6 +24,7 @@ import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import HistoryIcon from "@mui/icons-material/History";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
+import BarChartIcon from "@mui/icons-material/BarChart";
 import PeopleIcon from "@mui/icons-material/People";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Link, Outlet, useNavigate } from "react-router-dom";
@@ -110,6 +111,9 @@ export default function AppShell() {
               <Button color="inherit" component={Link} to="/players">
                 Players
               </Button>
+              <Button color="inherit" component={Link} to="/statistics">
+                Statistics
+              </Button>
               {auth.isAdmin && (
                 <>
                   <IconButton
@@ -192,6 +196,14 @@ export default function AppShell() {
                   <PeopleIcon />
                 </ListItemIcon>
                 <ListItemText primary="Players" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => handleDrawerNav("/statistics")}>
+                <ListItemIcon>
+                  <BarChartIcon />
+                </ListItemIcon>
+                <ListItemText primary="Statistics" />
               </ListItemButton>
             </ListItem>
           </List>
