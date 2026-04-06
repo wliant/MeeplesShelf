@@ -89,19 +89,30 @@ integration tests (`e2e-test/tests/test_session_edit.py`).
 
 ---
 
-### Gap 3 — Statistics and Analytics
+### ~~Gap 3 — Statistics and Analytics~~ (Done)
 
-**Description.** No aggregated statistics are available anywhere in the application. Users
-cannot see win rates per player, most-played games, score trends over time, head-to-head
-records, average session duration, or any other derived insight. The raw session data exists
-in the database but is never surfaced analytically.
+**Status.** Implemented. Four public read-only endpoints added under `/api/stats/`:
+`GET /stats/overview` (total games/sessions/players, recent sessions, most recent date),
+`GET /stats/players` (per-player win rate, sessions played, wins — ordered by win rate),
+`GET /stats/games` (per-game play count, unique players, last played — ordered by times played),
+`GET /stats/activity?months=12` (sessions per month over a configurable lookback, gap-filled).
+Backend: `app/app/schemas/stats.py`, `app/app/services/stats.py` (`fill_month_gaps` utility),
+`app/app/routers/stats.py`, mounted in `app/app/main.py`. Frontend: new `/statistics` route
+with `StatisticsPage` (`web/src/pages/StatisticsPage.tsx`) featuring four visualizations using
+Recharts — OverviewCards (summary metrics), PlayerLeaderboard (bar chart + table),
+MostPlayedGames (horizontal bar chart + table), and ActivityChart (area chart). Charts are
+responsive (hidden on mobile, table-only fallback). Navigation link added to `AppShell`
+(desktop toolbar + mobile drawer with `BarChartIcon`). API client in `web/src/api/stats.ts`,
+types in `web/src/types/stats.ts`, formatting helpers in `web/src/utils/stats.ts`.
+Covered by 6 backend unit tests (`app/tests/test_stats.py`), 3 frontend unit tests
+(`web/src/utils/stats.test.ts`), and 18 E2E integration tests (`e2e-test/tests/test_stats.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | High — the primary long-term value of a play tracker is answering "who is actually better at Catan?" and "what do we play most?"; without this, the app is a log with no payoff |
 | **Technical Complexity** | Medium — new `/api/stats` endpoints using SQL aggregations (window functions, GROUP BY); chart rendering in the frontend (e.g. Recharts); a dedicated Stats page or dashboard section |
 | **Dependencies / Prerequisites** | Sufficient accumulated session history for stats to be meaningful; Session Editing (Gap 2) to ensure data is accurate before surfacing it |
-| **Suggested Priority** | P1 |
+| **Suggested Priority** | ~~P1~~ Done |
 
 ---
 
@@ -502,7 +513,7 @@ enter or how to obtain it.
 |---|---|---|---|---|
 | 1 | ~~Expansion Scoring Patches~~ | ~~P0~~ Done | Low | — |
 | 2 | ~~Session Editing~~ | ~~P0~~ Done | Medium | — |
-| 3 | Statistics and Analytics | P1 | Medium | Gap 2 |
+| 3 | ~~Statistics and Analytics~~ | ~~P1~~ Done | Medium | Gap 2 |
 | 4 | ~~Search and Filtering~~ | ~~P1~~ Done | Low | — |
 | 5 | ~~Pagination~~ | ~~P1~~ Done | Low | Gap 4 (ideally) |
 | 6 | ~~Data Export and Backup~~ | ~~P1~~ Done | Low-Medium | — |

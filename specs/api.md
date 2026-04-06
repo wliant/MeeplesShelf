@@ -628,3 +628,100 @@ Sessions are ordered by `played_at` descending. Each session produces one row pe
 |---|---|
 | `401` | Missing or invalid token |
 | `403` | Not admin |
+
+---
+
+## Statistics Endpoints
+
+All statistics endpoints are **public** (no admin token required), consistent with other read-only endpoints.
+
+### `OverviewStats`
+```json
+{
+  "total_games":               "integer",
+  "total_sessions":            "integer",
+  "total_players":             "integer",
+  "recent_sessions":           "integer",
+  "most_recent_session_date":  "datetime | null"
+}
+```
+
+### `PlayerStats`
+```json
+{
+  "player_id":       "integer",
+  "player_name":     "string",
+  "sessions_played": "integer",
+  "wins":            "integer",
+  "win_rate":        "float"
+}
+```
+
+### `GameStats`
+```json
+{
+  "game_id":        "integer",
+  "game_name":      "string",
+  "times_played":   "integer",
+  "unique_players": "integer",
+  "last_played":    "datetime | null"
+}
+```
+
+### `ActivityMonth`
+```json
+{
+  "month":         "string",
+  "session_count": "integer"
+}
+```
+
+---
+
+### `GET /api/stats/overview`
+
+High-level summary metrics across all data.
+
+**Auth required:** No
+**Response:** `200 OK` → `OverviewStats`
+
+`recent_sessions` counts sessions with `played_at` within the last 30 days. `most_recent_session_date` is the latest `played_at` across all sessions, or `null` if no sessions exist.
+
+---
+
+### `GET /api/stats/players`
+
+Per-player statistics, ordered by win rate descending (then by sessions played descending).
+
+**Auth required:** No
+**Response:** `200 OK` → `PlayerStats[]`
+
+`win_rate` is `wins / sessions_played`, rounded to 4 decimal places. Players with zero sessions appear with `sessions_played=0`, `wins=0`, `win_rate=0.0`.
+
+---
+
+### `GET /api/stats/games`
+
+Per-game statistics, ordered by times played descending (then by game name ascending).
+
+**Auth required:** No
+**Response:** `200 OK` → `GameStats[]`
+
+`unique_players` is the distinct count of players who have participated in sessions of this game. Games with zero sessions appear with `times_played=0`, `unique_players=0`, `last_played=null`.
+
+---
+
+### `GET /api/stats/activity`
+
+Monthly play activity over a configurable lookback period. Returns a contiguous series of months (missing months are filled with `session_count=0`).
+
+**Auth required:** No
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `months` | integer (optional) | `12` | Number of months to include (1–60) |
+
+**Response:** `200 OK` → `ActivityMonth[]`
+
+The `month` field is an ISO-formatted year-month string (e.g. `"2025-06"`). Results are sorted chronologically (oldest first).

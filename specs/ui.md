@@ -20,6 +20,7 @@
 | `/inventory` | `InventoryPage` inside `AppShell` | `RequireAuth` | Default landing page |
 | `/sessions` | `SessionsPage` inside `AppShell` | `RequireAuth` | — |
 | `/players` | `PlayersPage` inside `AppShell` | `RequireAuth` | — |
+| `/statistics` | `StatisticsPage` inside `AppShell` | `RequireAuth` | — |
 | `*` (any other) | — | `RequireAuth` | Redirects to `/inventory` |
 
 `RequireAuth` redirects to `/login` when `role === null`. Both `admin` and `guest` pass through.
@@ -41,6 +42,7 @@
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/sessions"  element={<SessionsPage />} />
               <Route path="/players"   element={<PlayersPage />} />
+              <Route path="/statistics" element={<StatisticsPage />} />
               <Route path="*"          element={<Navigate to="/inventory" />} />
             </Route>
           </Route>
@@ -63,6 +65,7 @@ Persistent layout component rendered for all authenticated routes. Responsive: u
   - Nav button: "Inventory" → `/inventory`
   - Nav button: "Sessions" → `/sessions`
   - Nav button: "Players" → `/players`
+  - Nav button: "Statistics" → `/statistics`
   - Export button (admin only): `FileDownload` icon button → opens a `Menu` dropdown with:
     - "Export JSON (Full Backup)" → downloads `GET /api/export` as blob, saves as `meeplesshelf-export-YYYY-MM-DD.json`
     - "Export Sessions CSV" → downloads `GET /api/export/sessions/csv` as blob, saves as `meeplesshelf-sessions-YYYY-MM-DD.csv`
@@ -76,7 +79,7 @@ Persistent layout component rendered for all authenticated routes. Responsive: u
 - Right-anchored temporary `Drawer` (width 260px) containing:
   - Role chip ("Admin" / "Guest") centered at top (outlined, primary colour)
   - Divider
-  - Navigation list: "Inventory" (`SportsEsportsIcon`), "Sessions" (`HistoryIcon`), and "Players" (`PeopleIcon`) — clicking navigates and closes drawer
+  - Navigation list: "Inventory" (`SportsEsportsIcon`), "Sessions" (`HistoryIcon`), "Players" (`PeopleIcon`), and "Statistics" (`BarChartIcon`) — clicking navigates and closes drawer
   - Divider
   - Export list (admin only): "Export JSON (Full Backup)" and "Export Sessions CSV" (`FileDownloadIcon`) — disabled with `CircularProgress` during export
   - Divider
@@ -387,6 +390,37 @@ A `TextField` (small) with a search icon appears below the heading when not load
 ### Mobile layout (< 600px) — Cards
 
 Each card shows player name, session count, and creation date. Admin cards include edit and delete icon buttons in the header row.
+
+---
+
+## StatisticsPage
+
+**URL:** `/statistics`
+
+**Data fetched on mount:** All four stats endpoints in parallel via `Promise.all`:
+- `GET /api/stats/overview` → `OverviewStats`
+- `GET /api/stats/players` → `PlayerStats[]`
+- `GET /api/stats/games` → `GameStats[]`
+- `GET /api/stats/activity` → `ActivityMonth[]`
+
+**Loading state:** Centered `CircularProgress` while fetching.
+
+**Empty state:** When `total_sessions === 0`, displays a `BarChartIcon` (64px, secondary colour), heading "No statistics yet", and text "Log some game sessions to see statistics here."
+
+**Layout (when data is available):**
+
+1. **Heading:** "Statistics" (h4)
+2. **OverviewCards** — responsive `Grid` (xs=6, sm=3) of 4 MUI `Card` components:
+   - Total Games (`SportsEsportsIcon`)
+   - Total Sessions (`HistoryIcon`)
+   - Total Players (`PeopleIcon`)
+   - Last 30 Days (`TrendingUpIcon`)
+   Each card shows the metric as a large h4 number with a label below.
+3. **Two-column grid** (xs=12, md=6) in `Paper` containers:
+   - **PlayerLeaderboard** — Recharts `BarChart` of top 10 win rates (hidden on mobile < 600px), plus an MUI `Table` with columns: #, Player, Played, Wins, Win Rate (%). Full player list in the table, chart limited to top 10.
+   - **MostPlayedGames** — Recharts horizontal `BarChart` of top 10 games by session count (hidden on mobile), plus an MUI `Table` with columns: Game, Sessions, Players, Last Played.
+4. **Full-width row** in `Paper`:
+   - **ActivityChart** — Recharts `AreaChart` showing sessions per month over the last 12 months. Uses a gradient fill and `ResponsiveContainer` for responsive sizing. Month labels formatted as "Jan 2025".
 
 ---
 
