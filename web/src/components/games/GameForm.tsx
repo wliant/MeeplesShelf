@@ -14,6 +14,7 @@ import {
   InputLabel,
   Box,
   CircularProgress,
+  Rating,
 } from "@mui/material";
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { useState, useEffect } from "react";
@@ -60,6 +61,8 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
   const [name, setName] = useState("");
   const [minPlayers, setMinPlayers] = useState(1);
   const [maxPlayers, setMaxPlayers] = useState(4);
+  const [rating, setRating] = useState<number | null>(null);
+  const [notes, setNotes] = useState("");
   const [fields, setFields] = useState<ScoringField[]>([]);
 
   useEffect(() => {
@@ -67,11 +70,15 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
       setName(game.name);
       setMinPlayers(game.min_players);
       setMaxPlayers(game.max_players);
+      setRating(game.rating);
+      setNotes(game.notes ?? "");
       setFields(game.scoring_spec?.fields ?? []);
     } else {
       setName("");
       setMinPlayers(1);
       setMaxPlayers(4);
+      setRating(null);
+      setNotes("");
       setFields([]);
     }
   }, [game, open]);
@@ -83,6 +90,8 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
       max_players: maxPlayers,
       scoring_spec:
         fields.length > 0 ? { version: 1, fields } : null,
+      rating,
+      notes: notes.trim() || null,
     });
   };
 
@@ -130,6 +139,27 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
               slotProps={{ htmlInput: { min: 1 } }}
             />
           </Stack>
+
+          <Box>
+            <Typography variant="subtitle1" sx={{ pt: 1 }}>
+              Rating
+            </Typography>
+            <Rating
+              value={rating}
+              max={10}
+              onChange={(_event, newValue) => setRating(newValue)}
+            />
+          </Box>
+
+          <TextField
+            label="Notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            multiline
+            minRows={2}
+            maxRows={4}
+            placeholder="Personal notes about this game..."
+          />
 
           <Typography variant="subtitle1" sx={{ pt: 1 }}>
             Scoring Specification

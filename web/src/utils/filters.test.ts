@@ -9,6 +9,8 @@ const makeGame = (id: number, name: string): Game => ({
   min_players: 2,
   max_players: 4,
   scoring_spec: null,
+  rating: null,
+  notes: null,
   created_at: "2025-01-01T00:00:00Z",
   updated_at: "2025-01-01T00:00:00Z",
   expansions: [],

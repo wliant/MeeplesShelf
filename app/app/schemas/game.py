@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.schemas.scoring import ScoringSpec
 
@@ -22,11 +22,24 @@ class ExpansionRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+def _validate_rating(v: int | None) -> int | None:
+    if v is not None and not (1 <= v <= 10):
+        raise ValueError("Rating must be between 1 and 10")
+    return v
+
+
 class GameCreate(BaseModel):
     name: str
     min_players: int = 1
     max_players: int = 4
     scoring_spec: ScoringSpec | None = None
+    rating: int | None = None
+    notes: str | None = None
+
+    @field_validator("rating")
+    @classmethod
+    def check_rating(cls, v: int | None) -> int | None:
+        return _validate_rating(v)
 
 
 class GameUpdate(BaseModel):
@@ -34,6 +47,13 @@ class GameUpdate(BaseModel):
     min_players: int | None = None
     max_players: int | None = None
     scoring_spec: ScoringSpec | None = None
+    rating: int | None = None
+    notes: str | None = None
+
+    @field_validator("rating")
+    @classmethod
+    def check_rating(cls, v: int | None) -> int | None:
+        return _validate_rating(v)
 
 
 class GameRead(BaseModel):
@@ -42,6 +62,8 @@ class GameRead(BaseModel):
     min_players: int
     max_players: int
     scoring_spec: ScoringSpec | None = None
+    rating: int | None = None
+    notes: str | None = None
     created_at: datetime
     updated_at: datetime
     expansions: list[ExpansionRead] = []

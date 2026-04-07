@@ -56,6 +56,8 @@ async def create_game(
         min_players=payload.min_players,
         max_players=payload.max_players,
         scoring_spec=payload.scoring_spec.model_dump() if payload.scoring_spec else None,
+        rating=payload.rating,
+        notes=payload.notes,
     )
     db.add(game)
     await db.commit()
@@ -97,8 +99,11 @@ async def update_game(
         setattr(game, key, value)
 
     await db.commit()
-    await db.refresh(game, ["expansions"])
-    return game
+    # Re-query to get server-side updated_at and eager-load expansions
+    result = await db.execute(
+        select(Game).options(selectinload(Game.expansions)).where(Game.id == game_id)
+    )
+    return result.scalar_one()
 
 
 @router.delete("/games/{game_id}", status_code=204)

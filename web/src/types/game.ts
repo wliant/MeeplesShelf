@@ -14,6 +14,8 @@ export interface Game {
   min_players: number;
   max_players: number;
   scoring_spec: ScoringSpec | null;
+  rating: number | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
   expansions: Expansion[];
@@ -24,6 +26,8 @@ export interface GameCreate {
   min_players: number;
   max_players: number;
   scoring_spec?: ScoringSpec | null;
+  rating?: number | null;
+  notes?: string | null;
 }
 
 export interface ExpansionCreate {
