@@ -93,14 +93,19 @@ Centered card (width 360px) on a grey background (`grey.100`).
 
 **Elements (top to bottom):**
 1. Title: "MeeplesShelf" (h5 Typography, centered)
-2. "Continue as Guest" button (outlined, full-width) → `auth.enterAsGuest()` + navigate to `/inventory`
-3. Divider with "or" label
-4. "Admin Password" text field (type=password, full-width, small size)
-5. Error alert (severity=error) — visible only on wrong password; message: "Incorrect password"
-6. "Login as Admin" button (contained, full-width) — **disabled** when password field is empty or request is in-flight
+2. Guidance text (body2, text.secondary, centered): "Admin access requires the shared password configured on your server. Guests can browse the collection without a password."
+3. "Continue as Guest" button (outlined, full-width) → `auth.enterAsGuest()` + navigate to `/inventory`
+4. Divider with "or" label
+5. "Admin Password" text field (full-width, small size) with:
+   - Show/hide password toggle: `IconButton` with `Visibility`/`VisibilityOff` icon in an `InputAdornment` at the end position. Toggles `type` between `"password"` and `"text"`. Dynamic `aria-label` ("Show password" / "Hide password").
+   - Helper text: "Enter the shared household password set in your server configuration"
+   - Browser integration: `autoComplete="current-password"`, `name="password"`
+6. Error alert (severity=error) — visible only on wrong password; message: "Incorrect password"
+7. "Login as Admin" button (contained, full-width) — **disabled** when password field is empty or request is in-flight
 
 **Interactions:**
 - Enter key in password field triggers login.
+- Clicking the eye icon toggles password visibility.
 - On successful login: store JWT + set admin role + navigate to `/inventory`.
 - On 401: show error alert, stay on login page.
 

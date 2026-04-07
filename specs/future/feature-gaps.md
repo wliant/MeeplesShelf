@@ -505,20 +505,22 @@ must mentally cross-reference them.
 
 ---
 
-### Gap 24 — Password Field Not Masked Properly
+### ~~Gap 24 — Password Field UX / Onboarding~~ (Done)
 
-**Description.** The admin password input on the login page uses a standard `<TextField>`
-with no `type="password"` — or if it does, there is no show/hide toggle. The field label
-says "Admin Password" but there is no indication of what the password is for (e.g., "Enter
-the shared household password"). First-time users have no guidance on what credential to
-enter or how to obtain it.
+**Status.** Implemented. The `LoginPage` password field now includes: (1) a show/hide toggle
+using `Visibility`/`VisibilityOff` icons in an `InputAdornment` with dynamic `aria-label`,
+(2) helper text explaining the shared household password model, (3) `autoComplete="current-password"`
+and `name="password"` attributes for browser password manager integration, and (4) a guidance
+`Typography` element below the title providing first-time user context about admin vs guest
+access. File changed: `web/src/pages/LoginPage.tsx`. Covered by 2 E2E regression tests
+(`e2e-test/tests/test_password_field_ux.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Low — confusing for first-time setup; no onboarding guidance |
 | **Technical Complexity** | Low — add helper text explaining the shared password model; add a show/hide toggle icon; ensure `autocomplete="current-password"` for browser integration |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P2 |
+| **Suggested Priority** | ~~P2~~ Done |
 
 ---
 
@@ -549,4 +551,4 @@ enter or how to obtain it.
 | 21 | ~~Player Management (Rename/Delete)~~ | ~~P1~~ Done | Medium | — |
 | 22 | ~~Session Detail Modal Lacks Context~~ | ~~P2~~ Done | Low | — |
 | 23 | Game Card Shows No Session History | P2 | Low-Medium | — |
-| 24 | Password Field UX / Onboarding | P2 | Low | — |
+| 24 | ~~Password Field UX / Onboarding~~ | ~~P2~~ Done | Low | — |
