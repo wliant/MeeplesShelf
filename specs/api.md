@@ -53,7 +53,9 @@ See [scoring-system.md](./scoring-system.md) for full `ScoringField` definitions
   "name":         "string",          // required
   "min_players":  1,                 // optional, default 1
   "max_players":  4,                 // optional, default 4
-  "scoring_spec": ScoringSpec | null // optional, default null
+  "scoring_spec": ScoringSpec | null, // optional, default null
+  "rating":       "integer | null",  // optional, default null; must be 1–10 if provided
+  "notes":        "string | null"    // optional, default null; free-text personal notes
 }
 ```
 
@@ -64,9 +66,12 @@ All fields optional (partial update).
   "name":         "string | null",
   "min_players":  "integer | null",
   "max_players":  "integer | null",
-  "scoring_spec": "ScoringSpec | null"
+  "scoring_spec": "ScoringSpec | null",
+  "rating":       "integer | null",
+  "notes":        "string | null"
 }
 ```
+`rating` is validated to 1–10 when not null. Sending `null` clears the rating.
 
 ### `GameRead`
 ```json
@@ -76,6 +81,8 @@ All fields optional (partial update).
   "min_players":  "integer",
   "max_players":  "integer",
   "scoring_spec": "ScoringSpec | null",
+  "rating":       "integer | null",
+  "notes":        "string | null",
   "created_at":   "datetime (ISO 8601, UTC)",
   "updated_at":   "datetime (ISO 8601, UTC)",
   "expansions":   "ExpansionRead[]"

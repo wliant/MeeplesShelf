@@ -158,6 +158,7 @@ Renders one `GameCard` per game.
 
 **Layout (always visible):**
 - Game name (h6 Typography)
+- Rating display: MUI `<Rating>` component (`value={game.rating}`, `max={10}`, `readOnly`, `size="small"`) — only shown when `game.rating` is not null
 - Player count chip: e.g. "3-4 players" (outlined)
 - Scoring fields chip: e.g. "5 scoring fields" (primary colour, filled) — only if `scoring_spec` exists and has fields
 - Admin-only row:
@@ -165,9 +166,10 @@ Renders one `GameCard` per game.
   - Delete icon button (trash) → opens a `ConfirmDialog` ("Delete Game") with cascade warning; on confirm calls `DELETE /api/games/{id}`
 - Expand/collapse chevron button (always visible)
 
-**Collapsible section (expansion list):**
+**Collapsible section:**
 - Toggled by clicking the chevron button
-- Renders `<ExpansionList game={game} onRefresh={onRefresh} isAdmin={isAdmin} />`
+- Notes (if `game.notes` is not null): "Notes" subtitle2 heading + body2 text in secondary colour
+- `<ExpansionList game={game} onRefresh={onRefresh} isAdmin={isAdmin} />`
 
 ---
 
@@ -203,6 +205,12 @@ Renders one `GameCard` per game.
 | Game Name | text | "" | Required; Create/Update button disabled if empty |
 | Min Players | number | 1 | — |
 | Max Players | number | 4 | — |
+| Rating | MUI `<Rating>` (10 stars) | null (no rating) | 1–10 when set; click current value to clear |
+| Notes | multiline text | "" | Optional; empty string saved as null |
+
+**Rating and Notes section (between player counts and scoring spec):**
+- Rating: MUI `<Rating max={10}>` with "Rating" subtitle. Clicking a star sets the rating; clicking the current value clears it (returns null).
+- Notes: `<TextField multiline minRows={2} maxRows={4}>` with placeholder "Personal notes about this game..."
 
 **Scoring Specification section:**
 - Section heading: "Scoring Specification"

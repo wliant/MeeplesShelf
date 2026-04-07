@@ -1,6 +1,6 @@
 # MeeplesShelf — Data Model
 
-All tables are created by Alembic migration `001_initial.py`. The ORM layer uses SQLAlchemy 2 async with PostgreSQL 16.
+Tables are created by Alembic migrations (`001_initial.py`, `002_add_game_rating_notes.py`). The ORM layer uses SQLAlchemy 2 async with PostgreSQL 16.
 
 ---
 
@@ -40,6 +40,8 @@ Stores board games in the collection.
 | `min_players` | `INTEGER` | — | `1` | Application default (not server default) |
 | `max_players` | `INTEGER` | — | `4` | Application default (not server default) |
 | `scoring_spec` | `JSONB` | NULLABLE | `NULL` | See [Scoring System](./scoring-system.md) |
+| `rating` | `INTEGER` | NULLABLE | `NULL` | Group rating 1–10; validated by Pydantic, not DB constraint |
+| `notes` | `TEXT` | NULLABLE | `NULL` | Free-text personal notes about the game |
 | `created_at` | `TIMESTAMPTZ` | — | `now()` (server default) | Record creation time |
 | `updated_at` | `TIMESTAMPTZ` | — | `now()` (server default) | Auto-updated on every write via SQLAlchemy `onupdate=func.now()` |
 

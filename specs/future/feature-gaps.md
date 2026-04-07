@@ -201,19 +201,26 @@ score progression over time, or head-to-head record against other players.
 
 ---
 
-### Gap 8 — Game Ratings and Personal Notes
+### ~~Gap 8 — Game Ratings and Personal Notes~~ (Done)
 
-**Description.** Games in the inventory have no qualitative metadata beyond the scoring
-spec. There is no way to record how much the group enjoys a game, leave impressions after
-play, or tag a game as "we should play this again soon." This limits the usefulness of the
-inventory as a decision-support tool when choosing what to play next.
+**Status.** Implemented. `rating` (INTEGER, nullable, validated 1–10) and `notes` (TEXT, nullable)
+columns added to the `games` table via Alembic migration `002_add_game_rating_notes.py`. Backend:
+`GameCreate`, `GameUpdate`, and `GameRead` schemas updated with both fields; `field_validator` enforces
+rating range; `create_game` and `update_game` router endpoints handle the new fields. A pre-existing
+async ORM bug in `update_game` (MissingGreenlet on `updated_at`) was fixed by re-querying after commit.
+Frontend: `Game` and `GameCreate` TypeScript types extended; `GameForm` includes a 10-star MUI `<Rating>`
+widget and a multiline `<TextField>` for notes between the player count row and scoring spec section;
+`GameCard` displays a read-only `<Rating>` on the card face and notes in the expandable section.
+`formatRating` utility in `web/src/utils/rating.ts`. Covered by 14 backend unit tests
+(`app/tests/test_game_schema.py`), 4 frontend unit tests (`web/src/utils/rating.test.ts`), and 10 E2E
+integration tests (`e2e-test/tests/test_game_rating_notes.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Low-Medium — improves the inventory page from a pure catalogue into a living reference for the group's taste |
 | **Technical Complexity** | Low — add a `rating` (numeric 1–10) and `notes` (text) column to the `games` table via an Alembic migration; surface a star/number rating widget and notes field in `GameCard` and `GameForm` |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P2 |
+| **Suggested Priority** | ~~P2~~ Done |
 
 ---
 
@@ -518,7 +525,7 @@ enter or how to obtain it.
 | 5 | ~~Pagination~~ | ~~P1~~ Done | Low | Gap 4 (ideally) |
 | 6 | ~~Data Export and Backup~~ | ~~P1~~ Done | Low-Medium | — |
 | 7 | Per-Player Profiles | P2 | Medium | Gap 3 |
-| 8 | Game Ratings and Notes | P2 | Low | — |
+| 8 | ~~Game Ratings and Notes~~ | ~~P2~~ Done | Low | — |
 | 9 | Tags and Categories | P2 | Medium | Gap 4 |
 | 10 | Game Cover Images | P2 | Medium | — |
 | 11 | BoardGameGeek Integration | P2 | High | Gap 10 |
