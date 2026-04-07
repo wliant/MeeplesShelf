@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Box,
   Table,
   TableBody,
   TableCell,
@@ -14,7 +15,14 @@ import {
   Typography,
   Chip,
   Stack,
+  Link as MuiLink,
 } from "@mui/material";
+import {
+  EmojiEvents as EmojiEventsIcon,
+  Notes as NotesIcon,
+  Extension as ExtensionIcon,
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import type { GameSession } from "../../types/session";
 
 interface Props {
@@ -25,29 +33,54 @@ interface Props {
 }
 
 export default function SessionDetail({ session, onClose, onEdit, isAdmin }: Props) {
+  const navigate = useNavigate();
+
   if (!session) return null;
 
   return (
     <Dialog open={!!session} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        {session.game.name} -{" "}
+        <MuiLink
+          component="button"
+          variant="h6"
+          underline="hover"
+          onClick={() => {
+            onClose();
+            navigate(`/inventory?search=${encodeURIComponent(session.game.name)}`);
+          }}
+          sx={{ cursor: "pointer", verticalAlign: "baseline" }}
+        >
+          {session.game.name}
+        </MuiLink>
+        {" \u2014 "}
         {new Date(session.played_at).toLocaleDateString()}
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {session.notes && (
-            <Typography variant="body2" color="text.secondary">
-              {session.notes}
-            </Typography>
+            <Box sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 1 }}>
+              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.5 }}>
+                <NotesIcon fontSize="small" color="action" />
+                <Typography variant="subtitle2">Notes</Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary">
+                {session.notes}
+              </Typography>
+            </Box>
           )}
 
           {session.expansions.length > 0 && (
-            <Stack direction="row" spacing={1}>
-              <Typography variant="body2">Expansions:</Typography>
-              {session.expansions.map((e) => (
-                <Chip key={e.id} label={e.name} size="small" />
-              ))}
-            </Stack>
+            <Box sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 1 }}>
+              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.5 }}>
+                <ExtensionIcon fontSize="small" color="action" />
+                <Typography variant="subtitle2">Expansions</Typography>
+              </Stack>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {session.expansions.map((e) => (
+                  <Chip key={e.id} label={e.name} size="small" variant="outlined" />
+                ))}
+              </Stack>
+            </Box>
           )}
 
           <TableContainer component={Paper} variant="outlined">
@@ -61,17 +94,18 @@ export default function SessionDetail({ session, onClose, onEdit, isAdmin }: Pro
               </TableHead>
               <TableBody>
                 {session.players.map((sp) => (
-                  <TableRow key={sp.id}>
-                    <TableCell>{sp.player.name}</TableCell>
-                    <TableCell align="center">
+                  <TableRow
+                    key={sp.id}
+                    sx={sp.winner ? { bgcolor: (theme) => `${theme.palette.primary.main}14` } : undefined}
+                  >
+                    <TableCell sx={{ fontWeight: sp.winner ? "bold" : "normal" }}>
+                      {sp.player.name}
+                    </TableCell>
+                    <TableCell align="center" sx={{ fontWeight: sp.winner ? "bold" : "normal" }}>
                       {sp.total_score ?? "-"}
                     </TableCell>
                     <TableCell align="center">
-                      {sp.winner ? (
-                        <Chip label="Winner" color="primary" size="small" />
-                      ) : (
-                        ""
-                      )}
+                      {sp.winner ? <EmojiEventsIcon color="primary" fontSize="small" /> : null}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -86,7 +120,11 @@ export default function SessionDetail({ session, onClose, onEdit, isAdmin }: Pro
                 <TableRow>
                   <TableCell>Category</TableCell>
                   {session.players.map((sp) => (
-                    <TableCell key={sp.id} align="center">
+                    <TableCell
+                      key={sp.id}
+                      align="center"
+                      sx={{ fontWeight: sp.winner ? "bold" : "normal", color: sp.winner ? "primary.main" : undefined }}
+                    >
                       {sp.player.name}
                     </TableCell>
                   ))}

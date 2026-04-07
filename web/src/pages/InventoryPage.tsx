@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -25,12 +25,15 @@ import ConfirmDialog, { buildGameDeleteMessage } from "../components/common/Conf
 import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
 import { extractErrorMessage } from "../utils/errors";
+import { useSearchParams } from "react-router-dom";
 
 const PAGE_SIZE = 20;
 
 export default function InventoryPage() {
   const { isAdmin } = useAuth();
   const { showSnackbar } = useSnackbar();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearch = useMemo(() => searchParams.get("search") ?? "", []);
   const [games, setGames] = useState<Game[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -39,8 +42,15 @@ export default function InventoryPage() {
   const [pendingDeleteGame, setPendingDeleteGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
+
+  // Clear URL search param after consuming it
+  useEffect(() => {
+    if (searchParams.has("search")) {
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounce search input
   useEffect(() => {
