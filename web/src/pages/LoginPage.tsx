@@ -7,10 +7,13 @@ import {
   Card,
   CardContent,
   Divider,
+  IconButton,
+  InputAdornment,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { loginAdmin } from "../api/auth";
 
@@ -20,6 +23,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleGuestLogin = () => {
     auth.enterAsGuest();
@@ -55,6 +59,15 @@ export default function LoginPage() {
           <Typography variant="h5" align="center" gutterBottom>
             MeeplesShelf
           </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            align="center"
+            sx={{ mb: 1 }}
+          >
+            Admin access requires the shared password configured on your
+            server. Guests can browse the collection without a password.
+          </Typography>
           <Stack spacing={2}>
             <Button variant="outlined" fullWidth onClick={handleGuestLogin}>
               Continue as Guest
@@ -62,12 +75,33 @@ export default function LoginPage() {
             <Divider>or</Divider>
             <TextField
               label="Admin Password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               fullWidth
               size="small"
+              name="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdminLogin()}
+              helperText="Enter the shared household password set in your server configuration"
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        edge="end"
+                        size="small"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
             {error && <Alert severity="error">{error}</Alert>}
             <Button
