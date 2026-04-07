@@ -464,20 +464,28 @@ warning via `ConfirmDialog`. Guest view is read-only. "Players" nav link added t
 
 ---
 
-### Gap 22 — Session Detail Modal Lacks Context
+### ~~Gap 22 — Session Detail Modal Lacks Context~~ (Done)
 
-**Description.** The session detail modal shows only a summary table and score breakdown, but
-is missing several useful details: which expansions were used (chips exist in code but only
-render if present), the session notes (same), and no visual distinction for the winner beyond
-a small "Winner" chip. There is also no way to navigate from a session detail to the
-associated game's inventory card, or vice versa.
+**Status.** Implemented. The `SessionDetail` modal now has three improvements:
+(1) **Winner highlighting** — winning player rows have a light primary-colour background,
+bold name and score, and an `EmojiEventsIcon` (trophy) replacing the plain "Winner" chip.
+Winner column headers in the Score Breakdown table are bold and use primary colour.
+(2) **Clickable game name** — the game name in the dialog title is now an `MuiLink` that
+closes the modal and navigates to `/inventory?search={gameName}`. `InventoryPage` reads
+the `search` URL parameter on mount to seed its search field, enabling cross-navigation.
+(3) **Styled notes and expansions** — both sections are wrapped in tinted `Box` containers
+(`bgcolor: action.hover`) with icon headers (`NotesIcon`, `ExtensionIcon`) and `subtitle2`
+labels. Expansion chips use `variant="outlined"` for a lighter look.
+Files changed: `web/src/components/sessions/SessionDetail.tsx`,
+`web/src/pages/InventoryPage.tsx`. Covered by 9 E2E integration tests
+(`e2e-test/tests/test_session_detail_context.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Low-Medium — the detail view is functional but feels thin; cross-navigation between games and sessions would make history exploration natural |
 | **Technical Complexity** | Low — add clickable game name links, render notes/expansions more prominently, visually highlight winning player rows |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P2 |
+| **Suggested Priority** | ~~P2~~ Done |
 
 ---
 
@@ -539,6 +547,6 @@ enter or how to obtain it.
 | 19 | ~~Sessions Table Not Responsive~~ | ~~P1~~ Done | Medium | — |
 | 20 | Accessibility (a11y) Support | P2 | Low-Medium | — |
 | 21 | ~~Player Management (Rename/Delete)~~ | ~~P1~~ Done | Medium | — |
-| 22 | Session Detail Modal Lacks Context | P2 | Low | — |
+| 22 | ~~Session Detail Modal Lacks Context~~ | ~~P2~~ Done | Low | — |
 | 23 | Game Card Shows No Session History | P2 | Low-Medium | — |
 | 24 | Password Field UX / Onboarding | P2 | Low | — |

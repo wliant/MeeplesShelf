@@ -108,13 +108,15 @@ Centered card (width 360px) on a grey background (`grey.100`).
 
 ## InventoryPage
 
-**URL:** `/inventory`
+**URL:** `/inventory` (accepts optional `?search=` query parameter for cross-navigation)
 
 **Data fetched on mount:** `GET /api/games` → `PaginatedResponse[Game]` (page 1 of 20)
 
 ### Search bar
 
 A `TextField` (small, full-width) with a search icon appears below the heading when not loading. Placeholder: "Search games...". Filters the game list server-side via the `name` query parameter with a 300ms debounce. Changing the search text resets pagination to page 1. When the search matches no games, a "No games match your search" message is shown instead of the grid.
+
+**URL parameter seeding:** On mount, the `search` URL query parameter (if present) is used to seed the search field. This enables cross-navigation from `SessionDetail` (clicking a game name navigates to `/inventory?search={gameName}`). The URL parameter is cleared after consumption via `setSearchParams({}, { replace: true })` to keep the URL clean while the search remains active.
 
 ### Pagination
 
@@ -333,20 +335,24 @@ Read-only detail view. Opens when a row is clicked in `SessionList`.
 
 **Props:** `session`, `onClose`, `onEdit?`, `isAdmin?`
 
-**Title:** "{game.name} — {played_at toLocaleDateString()}"
+**Title:** Game name rendered as a clickable `MuiLink` (underline on hover) that navigates to `/inventory?search={gameName}` and closes the modal. Followed by an em-dash and the session date (`toLocaleDateString()`).
 
 **Contents (top to bottom):**
-1. Notes (if `session.notes` is not null): displayed as body text
-2. Expansions used (if any): chips with expansion names
-3. Summary table:
+1. **Notes section** (if `session.notes` is not null): Wrapped in a tinted `Box` (`bgcolor: action.hover`, rounded corners) with a `NotesIcon` + "Notes" subtitle2 heading, followed by body2 text in secondary colour.
+2. **Expansions section** (if any): Wrapped in a matching tinted `Box` with an `ExtensionIcon` + "Expansions" subtitle2 heading, followed by outlined `Chip` components with expansion names (flex-wrapped).
+3. **Summary table:**
    - Columns: Player | Total Score | Winner
-   - "Winner" cell shows a filled primary-colour chip labelled "Winner" for winning players
-4. "Score Breakdown" heading (if `players[0].score_data` has entries)
-5. Score Breakdown table:
+   - Winner rows are highlighted with a light primary-colour background (`~8% alpha`), bold player name and total score, and an `EmojiEventsIcon` (trophy) in the Winner column instead of a text chip.
+   - Non-winner rows have normal weight text and an empty Winner cell.
+4. **"Score Breakdown" heading** (subtitle2, if `players[0].score_data` has entries)
+5. **Score Breakdown table:**
    - Columns: Category | one column per player
+   - Winner player column headers are bold and use `primary.main` colour
    - Rows: one per key in `score_data` (displayed as-is)
    - Cell values formatted: booleans → "Yes"/"No", objects → JSON string, numbers → number
-6. Actions: "Edit" button (admin only, calls `onEdit(session)`) + "Close" button
+6. **Actions:** "Edit" button (admin only, calls `onEdit(session)`) + "Close" button
+
+**Cross-navigation:** Clicking the game name link closes the detail modal and navigates to `/inventory?search={encodedGameName}`. The `InventoryPage` reads the `search` URL parameter on mount to seed its search field, automatically filtering the game list to show the linked game. The URL parameter is cleared after consumption to keep the URL clean.
 
 ---
 
