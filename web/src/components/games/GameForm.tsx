@@ -15,6 +15,7 @@ import {
   Box,
   CircularProgress,
   Rating,
+  Tooltip,
 } from "@mui/material";
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { useState, useEffect } from "react";
@@ -204,12 +205,15 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
                       ))}
                     </Select>
                   </FormControl>
-                  <IconButton
-                    size="small"
-                    onClick={() => setFields(fields.filter((_, j) => j !== i))}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  <Tooltip title="Delete scoring field">
+                    <IconButton
+                      size="small"
+                      aria-label={`Delete field ${field.label || field.id}`}
+                      onClick={() => setFields(fields.filter((_, j) => j !== i))}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
                 </Stack>
 
                 {field.type === "numeric" && (
@@ -289,17 +293,20 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
                           }}
                           sx={{ width: 80 }}
                         />
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            const variants = field.variants.filter(
-                              (_, j) => j !== vi
-                            );
-                            updateField(i, { ...field, variants });
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                        <Tooltip title="Delete variant">
+                          <IconButton
+                            size="small"
+                            aria-label={`Delete variant ${v.label}`}
+                            onClick={() => {
+                              const variants = field.variants.filter(
+                                (_, j) => j !== vi
+                              );
+                              updateField(i, { ...field, variants });
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </Stack>
                     ))}
                     <Button

@@ -205,6 +205,7 @@ export default function InventoryPage() {
       {isAdmin && (
         <Fab
           color="primary"
+          aria-label="Add new game"
           sx={{ position: "fixed", bottom: 24, right: 24 }}
           onClick={() => {
             setEditingGame(null);

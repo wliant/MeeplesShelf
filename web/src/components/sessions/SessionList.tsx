@@ -9,6 +9,7 @@ import {
   IconButton,
   Chip,
   Divider,
+  Tooltip,
   Typography,
   Stack,
   useMediaQuery,
@@ -106,15 +107,18 @@ export default function SessionList({
                   </TableCell>
                   {isAdmin && (
                     <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(s);
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                      <Tooltip title="Delete session">
+                        <IconButton
+                          size="small"
+                          aria-label={`Delete session for ${s.game.name}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(s);
+                          }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
                     </TableCell>
                   )}
                 </TableRow>

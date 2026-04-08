@@ -15,6 +15,18 @@ const theme = createTheme({
     primary: { main: "#5c6bc0" },
     secondary: { main: "#ff7043" },
   },
+  components: {
+    MuiButtonBase: {
+      styleOverrides: {
+        root: {
+          "&:focus-visible": {
+            outline: "2px solid #5c6bc0",
+            outlineOffset: "2px",
+          },
+        },
+      },
+    },
+  },
 });
 
 function App() {

@@ -9,6 +9,7 @@ import {
   Collapse,
   Box,
   Rating,
+  Tooltip,
 } from "@mui/material";
 import {
   Delete as DeleteIcon,
@@ -68,26 +69,33 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }:
       </CardContent>
       <CardActions>
         {isAdmin && (
-          <IconButton size="small" onClick={() => onEdit(game)}>
-            <EditIcon />
-          </IconButton>
+          <Tooltip title="Edit game">
+            <IconButton size="small" aria-label={`Edit ${game.name}`} onClick={() => onEdit(game)}>
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
         )}
         {isAdmin && (
-          <IconButton size="small" onClick={() => onDelete(game)}>
-            <DeleteIcon />
-          </IconButton>
+          <Tooltip title="Delete game">
+            <IconButton size="small" aria-label={`Delete ${game.name}`} onClick={() => onDelete(game)}>
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
         )}
         <Box sx={{ flexGrow: 1 }} />
-        <IconButton
-          size="small"
-          onClick={() => setExpanded(!expanded)}
-          sx={{
-            transform: expanded ? "rotate(180deg)" : "none",
-            transition: "transform 0.2s",
-          }}
-        >
-          <ExpandMoreIcon />
-        </IconButton>
+        <Tooltip title={expanded ? "Hide details" : "Show details"}>
+          <IconButton
+            size="small"
+            aria-label={expanded ? "Hide details" : "Show details"}
+            onClick={() => setExpanded(!expanded)}
+            sx={{
+              transform: expanded ? "rotate(180deg)" : "none",
+              transition: "transform 0.2s",
+            }}
+          >
+            <ExpandMoreIcon />
+          </IconButton>
+        </Tooltip>
       </CardActions>
       <Collapse in={expanded}>
         <Box sx={{ px: 2, pb: 2 }}>

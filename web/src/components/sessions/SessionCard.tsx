@@ -6,6 +6,7 @@ import {
   Chip,
   IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { Delete as DeleteIcon } from "@mui/icons-material";
@@ -69,9 +70,11 @@ export default function SessionCard({
       </CardActionArea>
       {isAdmin && (
         <CardActions sx={{ justifyContent: "flex-end", pt: 0 }}>
-          <IconButton size="small" onClick={() => onDelete(session)}>
-            <DeleteIcon />
-          </IconButton>
+          <Tooltip title="Delete session">
+            <IconButton size="small" aria-label={`Delete session for ${session.game.name}`} onClick={() => onDelete(session)}>
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
         </CardActions>
       )}
     </Card>

@@ -6,6 +6,7 @@ import {
   TextField,
   Button,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
@@ -77,13 +78,16 @@ export default function ExpansionList({ game, onRefresh, isAdmin }: Props) {
             key={exp.id}
             secondaryAction={
               isAdmin ? (
-                <IconButton
-                  edge="end"
-                  size="small"
-                  onClick={() => setPendingDeleteExpansion(exp)}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                <Tooltip title="Delete expansion">
+                  <IconButton
+                    edge="end"
+                    size="small"
+                    aria-label={`Delete expansion ${exp.name}`}
+                    onClick={() => setPendingDeleteExpansion(exp)}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               ) : undefined
             }
           >

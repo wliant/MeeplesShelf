@@ -12,6 +12,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -94,9 +95,11 @@ export default function PlayerList({
             inputRef={inputRef}
             sx={{ minWidth: 120 }}
           />
-          <IconButton size="small" onMouseDown={(e) => e.preventDefault()} onClick={cancelEdit}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title="Cancel editing">
+            <IconButton size="small" aria-label="Cancel editing" onMouseDown={(e) => e.preventDefault()} onClick={cancelEdit}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Stack>
       );
     }
@@ -116,12 +119,16 @@ export default function PlayerList({
                   </Stack>
                   {isAdmin && editingId !== p.id && (
                     <Stack direction="row" spacing={0}>
-                      <IconButton size="small" onClick={() => startEdit(p)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => onDelete(p)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      <Tooltip title="Edit player">
+                        <IconButton size="small" aria-label={`Edit ${p.name}`} onClick={() => startEdit(p)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete player">
+                        <IconButton size="small" aria-label={`Delete ${p.name}`} onClick={() => onDelete(p)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
                   )}
                 </Stack>
@@ -161,13 +168,17 @@ export default function PlayerList({
               {isAdmin && (
                 <TableCell align="right">
                   {editingId !== p.id && (
-                    <IconButton size="small" onClick={() => startEdit(p)}>
-                      <EditIcon />
-                    </IconButton>
+                    <Tooltip title="Edit player">
+                      <IconButton size="small" aria-label={`Edit ${p.name}`} onClick={() => startEdit(p)}>
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
                   )}
-                  <IconButton size="small" onClick={() => onDelete(p)}>
-                    <DeleteIcon />
-                  </IconButton>
+                  <Tooltip title="Delete player">
+                    <IconButton size="small" aria-label={`Delete ${p.name}`} onClick={() => onDelete(p)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
                 </TableCell>
               )}
             </TableRow>

@@ -8,6 +8,7 @@ import {
   Divider,
   Drawer,
   IconButton,
+  Link as MuiLink,
   List,
   ListItem,
   ListItemButton,
@@ -86,6 +87,27 @@ export default function AppShell() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <MuiLink
+        href="#main-content"
+        sx={{
+          position: "absolute",
+          left: "-9999px",
+          top: "auto",
+          "&:focus": {
+            left: 8,
+            top: 8,
+            zIndex: 9999,
+            bgcolor: "primary.main",
+            color: "white",
+            px: 2,
+            py: 1,
+            borderRadius: 1,
+            textDecoration: "none",
+          },
+        }}
+      >
+        Skip to main content
+      </MuiLink>
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
@@ -102,18 +124,20 @@ export default function AppShell() {
             </IconButton>
           ) : (
             <>
-              <Button color="inherit" component={Link} to="/inventory">
-                Inventory
-              </Button>
-              <Button color="inherit" component={Link} to="/sessions">
-                Sessions
-              </Button>
-              <Button color="inherit" component={Link} to="/players">
-                Players
-              </Button>
-              <Button color="inherit" component={Link} to="/statistics">
-                Statistics
-              </Button>
+              <Box component="nav" aria-label="Main navigation" sx={{ display: "flex" }}>
+                <Button color="inherit" component={Link} to="/inventory">
+                  Inventory
+                </Button>
+                <Button color="inherit" component={Link} to="/sessions">
+                  Sessions
+                </Button>
+                <Button color="inherit" component={Link} to="/players">
+                  Players
+                </Button>
+                <Button color="inherit" component={Link} to="/statistics">
+                  Statistics
+                </Button>
+              </Box>
               {auth.isAdmin && (
                 <>
                   <IconButton
@@ -173,40 +197,42 @@ export default function AppShell() {
             />
           </Box>
           <Divider />
-          <List>
-            <ListItem disablePadding>
-              <ListItemButton onClick={() => handleDrawerNav("/inventory")}>
-                <ListItemIcon>
-                  <SportsEsportsIcon />
-                </ListItemIcon>
-                <ListItemText primary="Inventory" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton onClick={() => handleDrawerNav("/sessions")}>
-                <ListItemIcon>
-                  <HistoryIcon />
-                </ListItemIcon>
-                <ListItemText primary="Sessions" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton onClick={() => handleDrawerNav("/players")}>
-                <ListItemIcon>
-                  <PeopleIcon />
-                </ListItemIcon>
-                <ListItemText primary="Players" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton onClick={() => handleDrawerNav("/statistics")}>
-                <ListItemIcon>
-                  <BarChartIcon />
-                </ListItemIcon>
-                <ListItemText primary="Statistics" />
-              </ListItemButton>
-            </ListItem>
-          </List>
+          <Box component="nav" aria-label="Main navigation">
+            <List>
+              <ListItem disablePadding>
+                <ListItemButton onClick={() => handleDrawerNav("/inventory")}>
+                  <ListItemIcon>
+                    <SportsEsportsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Inventory" />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton onClick={() => handleDrawerNav("/sessions")}>
+                  <ListItemIcon>
+                    <HistoryIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Sessions" />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton onClick={() => handleDrawerNav("/players")}>
+                  <ListItemIcon>
+                    <PeopleIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Players" />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton onClick={() => handleDrawerNav("/statistics")}>
+                  <ListItemIcon>
+                    <BarChartIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Statistics" />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Box>
           {auth.isAdmin && (
             <>
               <Divider />
@@ -257,7 +283,7 @@ export default function AppShell() {
           </List>
         </Box>
       </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" id="main-content" sx={{ flexGrow: 1, p: 3 }}>
         <Outlet />
       </Box>
     </Box>

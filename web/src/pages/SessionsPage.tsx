@@ -232,6 +232,7 @@ export default function SessionsPage() {
       {isAdmin && (
         <Fab
           color="primary"
+          aria-label="Log new session"
           sx={{ position: "fixed", bottom: 24, right: 24 }}
           onClick={() => setFormOpen(true)}
         >
