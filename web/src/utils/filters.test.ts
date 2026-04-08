@@ -14,6 +14,8 @@ const makeGame = (id: number, name: string): Game => ({
   created_at: "2025-01-01T00:00:00Z",
   updated_at: "2025-01-01T00:00:00Z",
   expansions: [],
+  session_count: 0,
+  last_played_at: null,
 });
 
 const makeSession = (id: number, playerNames: string[]): GameSession => ({
