@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     s3_secret_key: str = "minioadmin"
     s3_bucket: str = "meeplesshelf"
     s3_public_url: str = "http://localhost:9000"
+    bgg_api_token: str | None = None
 
     model_config = {"env_prefix": "APP_", "env_file": [".env", "../.env"], "extra": "ignore"}
 

@@ -37,6 +37,7 @@ class GameCreate(BaseModel):
     rating: int | None = None
     notes: str | None = None
     tag_ids: list[int] = []
+    bgg_id: int | None = None
 
     @field_validator("rating")
     @classmethod
@@ -52,6 +53,7 @@ class GameUpdate(BaseModel):
     rating: int | None = None
     notes: str | None = None
     tag_ids: list[int] | None = None
+    bgg_id: int | None = None
 
     @field_validator("rating")
     @classmethod
@@ -72,6 +74,7 @@ class GameRead(BaseModel):
     updated_at: datetime
     expansions: list[ExpansionRead] = []
     tags: list[TagRead] = []
+    bgg_id: int | None = None
     session_count: int = 0
     last_played_at: datetime | None = None
 

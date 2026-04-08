@@ -124,6 +124,7 @@ async def create_game(
         scoring_spec=payload.scoring_spec.model_dump() if payload.scoring_spec else None,
         rating=payload.rating,
         notes=payload.notes,
+        bgg_id=payload.bgg_id,
     )
     game.tags = tags
     db.add(game)
