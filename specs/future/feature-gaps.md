@@ -236,19 +236,29 @@ integration tests (`e2e-test/tests/test_game_rating_notes.py`).
 
 ---
 
-### Gap 9 — Tags and Categories
+### ~~Gap 9 — Tags and Categories~~ (Done)
 
-**Description.** There is no way to classify games by genre, weight, theme, estimated play
-time, or any other attribute. The inventory is a flat, unsorted list. Browsing a diverse
-collection for a quick game, a heavyweight euro, or a specific theme is impossible without
-external references.
+**Status.** Implemented. `tags` table (VARCHAR(100) name, case-insensitively unique via functional
+index on `lower(name)`) and `game_tags` M:M junction table added via Alembic migration 004.
+Backend: `Tag` model and `game_tags` Table in `app/app/models/game.py`, `TagCreate`/`TagRead`
+schemas in `app/app/schemas/tag.py`, `GameCreate`/`GameUpdate` extended with `tag_ids` field,
+`GameRead` extended with `tags` field. Tags CRUD router (`GET /tags`, `POST /tags`, `DELETE /tags/{id}`)
+in `app/app/routers/tags.py`. `GET /api/games` accepts repeatable `tag` query parameter for AND-logic
+server-side filtering (case-insensitive). `POST /api/games` and `PUT /api/games/{id}` accept `tag_ids`
+for tag assignment with validation (400 if invalid). Frontend: `Tag` type in `web/src/types/game.ts`,
+tags API client in `web/src/api/tags.ts`. `GameForm` includes MUI `Autocomplete` (multiple, freeSolo)
+for tag selection and inline creation between Notes and Scoring Spec sections. `GameCard` displays tag
+chips (outlined) below info chips. `InventoryPage` shows clickable tag filter chips below the search bar
+(filled when active, outlined when inactive). `filterGamesByTag()` utility in `web/src/utils/filters.ts`.
+Covered by 10 backend unit tests (`app/tests/test_tag_schema.py`), 6 frontend unit tests
+(`web/src/utils/filters.test.ts`), and 22 E2E integration tests (`e2e-test/tests/test_tags.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — tags become the primary navigation mechanism once a collection grows beyond casual recall |
 | **Technical Complexity** | Medium — new `tags` table; `game_tags` M:M junction; tag management UI in `GameForm`; tag-based filter chips in `InventoryPage` |
 | **Dependencies / Prerequisites** | Search and Filtering (Gap 4) for the filter UI pattern |
-| **Suggested Priority** | P2 |
+| **Suggested Priority** | ~~P2~~ Done |
 
 ---
 

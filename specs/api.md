@@ -47,6 +47,22 @@ See [scoring-system.md](./scoring-system.md) for full `ScoringField` definitions
 
 ---
 
+### `TagCreate`
+```json
+{ "name": "string" }   // required; max 100 chars; stripped of whitespace
+```
+
+### `TagRead`
+```json
+{
+  "id":         "integer",
+  "name":       "string",
+  "created_at": "datetime (ISO 8601, UTC)"
+}
+```
+
+---
+
 ### `GameCreate`
 ```json
 {
@@ -55,7 +71,8 @@ See [scoring-system.md](./scoring-system.md) for full `ScoringField` definitions
   "max_players":  4,                 // optional, default 4
   "scoring_spec": ScoringSpec | null, // optional, default null
   "rating":       "integer | null",  // optional, default null; must be 1–10 if provided
-  "notes":        "string | null"    // optional, default null; free-text personal notes
+  "notes":        "string | null",   // optional, default null; free-text personal notes
+  "tag_ids":      "integer[]"        // optional, default []; list of existing tag IDs to assign
 }
 ```
 
@@ -68,10 +85,12 @@ All fields optional (partial update).
   "max_players":  "integer | null",
   "scoring_spec": "ScoringSpec | null",
   "rating":       "integer | null",
-  "notes":        "string | null"
+  "notes":        "string | null",
+  "tag_ids":      "integer[] | null" // null = don't change; [] = clear all tags
 }
 ```
 `rating` is validated to 1–10 when not null. Sending `null` clears the rating.
+`tag_ids` when omitted leaves tags unchanged; when set to `[]` removes all tags; returns 400 if any ID is invalid.
 
 ### `GameRead`
 ```json
@@ -87,6 +106,7 @@ All fields optional (partial update).
   "created_at":      "datetime (ISO 8601, UTC)",
   "updated_at":      "datetime (ISO 8601, UTC)",
   "expansions":      "ExpansionRead[]",
+  "tags":            "TagRead[]",
   "session_count":   "integer (default 0)",
   "last_played_at":  "datetime (ISO 8601, UTC) | null"
 }
@@ -238,6 +258,7 @@ List games, ordered by name ascending. Expansions are eager-loaded. Supports fil
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `name` | string (optional) | — | Case-insensitive substring match on game name |
+| `tag` | string (optional, repeatable) | — | Filter to games having ALL specified tags (AND logic, case-insensitive). Repeat for multiple: `?tag=Strategy&tag=Euro` |
 | `skip` | integer (optional) | `0` | Number of records to skip (offset). Must be >= 0. |
 | `limit` | integer (optional) | `20` | Maximum number of records to return. Must be 1–100. |
 
@@ -257,6 +278,7 @@ Create a new game.
 
 | Status | Condition |
 |---|---|
+| `400` | One or more `tag_ids` do not exist |
 | `401` | Missing or invalid token |
 | `403` | Token subject is not `"admin"` |
 
@@ -414,6 +436,53 @@ The `seeded` array lists only the games that were newly created. If all games al
 |---|---|
 | `401` | Missing or invalid token |
 | `403` | Not admin |
+
+---
+
+## Tags Endpoints
+
+### `GET /api/tags`
+
+List all tags, ordered by name ascending.
+
+**Auth required:** No  
+**Response:** `200 OK` → `TagRead[]`
+
+---
+
+### `POST /api/tags` 🔒
+
+Create a new tag. Tag names are case-insensitively unique.
+
+**Auth required:** Yes (admin)  
+**Request body:** `TagCreate`  
+**Response:** `201 Created` → `TagRead`
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `401` | Missing or invalid token |
+| `403` | Token subject is not `"admin"` |
+| `409` | A tag with that name already exists (case-insensitive) |
+| `422` | Name is empty or exceeds 100 characters |
+
+---
+
+### `DELETE /api/tags/{tag_id}` 🔒
+
+Delete a tag. Cascade removes `game_tags` rows; games are retained.
+
+**Auth required:** Yes (admin)  
+**Response:** `204 No Content`
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `401` | Missing or invalid token |
+| `403` | Not admin |
+| `404` | Tag not found |
 
 ---
 

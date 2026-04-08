@@ -1,6 +1,6 @@
 # MeeplesShelf — Data Model
 
-Tables are created by Alembic migrations (`001_initial.py`, `002_add_game_rating_notes.py`). The ORM layer uses SQLAlchemy 2 async with PostgreSQL 16.
+Tables are created by Alembic migrations (`001_initial.py`, `002_add_game_rating_notes.py`, `003_add_game_image.py`, `004_add_tags.py`). The ORM layer uses SQLAlchemy 2 async with PostgreSQL 16.
 
 ---
 
@@ -8,10 +8,10 @@ Tables are created by Alembic migrations (`001_initial.py`, `002_add_game_rating
 
 ```
 games ──────────────────────────────────┐
- │                                      │
- │ 1:N (cascade delete)                 │
- ▼                                      │
-expansions                              │ N:1
+ │                  │                   │
+ │ 1:N (cascade)    │ M:N via game_tags │ N:1
+ ▼                  ▼                   │
+expansions        tags                  │
                                         │
 game_sessions ──────────────────────────┘
  │                 │
@@ -48,6 +48,32 @@ Stores board games in the collection.
 
 **Relationships:**
 - `expansions` → `list[Expansion]`, one-to-many, `cascade="all, delete-orphan"`
+- `tags` → `list[Tag]`, many-to-many via `game_tags`, `lazy="selectin"`
+
+---
+
+### `tags`
+
+User-defined labels for classifying games (e.g. genre, weight, theme). Names are case-insensitively unique.
+
+| Column | Type | Constraints | Default | Notes |
+|---|---|---|---|---|
+| `id` | `INTEGER` | PRIMARY KEY | auto-increment | — |
+| `name` | `VARCHAR(100)` | NOT NULL | — | Tag label; unique index on `lower(name)` |
+| `created_at` | `TIMESTAMPTZ` | — | `now()` (server default) | — |
+
+---
+
+### `game_tags`
+
+Junction table linking games to tags. Many-to-many.
+
+| Column | Type | Constraints |
+|---|---|---|
+| `game_id` | `INTEGER` | FK → `games.id` ON DELETE CASCADE, PRIMARY KEY |
+| `tag_id` | `INTEGER` | FK → `tags.id` ON DELETE CASCADE, PRIMARY KEY |
+
+No ORM model class — defined as a SQLAlchemy `Table` object used as `secondary` in the `Game.tags` relationship.
 
 ---
 
@@ -137,10 +163,11 @@ No ORM model class — defined as a SQLAlchemy `Table` object used as `secondary
 
 | Action | Effect |
 |---|---|
-| Delete `games` row | Cascades to all its `expansions`, all `game_sessions` for that game, and in turn all `session_players` for those sessions |
+| Delete `games` row | Cascades to all its `expansions`, all `game_sessions` for that game, all `game_tags` rows, and in turn all `session_players` for those sessions |
 | Delete `game_sessions` row | Cascades to all its `session_players` and removes rows from `session_expansions` |
 | Delete `players` row | Cascades to all `session_players` rows for that player (sessions themselves are retained) |
 | Delete `expansions` row | Removes rows from `session_expansions`; past sessions are not modified |
+| Delete `tags` row | Removes rows from `game_tags`; games themselves are retained |
 
 ---
 

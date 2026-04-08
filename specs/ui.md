@@ -126,6 +126,10 @@ A `TextField` (small, full-width) with a search icon appears below the heading w
 
 **URL parameter seeding:** On mount, the `search` URL query parameter (if present) is used to seed the search field. This enables cross-navigation from `SessionDetail` (clicking a game name navigates to `/inventory?search={gameName}`). The URL parameter is cleared after consumption via `setSearchParams({}, { replace: true })` to keep the URL clean while the search remains active.
 
+### Tag filter chips
+
+Below the search bar, when tags exist in the system, a row of clickable `Chip` components is displayed. Each chip shows a tag name. Tags load via `GET /api/tags` on mount and are refreshed after each game list refresh. Clicking a chip toggles it between active (filled, primary colour) and inactive (outlined, default). Active chips filter the game list server-side via the `tag` query parameter (AND semantics: games must have ALL active tags). Toggling a chip resets pagination to page 1. The filter combines with the name search.
+
 ### Pagination
 
 An MUI `Pagination` component appears below the game grid when the total number of games exceeds the page size (20). Page changes trigger a server re-fetch with the appropriate `skip` offset.
@@ -181,6 +185,7 @@ Renders one `GameCard` per game.
 - Rating display: MUI `<Rating>` component (`value={game.rating}`, `max={10}`, `readOnly`, `size="small"`) — only shown when `game.rating` is not null
 - Player count chip: e.g. "3-4 players" (outlined)
 - Scoring fields chip: e.g. "5 scoring fields" (primary colour, filled) — only if `scoring_spec` exists and has fields
+- Tag chips (below info chips, only when `game.tags.length > 0`): `Stack` with `flexWrap` containing outlined `Chip` components for each tag name
 - Session history line (body2, text.secondary): "Played 5 times · Last: 3/15/2025" when `session_count > 0`, or "Never played" when `session_count === 0`. Uses `formatLastPlayed()` from `utils/stats.ts`.
 - Admin-only row:
   - Edit icon button (pencil) → opens `GameForm` in "edit" mode with game pre-populated
@@ -232,6 +237,15 @@ Renders one `GameCard` per game.
 **Rating and Notes section (between player counts and scoring spec):**
 - Rating: MUI `<Rating max={10}>` with "Rating" subtitle. Clicking a star sets the rating; clicking the current value clears it (returns null).
 - Notes: `<TextField multiline minRows={2} maxRows={4}>` with placeholder "Personal notes about this game..."
+
+**Tags section (between Notes and Scoring Specification):**
+- MUI `<Autocomplete>` with `multiple` and `freeSolo` props
+- Label: "Tags", placeholder: "Type to search or create tags..."
+- Available options loaded from `GET /api/tags` when dialog opens
+- Selected tags displayed as removable `Chip` components
+- Selecting an existing tag adds it; typing a new string and pressing Enter calls `POST /api/tags` to create it inline, then adds the result
+- In edit mode, pre-populated from `game.tags`
+- On submit, `tag_ids` (array of tag IDs) is included in the `GameCreate` payload
 
 **Scoring Specification section:**
 - Section heading: "Scoring Specification"
