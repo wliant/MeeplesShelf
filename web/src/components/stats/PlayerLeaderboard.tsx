@@ -1,4 +1,6 @@
+import { Link as RouterLink } from "react-router-dom";
 import {
+  Link,
   Paper,
   Table,
   TableBody,
@@ -75,7 +77,16 @@ export default function PlayerLeaderboard({ data }: Props) {
             {data.map((p, i) => (
               <TableRow key={p.player_id}>
                 <TableCell>{i + 1}</TableCell>
-                <TableCell>{p.player_name}</TableCell>
+                <TableCell>
+                  <Link
+                    component={RouterLink}
+                    to={`/players/${p.player_id}`}
+                    color="inherit"
+                    underline="hover"
+                  >
+                    {p.player_name}
+                  </Link>
+                </TableCell>
                 <TableCell align="right">{p.sessions_played}</TableCell>
                 <TableCell align="right">{p.wins}</TableCell>
                 <TableCell align="right">

@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import {
   Card,
   CardContent,
   Divider,
   IconButton,
+  Link,
   Paper,
   Stack,
   Table,
@@ -103,7 +105,16 @@ export default function PlayerList({
         </Stack>
       );
     }
-    return <Typography>{player.name}</Typography>;
+    return (
+      <Link
+        component={RouterLink}
+        to={`/players/${player.id}`}
+        color="inherit"
+        underline="hover"
+      >
+        {player.name}
+      </Link>
+    );
   };
 
   if (isMobile) {

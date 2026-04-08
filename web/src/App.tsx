@@ -9,6 +9,7 @@ import InventoryPage from "./pages/InventoryPage";
 import SessionsPage from "./pages/SessionsPage";
 import PlayersPage from "./pages/PlayersPage";
 import StatisticsPage from "./pages/StatisticsPage";
+import PlayerProfilePage from "./pages/PlayerProfilePage";
 
 const theme = createTheme({
   palette: {
@@ -43,6 +44,7 @@ function App() {
                   <Route path="/inventory" element={<InventoryPage />} />
                   <Route path="/sessions" element={<SessionsPage />} />
                   <Route path="/players" element={<PlayersPage />} />
+                  <Route path="/players/:id" element={<PlayerProfilePage />} />
                   <Route path="/statistics" element={<StatisticsPage />} />
                   <Route path="*" element={<Navigate to="/inventory" replace />} />
                 </Route>

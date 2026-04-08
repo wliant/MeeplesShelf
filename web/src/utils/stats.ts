@@ -29,3 +29,8 @@ export function formatMonth(isoMonth: string): string {
 export function formatLastPlayed(isoDate: string | null): string {
   return isoDate ? new Date(isoDate).toLocaleDateString() : "Never";
 }
+
+/** Format a score value, returning "--" for null */
+export function formatScore(score: number | null): string {
+  return score !== null ? String(score) : "--";
+}
