@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import require_admin
-from app.models.game import Expansion, Game
+from app.models.game import Expansion, Game, Tag, game_tags
 from app.models.session import GameSession
 from app.schemas.game import (
     ExpansionCreate,
@@ -62,6 +62,7 @@ def _enrich_game(
 @router.get("/games", response_model=PaginatedResponse[GameRead])
 async def list_games(
     name: str | None = None,
+    tag: list[str] | None = Query(default=None),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -69,13 +70,25 @@ async def list_games(
     conditions = []
     if name:
         conditions.append(Game.name.ilike(f"%{name}%"))
+    if tag:
+        for t in tag:
+            subq = (
+                select(game_tags.c.game_id)
+                .join(Tag, game_tags.c.tag_id == Tag.id)
+                .where(func.lower(Tag.name) == t.strip().lower())
+            )
+            conditions.append(Game.id.in_(subq))
 
     count_query = select(func.count()).select_from(Game)
     for cond in conditions:
         count_query = count_query.where(cond)
     total = (await db.execute(count_query)).scalar_one()
 
-    query = select(Game).options(selectinload(Game.expansions)).order_by(Game.name)
+    query = (
+        select(Game)
+        .options(selectinload(Game.expansions), selectinload(Game.tags))
+        .order_by(Game.name)
+    )
     for cond in conditions:
         query = query.where(cond)
     query = query.offset(skip).limit(limit)
@@ -94,6 +107,16 @@ async def create_game(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(require_admin),
 ):
+    # Resolve tag_ids before creating game
+    tags = []
+    if payload.tag_ids:
+        result = await db.execute(
+            select(Tag).where(Tag.id.in_(payload.tag_ids))
+        )
+        tags = list(result.scalars().all())
+        if len(tags) != len(set(payload.tag_ids)):
+            raise HTTPException(400, "One or more tag_ids do not exist")
+
     game = Game(
         name=payload.name,
         min_players=payload.min_players,
@@ -102,9 +125,10 @@ async def create_game(
         rating=payload.rating,
         notes=payload.notes,
     )
+    game.tags = tags
     db.add(game)
     await db.commit()
-    await db.refresh(game, ["expansions"])
+    await db.refresh(game, ["expansions", "tags"])
     return game
 
 
@@ -112,7 +136,7 @@ async def create_game(
 async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Game)
-        .options(selectinload(Game.expansions))
+        .options(selectinload(Game.expansions), selectinload(Game.tags))
         .where(Game.id == game_id)
     )
     game = result.scalar_one_or_none()
@@ -130,7 +154,9 @@ async def update_game(
     _: None = Depends(require_admin),
 ):
     result = await db.execute(
-        select(Game).options(selectinload(Game.expansions)).where(Game.id == game_id)
+        select(Game)
+        .options(selectinload(Game.expansions), selectinload(Game.tags))
+        .where(Game.id == game_id)
     )
     game = result.scalar_one_or_none()
     if not game:
@@ -139,13 +165,31 @@ async def update_game(
     update_data = payload.model_dump(exclude_unset=True)
     if "scoring_spec" in update_data and update_data["scoring_spec"] is not None:
         update_data["scoring_spec"] = payload.scoring_spec.model_dump()
+
+    # Handle tag_ids separately
+    if "tag_ids" in update_data:
+        tag_ids = update_data.pop("tag_ids")
+        if tag_ids is not None:
+            if tag_ids:
+                tag_result = await db.execute(
+                    select(Tag).where(Tag.id.in_(tag_ids))
+                )
+                found_tags = list(tag_result.scalars().all())
+                if len(found_tags) != len(set(tag_ids)):
+                    raise HTTPException(400, "One or more tag_ids do not exist")
+                game.tags = found_tags
+            else:
+                game.tags = []
+
     for key, value in update_data.items():
         setattr(game, key, value)
 
     await db.commit()
-    # Re-query to get server-side updated_at and eager-load expansions
+    # Re-query to get server-side updated_at and eager-load expansions + tags
     result = await db.execute(
-        select(Game).options(selectinload(Game.expansions)).where(Game.id == game_id)
+        select(Game)
+        .options(selectinload(Game.expansions), selectinload(Game.tags))
+        .where(Game.id == game_id)
     )
     return result.scalar_one()
 
@@ -184,7 +228,9 @@ async def upload_game_image(
         raise HTTPException(400, "File too large. Maximum size: 5MB")
 
     result = await db.execute(
-        select(Game).options(selectinload(Game.expansions)).where(Game.id == game_id)
+        select(Game)
+        .options(selectinload(Game.expansions), selectinload(Game.tags))
+        .where(Game.id == game_id)
     )
     game = result.scalar_one_or_none()
     if not game:
@@ -199,9 +245,11 @@ async def upload_game_image(
 
     game.image_filename = filename
     await db.commit()
-    # Re-query to get server-side updated_at and eager-load expansions
+    # Re-query to get server-side updated_at and eager-load expansions + tags
     result = await db.execute(
-        select(Game).options(selectinload(Game.expansions)).where(Game.id == game_id)
+        select(Game)
+        .options(selectinload(Game.expansions), selectinload(Game.tags))
+        .where(Game.id == game_id)
     )
     game = result.scalar_one()
     stats = await _load_session_stats(db, [game.id])

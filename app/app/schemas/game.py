@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel, field_validator
 
 from app.schemas.scoring import ScoringSpec
+from app.schemas.tag import TagRead
 
 
 class ExpansionCreate(BaseModel):
@@ -35,6 +36,7 @@ class GameCreate(BaseModel):
     scoring_spec: ScoringSpec | None = None
     rating: int | None = None
     notes: str | None = None
+    tag_ids: list[int] = []
 
     @field_validator("rating")
     @classmethod
@@ -49,6 +51,7 @@ class GameUpdate(BaseModel):
     scoring_spec: ScoringSpec | None = None
     rating: int | None = None
     notes: str | None = None
+    tag_ids: list[int] | None = None
 
     @field_validator("rating")
     @classmethod
@@ -68,6 +71,7 @@ class GameRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     expansions: list[ExpansionRead] = []
+    tags: list[TagRead] = []
     session_count: int = 0
     last_played_at: datetime | None = None
 

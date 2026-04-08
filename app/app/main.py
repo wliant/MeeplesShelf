@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routers import auth, export, games, players, sessions, stats
+from app.routers import auth, export, games, players, sessions, stats, tags
 from app.services.storage import ensure_bucket
 
 
@@ -45,6 +45,7 @@ app.include_router(sessions.router, prefix="/api")
 app.include_router(export.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(players.router, prefix="/api")
+app.include_router(tags.router, prefix="/api")
 
 # Serve compiled React SPA in production.
 # The guard makes local dev startup safe when no static dir exists.
