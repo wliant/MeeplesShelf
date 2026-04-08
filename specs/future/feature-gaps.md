@@ -252,19 +252,31 @@ external references.
 
 ---
 
-### Gap 10 — Game Cover Images
+### ~~Gap 10 — Game Cover Images~~ (Done)
 
-**Description.** Game cards display only text (name, player count, scoring field count).
-There are no thumbnails or cover art. For households with large collections, visual
-recognition of game box art significantly speeds up browsing and makes the inventory feel
-like a real shelf rather than a database table.
+**Status.** Implemented. `POST /api/games/{game_id}/image` (admin-only, multipart form-data) uploads
+a cover image (JPEG, PNG, or WebP, max 5MB) with UUID-based filenames stored at
+`{upload_dir}/games/{game_id}/`. `DELETE /api/games/{game_id}/image` (admin-only) removes the image.
+Images are served publicly via `/api/uploads/` using FastAPI's `StaticFiles`. The `GameRead` schema
+includes a computed `image_url` field. Image files are cleaned up on game deletion or image replacement.
+Database: `image_filename` column added to `games` table via Alembic migration 003. Docker: uploads
+volume (`/srv/uploads`) persists images across container rebuilds. Frontend: `GameCard` displays cover
+images with `CardMedia` (180px height, object-fit cover) or a placeholder icon when no image exists.
+Admin users see camera/remove icon overlays for upload and deletion with loading states and snackbar
+feedback. Client-side validation mirrors backend (type + size). Files changed: `app/pyproject.toml`,
+`app/app/config.py`, `app/alembic/versions/003_add_game_image.py`, `app/app/models/game.py`,
+`app/app/schemas/game.py`, `app/app/routers/games.py`, `app/app/main.py`, `Dockerfile`,
+`docker-compose.app.yml`, `web/src/types/game.ts`, `web/src/api/games.ts`,
+`web/src/components/games/GameCard.tsx`. Covered by 2 backend unit tests
+(`app/tests/test_game_schema.py`), and 14 E2E integration tests
+(`e2e-test/tests/test_game_image.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — visual identity improves usability and emotional engagement with the app |
 | **Technical Complexity** | Medium — file upload endpoint (`POST /api/games/{id}/image`); store images on a mounted Docker volume; serve via a static file route; display in `GameCard` with an `<img>` element and fallback placeholder |
 | **Dependencies / Prerequisites** | None; can be implemented independently before BoardGameGeek integration |
-| **Suggested Priority** | P2 |
+| **Suggested Priority** | ~~P2~~ Done |
 
 ---
 
@@ -565,7 +577,7 @@ access. File changed: `web/src/pages/LoginPage.tsx`. Covered by 2 E2E regression
 | 7 | ~~Per-Player Profiles~~ | ~~P2~~ Done | Medium | Gap 3 |
 | 8 | ~~Game Ratings and Notes~~ | ~~P2~~ Done | Low | — |
 | 9 | Tags and Categories | P2 | Medium | Gap 4 |
-| 10 | Game Cover Images | P2 | Medium | — |
+| 10 | ~~Game Cover Images~~ | ~~P2~~ Done | Medium | — |
 | 11 | BoardGameGeek Integration | P2 | High | Gap 10 |
 | 12 | ~~Multiple Admin Accounts~~ | ~~P3~~ Will Not Do | High | — |
 | 13 | ~~PWA and Offline Support~~ | ~~P3~~ Will Not Do | High | — |

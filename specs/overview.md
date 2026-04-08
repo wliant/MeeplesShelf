@@ -39,6 +39,8 @@ FastAPI application (uvicorn)
   │
   ├── /api/*        REST API endpoints
   │
+  ├── /api/uploads/* Uploaded game cover images (StaticFiles)
+  │
   ├── /docs         Swagger UI (interactive API docs)
   │
   └── /*            React SPA (served from compiled static files)
@@ -60,6 +62,7 @@ In production (Docker), the React app is built into a `static/` directory served
 | `http://localhost:8000` | Full application (SPA + API in Docker) |
 | `http://localhost:8000/docs` | Swagger UI (interactive API reference) |
 | `http://localhost:8000/api/*` | REST API endpoints |
+| `http://localhost:8000/api/uploads/*` | Uploaded game cover images |
 | `http://localhost:5173` | Vite dev server (frontend dev only) |
 
 ---
@@ -79,6 +82,7 @@ All variables are defined in `.env` (copy from `.env.example`). Docker Compose r
 | `APP_PORT` | yes | `8000` | Host port for the backend/app container |
 | `APP_ADMIN_PASSWORD` | yes | *(must set)* | Shared admin password for obtaining a JWT |
 | `APP_SECRET_KEY` | yes | *(must set)* | Secret used to sign and verify JWTs (min 32 random bytes recommended) |
+| `APP_UPLOAD_DIR` | no | `/srv/uploads` | Directory for uploaded game cover images (Docker volume mount) |
 | `VITE_API_BASE_URL` | no | `http://localhost:8000/api` | API base URL injected into the frontend build |
 
 Backend settings are loaded by Pydantic Settings with prefix `APP_` and will read from `.env` or `../.env`. The `extra = "ignore"` config means unknown env vars are silently ignored.
@@ -93,7 +97,7 @@ Two Compose files are used together:
 - `db` service: PostgreSQL 16, persistent volume `pgdata`, port `${POSTGRES_PORT}:5432`
 
 **`docker-compose.app.yml`** — application
-- `app` service: multi-stage Docker image (builds frontend then serves from FastAPI), port `${APP_PORT}:8000`, depends on `db`, receives `APP_DATABASE_URL`, `APP_ADMIN_PASSWORD`, `APP_SECRET_KEY` from environment
+- `app` service: multi-stage Docker image (builds frontend then serves from FastAPI), port `${APP_PORT}:8000`, depends on `db`, receives `APP_DATABASE_URL`, `APP_ADMIN_PASSWORD`, `APP_SECRET_KEY` from environment. Named volume `uploads` mounted at `/srv/uploads` for persistent game cover images.
 
 Start both together:
 ```bash

@@ -166,6 +166,16 @@ Renders one `GameCard` per game.
 
 **Props:** `game`, `onEdit`, `onDelete`, `onRefresh`, `isAdmin`
 
+**Cover image area (always visible, 180px height):**
+- If `game.image_url` is not null: `<CardMedia component="img">` displaying the cover image with `objectFit: "cover"`
+- If `game.image_url` is null: placeholder `<Box>` with grey background and `<ImageNotSupportedOutlined>` icon (48px, grey.400)
+- Admin overlay (positioned absolute, top-right, only when not uploading):
+  - Upload icon button (`PhotoCamera`) with white semi-transparent background → opens a hidden file input (`accept="image/jpeg,image/png,image/webp"`)
+  - Remove icon button (`Close`, only when `game.image_url` is not null) → calls `DELETE /api/games/{id}/image` then `onRefresh()`
+- Upload loading overlay: `<CircularProgress>` centered over the image area with translucent white background (shown during upload/delete)
+- Client-side validation: file type must be JPEG/PNG/WebP, max 5 MB; errors shown via snackbar
+- On successful upload: calls `POST /api/games/{id}/image` (multipart form-data) then `onRefresh()`
+
 **Layout (always visible):**
 - Game name (h6 Typography)
 - Rating display: MUI `<Rating>` component (`value={game.rating}`, `max={10}`, `readOnly`, `size="small"`) — only shown when `game.rating` is not null

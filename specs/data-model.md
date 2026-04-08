@@ -42,6 +42,7 @@ Stores board games in the collection.
 | `scoring_spec` | `JSONB` | NULLABLE | `NULL` | See [Scoring System](./scoring-system.md) |
 | `rating` | `INTEGER` | NULLABLE | `NULL` | Group rating 1–10; validated by Pydantic, not DB constraint |
 | `notes` | `TEXT` | NULLABLE | `NULL` | Free-text personal notes about the game |
+| `image_filename` | `VARCHAR(255)` | NULLABLE | `NULL` | Filename of uploaded cover image (stored on disk under `{upload_dir}/games/{id}/`) |
 | `created_at` | `TIMESTAMPTZ` | — | `now()` (server default) | Record creation time |
 | `updated_at` | `TIMESTAMPTZ` | — | `now()` (server default) | Auto-updated on every write via SQLAlchemy `onupdate=func.now()` |
 
