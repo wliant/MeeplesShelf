@@ -21,6 +21,7 @@ import {
   seedGames,
 } from "../api/games";
 import { listTags } from "../api/tags";
+import { importBGGImage } from "../api/bgg";
 import GameList from "../components/games/GameList";
 import GameForm from "../components/games/GameForm";
 import ConfirmDialog, { buildGameDeleteMessage } from "../components/common/ConfirmDialog";
@@ -109,8 +110,15 @@ export default function InventoryPage() {
         await updateGame(editingGame.id, data);
         showSnackbar("Game updated successfully");
       } else {
-        await createGame(data);
+        const created = await createGame(data);
         showSnackbar("Game created successfully");
+        if (data.bgg_id) {
+          try {
+            await importBGGImage(data.bgg_id, created.id);
+          } catch {
+            showSnackbar("Game created but BGG image import failed", "warning");
+          }
+        }
       }
       setFormOpen(false);
       setEditingGame(null);

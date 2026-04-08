@@ -23,6 +23,7 @@ export interface Game {
   rating: number | null;
   notes: string | null;
   image_url: string | null;
+  bgg_id: number | null;
   created_at: string;
   updated_at: string;
   expansions: Expansion[];
@@ -39,6 +40,7 @@ export interface GameCreate {
   rating?: number | null;
   notes?: string | null;
   tag_ids?: number[];
+  bgg_id?: number | null;
 }
 
 export interface ExpansionCreate {

@@ -19,11 +19,17 @@ import {
   Autocomplete,
   Chip,
 } from "@mui/material";
-import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Search as SearchIcon,
+} from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import type { Game, GameCreate, Tag } from "../../types/game";
+import type { BGGSearchResult } from "../../types/bgg";
 import type { ScoringField } from "../../types/scoring";
 import { listTags, createTag } from "../../api/tags";
+import { searchBGG, getBGGDetails } from "../../api/bgg";
 import { useSnackbar } from "../../context/SnackbarContext";
 import { extractErrorMessage } from "../../utils/errors";
 
@@ -72,6 +78,12 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
   const [fields, setFields] = useState<ScoringField[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [bggQuery, setBggQuery] = useState("");
+  const [bggResults, setBggResults] = useState<BGGSearchResult[]>([]);
+  const [bggSearching, setBggSearching] = useState(false);
+  const [bggImporting, setBggImporting] = useState(false);
+  const [bggId, setBggId] = useState<number | null>(null);
+  const [bggError, setBggError] = useState<string | null>(null);
   const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
@@ -89,6 +101,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
       setNotes(game.notes ?? "");
       setFields(game.scoring_spec?.fields ?? []);
       setSelectedTags(game.tags ?? []);
+      setBggId(game.bgg_id ?? null);
     } else {
       setName("");
       setMinPlayers(1);
@@ -97,8 +110,50 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
       setNotes("");
       setFields([]);
       setSelectedTags([]);
+      setBggId(null);
     }
+    setBggQuery("");
+    setBggResults([]);
+    setBggSearching(false);
+    setBggImporting(false);
+    setBggError(null);
   }, [game, open]);
+
+  const handleBGGSearch = async () => {
+    if (!bggQuery.trim()) return;
+    setBggSearching(true);
+    setBggError(null);
+    try {
+      const response = await searchBGG(bggQuery.trim());
+      setBggResults(response.results);
+      if (response.results.length === 0) {
+        setBggError("No results found on BGG.");
+      }
+    } catch {
+      setBggError("BGG search failed. Please try again.");
+    } finally {
+      setBggSearching(false);
+    }
+  };
+
+  const handleBGGSelect = async (result: BGGSearchResult) => {
+    setBggImporting(true);
+    setBggError(null);
+    try {
+      const detail = await getBGGDetails(result.bgg_id);
+      setName(detail.name);
+      if (detail.min_players != null) setMinPlayers(detail.min_players);
+      if (detail.max_players != null) setMaxPlayers(detail.max_players);
+      if (detail.description) setNotes(detail.description);
+      setBggId(detail.bgg_id);
+      setBggResults([]);
+      showSnackbar("Game data imported from BGG", "success");
+    } catch {
+      setBggError("Failed to fetch game details from BGG.");
+    } finally {
+      setBggImporting(false);
+    }
+  };
 
   const handleSubmit = () => {
     onSave({
@@ -110,6 +165,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
       rating,
       notes: notes.trim() || null,
       tag_ids: selectedTags.map((t) => t.id),
+      bgg_id: bggId,
     });
   };
 
@@ -166,6 +222,91 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
       <DialogTitle>{game ? "Edit Game" : "Add Game"}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
+          {!game && (
+            <Box sx={{ p: 2, border: "1px solid", borderColor: "divider", borderRadius: 1, bgcolor: "grey.50" }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Import from BoardGameGeek
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  placeholder="Search BGG by game name..."
+                  value={bggQuery}
+                  onChange={(e) => setBggQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleBGGSearch();
+                    }
+                  }}
+                  disabled={bggSearching || bggImporting}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={handleBGGSearch}
+                  disabled={bggSearching || bggImporting || !bggQuery.trim()}
+                  startIcon={
+                    bggSearching ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <SearchIcon />
+                    )
+                  }
+                >
+                  Search
+                </Button>
+              </Stack>
+              {bggError && (
+                <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>
+                  {bggError}
+                </Typography>
+              )}
+              {bggResults.length > 0 && (
+                <Box sx={{ maxHeight: 200, overflowY: "auto", mt: 1, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+                  {bggResults.map((r) => (
+                    <Box
+                      key={r.bgg_id}
+                      onClick={() => handleBGGSelect(r)}
+                      sx={{
+                        p: 1,
+                        cursor: "pointer",
+                        "&:hover": { bgcolor: "action.hover" },
+                        borderBottom: "1px solid",
+                        borderBottomColor: "divider",
+                        "&:last-child": { borderBottom: "none" },
+                      }}
+                    >
+                      <Typography variant="body2">
+                        {r.name}
+                        {r.year_published && (
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ ml: 1 }}
+                          >
+                            ({r.year_published})
+                          </Typography>
+                        )}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+              {bggImporting && (
+                <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              )}
+              {bggId && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                  Linked to BGG ID: {bggId}
+                </Typography>
+              )}
+            </Box>
+          )}
+
           <TextField
             label="Game Name"
             value={name}
