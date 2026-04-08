@@ -10,8 +10,25 @@ import {
   CircularProgress,
   Pagination,
   Chip,
+  ToggleButton,
+  ToggleButtonGroup,
+  MenuItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Paper,
+  Rating,
 } from "@mui/material";
-import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
+import {
+  Add as AddIcon,
+  Search as SearchIcon,
+  SearchOff as SearchOffIcon,
+  ViewModule as ViewModuleIcon,
+  ViewList as ViewListIcon,
+} from "@mui/icons-material";
+import MeepleIcon from "../components/common/MeepleIcon";
 import type { Game, GameCreate, Tag } from "../types/game";
 import {
   listGames,
@@ -29,6 +46,7 @@ import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
 import { extractErrorMessage } from "../utils/errors";
 import { useSearchParams } from "react-router-dom";
+import { formatLastPlayed } from "../utils/stats";
 
 const PAGE_SIZE = 20;
 
@@ -49,6 +67,10 @@ export default function InventoryPage() {
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState("name_asc");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() =>
+    (localStorage.getItem("ms_inventory_view") as "grid" | "list") || "grid",
+  );
 
   // Clear URL search param after consuming it
   useEffect(() => {
@@ -85,6 +107,7 @@ export default function InventoryPage() {
     listGames({
       name: debouncedSearch || undefined,
       tag: selectedFilterTags.length > 0 ? selectedFilterTags : undefined,
+      sort: sortBy !== "name_asc" ? sortBy : undefined,
       skip: page * PAGE_SIZE,
       limit: PAGE_SIZE,
     })
@@ -97,7 +120,7 @@ export default function InventoryPage() {
         // Reload tags in case new ones were created in GameForm
         listTags().then(setAllTags).catch(() => {});
       });
-  }, [debouncedSearch, selectedFilterTags, page]);
+  }, [debouncedSearch, selectedFilterTags, sortBy, page]);
 
   useEffect(() => {
     refresh();
@@ -220,15 +243,81 @@ export default function InventoryPage() {
         </>
       )}
 
+      {!loading && (
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mb: 2 }}
+          flexWrap="wrap"
+          useFlexGap
+          spacing={1}
+        >
+          <Typography variant="body2" color="text.secondary">
+            {total} game{total !== 1 ? "s" : ""}
+          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <TextField
+              select
+              size="small"
+              value={sortBy}
+              onChange={(e) => { setSortBy(e.target.value); setPage(0); }}
+              sx={{ minWidth: 160 }}
+            >
+              <MenuItem value="name_asc">Name A&#8211;Z</MenuItem>
+              <MenuItem value="name_desc">Name Z&#8211;A</MenuItem>
+              <MenuItem value="rating_desc">Highest Rated</MenuItem>
+              <MenuItem value="last_played">Recently Played</MenuItem>
+              <MenuItem value="most_played">Most Played</MenuItem>
+            </TextField>
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              size="small"
+              onChange={(_, v) => {
+                if (v) {
+                  setViewMode(v);
+                  localStorage.setItem("ms_inventory_view", v);
+                }
+              }}
+            >
+              <ToggleButton value="grid" aria-label="Grid view"><ViewModuleIcon /></ToggleButton>
+              <ToggleButton value="list" aria-label="List view"><ViewListIcon /></ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
+        </Stack>
+      )}
+
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
           <CircularProgress />
         </Box>
       ) : games.length === 0 && (debouncedSearch || selectedFilterTags.length > 0) ? (
-        <Typography color="text.secondary" sx={{ mt: 2 }}>
-          No games match your search.
-        </Typography>
-      ) : (
+        <Box sx={{ textAlign: "center", mt: 6 }}>
+          <SearchOffIcon sx={{ fontSize: 48, color: "text.secondary", mb: 1 }} />
+          <Typography color="text.secondary">
+            No games match your search.
+          </Typography>
+        </Box>
+      ) : games.length === 0 && !debouncedSearch && selectedFilterTags.length === 0 ? (
+        <Box sx={{ textAlign: "center", mt: 6 }}>
+          <MeepleIcon sx={{ fontSize: 64, color: "text.secondary", mb: 1 }} />
+          <Typography variant="h6" gutterBottom>
+            Your shelf is empty.
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            Add your first board game to start tracking.
+          </Typography>
+          {isAdmin && (
+            <Button
+              variant="contained"
+              onClick={() => { setEditingGame(null); setFormOpen(true); }}
+            >
+              Add your first game
+            </Button>
+          )}
+        </Box>
+      ) : viewMode === "grid" ? (
         <>
           <GameList
             games={games}
@@ -237,6 +326,42 @@ export default function InventoryPage() {
             onRefresh={refresh}
             isAdmin={isAdmin}
           />
+          {total > PAGE_SIZE && (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+              <Pagination
+                count={Math.ceil(total / PAGE_SIZE)}
+                page={page + 1}
+                onChange={(_, value) => setPage(value - 1)}
+              />
+            </Box>
+          )}
+        </>
+      ) : (
+        <>
+          <Paper variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Players</TableCell>
+                  <TableCell>Rating</TableCell>
+                  <TableCell>Sessions</TableCell>
+                  <TableCell>Last Played</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {games.map((g) => (
+                  <TableRow key={g.id} hover sx={{ cursor: "pointer" }} onClick={() => handleEdit(g)}>
+                    <TableCell>{g.name}</TableCell>
+                    <TableCell>{g.min_players}&#8211;{g.max_players}</TableCell>
+                    <TableCell>{g.rating !== null ? <Rating value={g.rating} max={10} readOnly size="small" /> : "-"}</TableCell>
+                    <TableCell>{g.session_count}</TableCell>
+                    <TableCell>{formatLastPlayed(g.last_played_at)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Paper>
           {total > PAGE_SIZE && (
             <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
               <Pagination

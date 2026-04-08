@@ -63,6 +63,7 @@ def _enrich_game(
 async def list_games(
     name: str | None = None,
     tag: list[str] | None = Query(default=None),
+    sort: str | None = Query(default=None),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -84,13 +85,36 @@ async def list_games(
         count_query = count_query.where(cond)
     total = (await db.execute(count_query)).scalar_one()
 
-    query = (
-        select(Game)
-        .options(selectinload(Game.expansions), selectinload(Game.tags))
-        .order_by(Game.name)
-    )
+    # Build sort-dependent query
+    needs_stats_join = sort in ("last_played", "most_played")
+    stats_subq = (
+        select(
+            GameSession.game_id,
+            func.count(GameSession.id).label("session_count"),
+            func.max(GameSession.played_at).label("last_played_at"),
+        )
+        .group_by(GameSession.game_id)
+        .subquery()
+    ) if needs_stats_join else None
+
+    query = select(Game).options(selectinload(Game.expansions), selectinload(Game.tags))
+    if needs_stats_join and stats_subq is not None:
+        query = query.outerjoin(stats_subq, Game.id == stats_subq.c.game_id)
+
     for cond in conditions:
         query = query.where(cond)
+
+    if sort == "name_desc":
+        query = query.order_by(Game.name.desc())
+    elif sort == "rating_desc":
+        query = query.order_by(Game.rating.desc().nulls_last(), Game.name)
+    elif sort == "last_played" and stats_subq is not None:
+        query = query.order_by(stats_subq.c.last_played_at.desc().nulls_last(), Game.name)
+    elif sort == "most_played" and stats_subq is not None:
+        query = query.order_by(stats_subq.c.session_count.desc().nulls_last(), Game.name)
+    else:
+        query = query.order_by(Game.name)
+
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     items = list(result.scalars().all())

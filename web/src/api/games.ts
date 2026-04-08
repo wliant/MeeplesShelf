@@ -5,6 +5,7 @@ import type { PaginatedResponse } from "../types/pagination";
 export interface GameListParams {
   name?: string;
   tag?: string[];
+  sort?: string;
   skip?: number;
   limit?: number;
 }

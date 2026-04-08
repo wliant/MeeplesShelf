@@ -18,11 +18,15 @@ import {
   Edit as EditIcon,
   ExpandMore as ExpandMoreIcon,
   PhotoCamera as PhotoCameraIcon,
+  PlaylistAdd as PlaylistAddIcon,
   Close as RemoveImageIcon,
-  ImageNotSupportedOutlined,
 } from "@mui/icons-material";
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
 import type { Game } from "../../types/game";
+import type { ScoringField } from "../../types/scoring";
+import MeepleIcon from "../common/MeepleIcon";
 import { formatLastPlayed } from "../../utils/stats";
 import { uploadGameImage, deleteGameImage } from "../../api/games";
 import { useSnackbar } from "../../context/SnackbarContext";
@@ -40,9 +44,25 @@ interface Props {
   isAdmin: boolean;
 }
 
+function nameHue(name: string): number {
+  return name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
+}
+
+function scoringFieldLabel(field: ScoringField): string {
+  switch (field.type) {
+    case "numeric": return `${field.label} (x${field.multiplier})`;
+    case "boolean": return `${field.label} (+${field.value})`;
+    case "enum_count": return `${field.label} (${field.variants.length} types)`;
+    case "set_collection": return `${field.label} (set)`;
+    default: return field.label;
+  }
+}
+
 export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const theme = useTheme();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showSnackbar } = useSnackbar();
 
@@ -103,10 +123,14 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }:
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              bgcolor: "grey.100",
+              position: "relative",
+              bgcolor: `hsl(${nameHue(game.name)}, 40%, ${theme.palette.mode === "dark" ? 25 : 85}%)`,
             }}
           >
-            <ImageNotSupportedOutlined sx={{ fontSize: 48, color: "grey.400" }} />
+            <MeepleIcon sx={{ fontSize: 80, position: "absolute", opacity: 0.15 }} />
+            <Typography variant="h2" sx={{ fontWeight: 700, opacity: 0.6, zIndex: 1 }}>
+              {game.name.charAt(0).toUpperCase()}
+            </Typography>
           </Box>
         )}
         {uploading && (
@@ -211,6 +235,13 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }:
       </CardContent>
       <CardActions>
         {isAdmin && (
+          <Tooltip title="Log session">
+            <IconButton size="small" aria-label={`Log session for ${game.name}`} onClick={() => navigate(`/sessions?quicklog=${game.id}`)}>
+              <PlaylistAddIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+        {isAdmin && (
           <Tooltip title="Edit game">
             <IconButton size="small" aria-label={`Edit ${game.name}`} onClick={() => onEdit(game)}>
               <EditIcon />
@@ -252,6 +283,18 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }:
             </Box>
           )}
           <ExpansionList game={game} onRefresh={onRefresh} isAdmin={isAdmin} />
+          {game.scoring_spec && game.scoring_spec.fields.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                Scoring Categories
+              </Typography>
+              <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                {game.scoring_spec.fields.map((field) => (
+                  <Chip key={field.id} label={scoringFieldLabel(field)} size="small" variant="outlined" />
+                ))}
+              </Stack>
+            </Box>
+          )}
         </Box>
       </Collapse>
     </Card>
