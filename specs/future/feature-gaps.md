@@ -186,18 +186,30 @@ with loading state and snackbar feedback. Backend: `app/app/schemas/export.py`, 
 
 ---
 
-### Gap 7 — Per-Player Profile and Statistics
+### ~~Gap 7 — Per-Player Profile and Statistics~~ (Done)
 
-**Description.** Players exist only as names in a global registry. There is no player
-profile page, no view of a specific player's game history, win rate across different games,
-score progression over time, or head-to-head record against other players.
+**Status.** Implemented. `GET /api/players/{player_id}/stats` endpoint added to
+`app/app/routers/players.py` returning a `PlayerProfileStats` response with five sections:
+overall stats (sessions played, wins, win rate), favorite game, per-game breakdown (times
+played, wins, win rate, avg/best score per game), recent sessions (last 20, ordered by date
+desc), and monthly activity (12 months, gap-filled via `fill_month_gaps()`). Schemas in
+`app/app/schemas/player_stats.py` reuse `ActivityMonth` from existing stats schemas. Router
+registered in `app/app/main.py`. Frontend: new `PlayerProfilePage` at `/players/:id`
+(`web/src/pages/PlayerProfilePage.tsx`) with overview cards, Recharts bar chart for game
+breakdown, responsive table/card layout for recent sessions, and reused `ActivityChart`
+component. Player names are clickable links in `PlayerList.tsx` and `PlayerLeaderboard.tsx`
+(via React Router `Link`). `formatScore()` utility added to `web/src/utils/stats.ts`.
+Types added to `web/src/types/stats.ts`, API call added to `web/src/api/sessions.ts`.
+Covered by 7 backend unit tests (`app/tests/test_player_stats.py`), 3 frontend unit tests
+(`web/src/utils/stats.test.ts`), and 15 E2E integration tests
+(`e2e-test/tests/test_player_profile.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — individual stats create engagement and friendly competition; groups often care about "who is the best Catan player" as much as aggregate history |
 | **Technical Complexity** | Medium — new `PlayerPage` route; `GET /api/players/{id}/stats` endpoint aggregating wins, games played, average scores per game; charts reusing Stats infrastructure |
 | **Dependencies / Prerequisites** | Statistics infrastructure (Gap 3) |
-| **Suggested Priority** | P2 |
+| **Suggested Priority** | ~~P2~~ Done |
 
 ---
 
@@ -550,7 +562,7 @@ access. File changed: `web/src/pages/LoginPage.tsx`. Covered by 2 E2E regression
 | 4 | ~~Search and Filtering~~ | ~~P1~~ Done | Low | — |
 | 5 | ~~Pagination~~ | ~~P1~~ Done | Low | Gap 4 (ideally) |
 | 6 | ~~Data Export and Backup~~ | ~~P1~~ Done | Low-Medium | — |
-| 7 | Per-Player Profiles | P2 | Medium | Gap 3 |
+| 7 | ~~Per-Player Profiles~~ | ~~P2~~ Done | Medium | Gap 3 |
 | 8 | ~~Game Ratings and Notes~~ | ~~P2~~ Done | Low | — |
 | 9 | Tags and Categories | P2 | Medium | Gap 4 |
 | 10 | Game Cover Images | P2 | Medium | — |

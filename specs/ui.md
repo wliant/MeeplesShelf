@@ -21,6 +21,7 @@
 | `/inventory` | `InventoryPage` inside `AppShell` | `RequireAuth` | Default landing page |
 | `/sessions` | `SessionsPage` inside `AppShell` | `RequireAuth` | — |
 | `/players` | `PlayersPage` inside `AppShell` | `RequireAuth` | — |
+| `/players/:id` | `PlayerProfilePage` inside `AppShell` | `RequireAuth` | Per-player statistics |
 | `/statistics` | `StatisticsPage` inside `AppShell` | `RequireAuth` | — |
 | `*` (any other) | — | `RequireAuth` | Redirects to `/inventory` |
 
@@ -43,6 +44,7 @@
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/sessions"  element={<SessionsPage />} />
               <Route path="/players"   element={<PlayersPage />} />
+              <Route path="/players/:id" element={<PlayerProfilePage />} />
               <Route path="/statistics" element={<StatisticsPage />} />
               <Route path="*"          element={<Navigate to="/inventory" />} />
             </Route>
@@ -412,6 +414,37 @@ A `TextField` (small) with a search icon appears below the heading when not load
 
 Each card shows player name, session count, and creation date. Admin cards include edit and delete icon buttons in the header row.
 
+### Player Name Links
+
+Player names (in both table and card layouts) are clickable `MuiLink` components using React Router `Link`. Clicking navigates to `/players/{id}` (the player profile page). When inline editing is active, the link is replaced by the edit `TextField`.
+
+---
+
+## PlayerProfilePage
+
+**URL:** `/players/:id`
+
+**Data fetched on mount:** `GET /api/players/{id}/stats` → `PlayerProfileStats`
+
+**Loading state:** Centered `CircularProgress` while fetching.
+
+**Not found state:** When the API returns 404, displays a `PersonIcon` (64px, secondary colour), heading "Player not found", and an "All Players" back button.
+
+**Layout (when data is available):**
+
+1. **Back button:** "All Players" with `ArrowBackIcon` → navigates to `/players`
+2. **Player name heading** (h4)
+3. **Overview cards** — responsive `Grid` (xs=6, sm=3) of 4 MUI `Card` components:
+   - Sessions Played (`HistoryIcon`)
+   - Wins (`EmojiEventsIcon`)
+   - Win Rate (`TrendingUpIcon`) — formatted via `formatWinRate()`
+   - Favorite Game (`SportsEsportsIcon`) — game name or "N/A" if no sessions. Font size reduced for long names.
+4. **Two-column grid** (xs=12, md=6) in `Paper` containers:
+   - **Games Breakdown** — Recharts horizontal `BarChart` of top 10 games by times played (hidden on mobile), plus an MUI `Table` with columns: Game, Played, Wins, Win Rate, Avg Score (desktop only), Best (desktop only). Null scores shown as "--". Empty state: "No games played yet".
+   - **Recent Sessions** — Desktop: MUI `Table` with columns: Game, Date, Score, Result (Win `Chip`). Mobile: vertical `Stack` of outlined `Card` components with game name, date, score, and Win chip. Null scores shown as "--". Empty state: "No sessions yet".
+5. **Full-width row** in `Paper`:
+   - **ActivityChart** — reuses the existing `ActivityChart` component with player-scoped activity data (last 12 months, gap-filled).
+
 ---
 
 ## StatisticsPage
@@ -438,7 +471,7 @@ Each card shows player name, session count, and creation date. Admin cards inclu
    - Last 30 Days (`TrendingUpIcon`)
    Each card shows the metric as a large h4 number with a label below.
 3. **Two-column grid** (xs=12, md=6) in `Paper` containers:
-   - **PlayerLeaderboard** — Recharts `BarChart` of top 10 win rates (hidden on mobile < 600px), plus an MUI `Table` with columns: #, Player, Played, Wins, Win Rate (%). Full player list in the table, chart limited to top 10.
+   - **PlayerLeaderboard** — Recharts `BarChart` of top 10 win rates (hidden on mobile < 600px), plus an MUI `Table` with columns: #, Player, Played, Wins, Win Rate (%). Player names in the table are clickable `MuiLink` components that navigate to `/players/{id}`. Full player list in the table, chart limited to top 10.
    - **MostPlayedGames** — Recharts horizontal `BarChart` of top 10 games by session count (hidden on mobile), plus an MUI `Table` with columns: Game, Sessions, Players, Last Played.
 4. **Full-width row** in `Paper`:
    - **ActivityChart** — Recharts `AreaChart` showing sessions per month over the last 12 months. Uses a gradient fill and `ResponsiveContainer` for responsive sizing. Month labels formatted as "Jan 2025".

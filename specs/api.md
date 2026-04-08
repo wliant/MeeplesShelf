@@ -734,3 +734,72 @@ Monthly play activity over a configurable lookback period. Returns a contiguous 
 **Response:** `200 OK` → `ActivityMonth[]`
 
 The `month` field is an ISO-formatted year-month string (e.g. `"2025-06"`). Results are sorted chronologically (oldest first).
+
+---
+
+## Player Profile Endpoints
+
+### `PlayerGameBreakdown`
+```json
+{
+  "game_id":      "integer",
+  "game_name":    "string",
+  "times_played": "integer",
+  "wins":         "integer",
+  "win_rate":     "float",
+  "avg_score":    "float | null",
+  "best_score":   "integer | null",
+  "last_played":  "datetime | null"
+}
+```
+
+### `PlayerRecentSession`
+```json
+{
+  "session_id":   "integer",
+  "game_id":      "integer",
+  "game_name":    "string",
+  "played_at":    "datetime (ISO 8601, UTC)",
+  "total_score":  "integer | null",
+  "winner":       "boolean"
+}
+```
+
+### `PlayerProfileStats`
+```json
+{
+  "player_id":       "integer",
+  "player_name":     "string",
+  "created_at":      "datetime (ISO 8601, UTC)",
+  "sessions_played": "integer",
+  "wins":            "integer",
+  "win_rate":        "float",
+  "favorite_game":   "string | null",
+  "games":           "PlayerGameBreakdown[]",
+  "recent_sessions": "PlayerRecentSession[]",
+  "activity":        "ActivityMonth[]"
+}
+```
+
+---
+
+### `GET /api/players/{player_id}/stats`
+
+Comprehensive statistics for a single player: overall performance, per-game breakdown, recent session history, and monthly activity timeline.
+
+**Auth required:** No
+**Path parameter:** `player_id: integer`
+**Response:** `200 OK` → `PlayerProfileStats`
+
+**Computed fields:**
+- `win_rate`: `wins / sessions_played`, rounded to 4 decimal places. `0.0` if no sessions.
+- `favorite_game`: name of the game the player has played most often. `null` if no sessions.
+- `games`: per-game breakdown ordered by `times_played` descending, then game name ascending. `avg_score` is rounded to 1 decimal place; `null` for games without a scoring spec.
+- `recent_sessions`: last 20 sessions ordered by `played_at` descending.
+- `activity`: last 12 months of monthly session counts, gap-filled with `session_count=0` for months with no activity.
+
+**Errors:**
+
+| Status | `detail` | Condition |
+|---|---|---|
+| `404` | `"Player not found"` | No player with that ID |
