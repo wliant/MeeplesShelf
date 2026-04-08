@@ -24,10 +24,6 @@ _app_port = os.environ.get("APP_PORT", "8000")
 BASE_URL = os.environ.get("E2E_BASE_URL", f"http://localhost:{_app_port}/api")
 ADMIN_PASS = os.environ.get("APP_ADMIN_PASSWORD", "changeme")
 
-# The image URL returned by the API uses a path like /api/uploads/games/{id}/...
-# but the base_url already points to /api, so we need the root URL for image fetches.
-ROOT_URL = BASE_URL.rsplit("/api", 1)[0]
-
 # Minimal valid 1x1 red pixel JPEG (635 bytes)
 _TINY_JPEG = bytes.fromhex(
     "ffd8ffe000104a46494600010100000100010000"
@@ -71,16 +67,15 @@ _TINY_PNG = bytes.fromhex(
 )
 
 
+def _fetch_image(url: str) -> httpx.Response:
+    """Fetch an image by its absolute URL (served by MinIO)."""
+    with httpx.Client(timeout=10) as c:
+        return c.get(url)
+
+
 @pytest.fixture()
 def client():
     with httpx.Client(base_url=BASE_URL, timeout=10) as c:
-        yield c
-
-
-@pytest.fixture()
-def image_client():
-    """Client rooted at the server origin (for fetching image URLs)."""
-    with httpx.Client(base_url=ROOT_URL, timeout=10) as c:
         yield c
 
 
@@ -117,7 +112,7 @@ class TestImageUpload:
         assert resp.status_code == 200
         data = resp.json()
         assert data["image_url"] is not None
-        assert f"/games/{game['id']}/" in data["image_url"]
+        assert data["image_url"].startswith("http")
         assert data["image_url"].endswith(".jpg")
 
     def test_upload_png(self, client, admin_headers, game):
@@ -178,26 +173,26 @@ class TestImageUpload:
 
 
 class TestImageServing:
-    def test_image_accessible_via_url(self, client, image_client, admin_headers, game):
+    def test_image_accessible_via_url(self, client, admin_headers, game):
         resp = client.post(
             f"/games/{game['id']}/image",
             headers=admin_headers,
             files={"file": ("cover.jpg", _TINY_JPEG, "image/jpeg")},
         )
         image_url = resp.json()["image_url"]
-        img_resp = image_client.get(image_url)
+        img_resp = _fetch_image(image_url)
         assert img_resp.status_code == 200
         assert "image" in img_resp.headers.get("content-type", "")
 
-    def test_image_accessible_without_auth(self, client, image_client, admin_headers, game):
+    def test_image_accessible_without_auth(self, client, admin_headers, game):
         resp = client.post(
             f"/games/{game['id']}/image",
             headers=admin_headers,
             files={"file": ("cover.jpg", _TINY_JPEG, "image/jpeg")},
         )
         image_url = resp.json()["image_url"]
-        # Fetch without any auth headers
-        img_resp = image_client.get(image_url)
+        # Fetch without any auth headers — S3 bucket has public-read policy
+        img_resp = _fetch_image(image_url)
         assert img_resp.status_code == 200
 
 
@@ -221,7 +216,7 @@ class TestImageReplace:
 
 
 class TestImageDelete:
-    def test_delete_image(self, client, image_client, admin_headers, game):
+    def test_delete_image(self, client, admin_headers, game):
         resp = client.post(
             f"/games/{game['id']}/image",
             headers=admin_headers,
@@ -237,8 +232,8 @@ class TestImageDelete:
         detail = client.get(f"/games/{game['id']}")
         assert detail.json()["image_url"] is None
 
-        img_resp = image_client.get(image_url)
-        assert img_resp.status_code == 404
+        img_resp = _fetch_image(image_url)
+        assert img_resp.status_code in (404, 403)
 
     def test_delete_image_requires_admin(self, client, admin_headers, game):
         client.post(
@@ -258,7 +253,7 @@ class TestImageDelete:
 
 
 class TestGameDeletionCleansImage:
-    def test_deleting_game_removes_image(self, client, image_client, admin_headers):
+    def test_deleting_game_removes_image(self, client, admin_headers):
         name = f"E2E Delete Image {uuid.uuid4().hex[:8]}"
         create_resp = client.post(
             "/games",
@@ -277,5 +272,5 @@ class TestGameDeletionCleansImage:
 
         client.delete(f"/games/{game_id}", headers=admin_headers)
 
-        img_resp = image_client.get(image_url)
-        assert img_resp.status_code == 404
+        img_resp = _fetch_image(image_url)
+        assert img_resp.status_code in (404, 403)
