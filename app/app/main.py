@@ -38,6 +38,13 @@ app.include_router(export.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(players.router, prefix="/api")
 
+# Serve uploaded images (must be mounted before the SPA catch-all).
+from app.config import settings as _settings  # noqa: E402
+
+_upload_dir = _settings.upload_dir
+if Path(_upload_dir).is_dir():
+    app.mount("/api/uploads", StaticFiles(directory=_upload_dir), name="uploads")
+
 # Serve compiled React SPA in production.
 # The guard makes local dev startup safe when no static dir exists.
 _static_dir = os.getenv("STATIC_DIR", str(Path(__file__).parent / "static"))

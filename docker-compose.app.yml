@@ -13,6 +13,11 @@ services:
       APP_SECRET_KEY: ${APP_SECRET_KEY}
     ports:
       - "${APP_PORT:-8000}:8000"
+    volumes:
+      - uploads:/srv/uploads
     depends_on:
       db:
         condition: service_healthy
+
+volumes:
+  uploads:

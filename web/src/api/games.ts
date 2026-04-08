@@ -30,5 +30,18 @@ export const addExpansion = (gameId: number, data: ExpansionCreate) =>
 export const deleteExpansion = (gameId: number, expansionId: number) =>
   client.delete(`/games/${gameId}/expansions/${expansionId}`);
 
+export const uploadGameImage = (gameId: number, file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return client
+    .post<Game>(`/games/${gameId}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+    .then((r) => r.data);
+};
+
+export const deleteGameImage = (gameId: number) =>
+  client.delete(`/games/${gameId}/image`);
+
 export const seedGames = () =>
   client.post<{ seeded: string[] }>("/seed").then((r) => r.data);

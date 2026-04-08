@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     )
     admin_password: str
     secret_key: str
+    upload_dir: str = "/srv/uploads"
 
     model_config = {"env_prefix": "APP_", "env_file": [".env", "../.env"], "extra": "ignore"}
 

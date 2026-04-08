@@ -64,6 +64,7 @@ class GameRead(BaseModel):
     scoring_spec: ScoringSpec | None = None
     rating: int | None = None
     notes: str | None = None
+    image_url: str | None = None
     created_at: datetime
     updated_at: datetime
     expansions: list[ExpansionRead] = []
