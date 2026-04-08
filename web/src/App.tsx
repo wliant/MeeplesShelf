@@ -1,7 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { AuthProvider } from "./context/AuthContext";
 import { SnackbarProvider } from "./context/SnackbarContext";
+import { ThemeModeProvider } from "./context/ThemeContext";
 import RequireAuth from "./components/auth/RequireAuth";
 import AppShell from "./components/layout/AppShell";
 import LoginPage from "./pages/LoginPage";
@@ -11,29 +11,9 @@ import PlayersPage from "./pages/PlayersPage";
 import StatisticsPage from "./pages/StatisticsPage";
 import PlayerProfilePage from "./pages/PlayerProfilePage";
 
-const theme = createTheme({
-  palette: {
-    primary: { main: "#5c6bc0" },
-    secondary: { main: "#ff7043" },
-  },
-  components: {
-    MuiButtonBase: {
-      styleOverrides: {
-        root: {
-          "&:focus-visible": {
-            outline: "2px solid #5c6bc0",
-            outlineOffset: "2px",
-          },
-        },
-      },
-    },
-  },
-});
-
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeModeProvider>
       <SnackbarProvider>
         <AuthProvider>
           <BrowserRouter>
@@ -53,7 +33,7 @@ function App() {
           </BrowserRouter>
         </AuthProvider>
       </SnackbarProvider>
-    </ThemeProvider>
+    </ThemeModeProvider>
   );
 }
 

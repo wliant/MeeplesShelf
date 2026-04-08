@@ -16,6 +16,7 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { loginAdmin } from "../api/auth";
+import MeepleIcon from "../components/common/MeepleIcon";
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -51,11 +52,14 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "grey.100",
+        bgcolor: "background.default",
       }}
     >
       <Card sx={{ width: 360, p: 1 }}>
         <CardContent>
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+            <MeepleIcon sx={{ fontSize: 48, color: "primary.main" }} />
+          </Box>
           <Typography variant="h5" align="center" gutterBottom>
             MeeplesShelf
           </Typography>

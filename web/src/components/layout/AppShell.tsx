@@ -21,8 +21,10 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import HistoryIcon from "@mui/icons-material/History";
+import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import BarChartIcon from "@mui/icons-material/BarChart";
@@ -31,6 +33,8 @@ import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useSnackbar } from "../../context/SnackbarContext";
+import { useThemeMode } from "../../context/ThemeContext";
+import MeepleIcon from "../common/MeepleIcon";
 import { downloadJsonExport, downloadCsvExport } from "../../api/export";
 import { downloadBlob } from "../../utils/download";
 
@@ -38,6 +42,7 @@ export default function AppShell() {
   const auth = useAuth();
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
+  const { mode, toggleTheme } = useThemeMode();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [exporting, setExporting] = useState(false);
 
@@ -110,9 +115,10 @@ export default function AppShell() {
       </MuiLink>
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            MeeplesShelf
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexGrow: 1 }}>
+            <MeepleIcon />
+            <Typography variant="h6">MeeplesShelf</Typography>
+          </Box>
           {isMobile ? (
             <IconButton
               color="inherit"
@@ -138,6 +144,13 @@ export default function AppShell() {
                   Statistics
                 </Button>
               </Box>
+              <IconButton
+                color="inherit"
+                onClick={toggleTheme}
+                aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+              </IconButton>
               {auth.isAdmin && (
                 <>
                   <IconButton
@@ -188,7 +201,8 @@ export default function AppShell() {
         onClose={() => setDrawerOpen(false)}
       >
         <Box sx={{ width: 260 }} role="presentation">
-          <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
+          <Box sx={{ p: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+            <MeepleIcon sx={{ fontSize: 32, color: "primary.main" }} />
             <Chip
               label={auth.isAdmin ? "Admin" : "Guest"}
               size="small"
@@ -270,6 +284,17 @@ export default function AppShell() {
               </List>
             </>
           )}
+          <Divider />
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton onClick={toggleTheme}>
+                <ListItemIcon>
+                  {mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+                </ListItemIcon>
+                <ListItemText primary={mode === "dark" ? "Light Mode" : "Dark Mode"} />
+              </ListItemButton>
+            </ListItem>
+          </List>
           <Divider />
           <List>
             <ListItem disablePadding>
