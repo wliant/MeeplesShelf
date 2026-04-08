@@ -1,5 +1,11 @@
 import type { ScoringSpec } from "./scoring";
 
+export interface Tag {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
 export interface Expansion {
   id: number;
   game_id: number;
@@ -20,6 +26,7 @@ export interface Game {
   created_at: string;
   updated_at: string;
   expansions: Expansion[];
+  tags: Tag[];
   session_count: number;
   last_played_at: string | null;
 }
@@ -31,6 +38,7 @@ export interface GameCreate {
   scoring_spec?: ScoringSpec | null;
   rating?: number | null;
   notes?: string | null;
+  tag_ids?: number[];
 }
 
 export interface ExpansionCreate {

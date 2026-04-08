@@ -9,9 +9,10 @@ import {
   InputAdornment,
   CircularProgress,
   Pagination,
+  Chip,
 } from "@mui/material";
 import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
-import type { Game, GameCreate } from "../types/game";
+import type { Game, GameCreate, Tag } from "../types/game";
 import {
   listGames,
   createGame,
@@ -19,6 +20,7 @@ import {
   deleteGame,
   seedGames,
 } from "../api/games";
+import { listTags } from "../api/tags";
 import GameList from "../components/games/GameList";
 import GameForm from "../components/games/GameForm";
 import ConfirmDialog, { buildGameDeleteMessage } from "../components/common/ConfirmDialog";
@@ -44,6 +46,8 @@ export default function InventoryPage() {
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
 
   // Clear URL search param after consuming it
   useEffect(() => {
@@ -51,6 +55,11 @@ export default function InventoryPage() {
       setSearchParams({}, { replace: true });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load tags on mount
+  useEffect(() => {
+    listTags().then(setAllTags).catch(() => {});
+  }, []);
 
   // Debounce search input
   useEffect(() => {
@@ -61,10 +70,20 @@ export default function InventoryPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const toggleFilterTag = (tagName: string) => {
+    setSelectedFilterTags((prev) =>
+      prev.includes(tagName)
+        ? prev.filter((t) => t !== tagName)
+        : [...prev, tagName],
+    );
+    setPage(0);
+  };
+
   const refresh = useCallback(() => {
     setLoading(true);
     listGames({
       name: debouncedSearch || undefined,
+      tag: selectedFilterTags.length > 0 ? selectedFilterTags : undefined,
       skip: page * PAGE_SIZE,
       limit: PAGE_SIZE,
     })
@@ -72,8 +91,12 @@ export default function InventoryPage() {
         setGames(res.items);
         setTotal(res.total);
       })
-      .finally(() => setLoading(false));
-  }, [debouncedSearch, page]);
+      .finally(() => {
+        setLoading(false);
+        // Reload tags in case new ones were created in GameForm
+        listTags().then(setAllTags).catch(() => {});
+      });
+  }, [debouncedSearch, selectedFilterTags, page]);
 
   useEffect(() => {
     refresh();
@@ -154,30 +177,46 @@ export default function InventoryPage() {
       </Stack>
 
       {!loading && (
-        <TextField
-          size="small"
-          fullWidth
-          placeholder="Search games..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ mb: 2 }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
+        <>
+          <TextField
+            size="small"
+            fullWidth
+            placeholder="Search games..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ mb: allTags.length > 0 ? 1 : 2 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          {allTags.length > 0 && (
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+              {allTags.map((tag) => (
+                <Chip
+                  key={tag.id}
+                  label={tag.name}
+                  size="small"
+                  variant={selectedFilterTags.includes(tag.name) ? "filled" : "outlined"}
+                  color={selectedFilterTags.includes(tag.name) ? "primary" : "default"}
+                  onClick={() => toggleFilterTag(tag.name)}
+                />
+              ))}
+            </Stack>
+          )}
+        </>
       )}
 
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
           <CircularProgress />
         </Box>
-      ) : games.length === 0 && debouncedSearch ? (
+      ) : games.length === 0 && (debouncedSearch || selectedFilterTags.length > 0) ? (
         <Typography color="text.secondary" sx={{ mt: 2 }}>
           No games match your search.
         </Typography>

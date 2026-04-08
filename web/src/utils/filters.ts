@@ -19,3 +19,13 @@ export function filterSessionsByPlayerName(
     s.players.some((p) => p.player.name.toLowerCase().includes(q)),
   );
 }
+
+/** Filter games to those having ALL specified tags (AND logic, case-insensitive). */
+export function filterGamesByTag(games: Game[], tagNames: string[]): Game[] {
+  if (tagNames.length === 0) return games;
+  return games.filter((g) =>
+    tagNames.every((t) =>
+      g.tags.some((gt) => gt.name.toLowerCase() === t.toLowerCase()),
+    ),
+  );
+}

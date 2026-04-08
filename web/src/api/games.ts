@@ -4,12 +4,18 @@ import type { PaginatedResponse } from "../types/pagination";
 
 export interface GameListParams {
   name?: string;
+  tag?: string[];
   skip?: number;
   limit?: number;
 }
 
 export const listGames = (params?: GameListParams) =>
-  client.get<PaginatedResponse<Game>>("/games", { params }).then((r) => r.data);
+  client
+    .get<PaginatedResponse<Game>>("/games", {
+      params,
+      paramsSerializer: { indexes: null },
+    })
+    .then((r) => r.data);
 
 export const getGame = (id: number) =>
   client.get<Game>(`/games/${id}`).then((r) => r.data);

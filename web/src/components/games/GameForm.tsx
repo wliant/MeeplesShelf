@@ -16,11 +16,16 @@ import {
   CircularProgress,
   Rating,
   Tooltip,
+  Autocomplete,
+  Chip,
 } from "@mui/material";
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { useState, useEffect } from "react";
-import type { Game, GameCreate } from "../../types/game";
+import type { Game, GameCreate, Tag } from "../../types/game";
 import type { ScoringField } from "../../types/scoring";
+import { listTags, createTag } from "../../api/tags";
+import { useSnackbar } from "../../context/SnackbarContext";
+import { extractErrorMessage } from "../../utils/errors";
 
 interface Props {
   open: boolean;
@@ -65,6 +70,15 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
   const [rating, setRating] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [fields, setFields] = useState<ScoringField[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const { showSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    if (open) {
+      listTags().then(setAvailableTags).catch(() => {});
+    }
+  }, [open]);
 
   useEffect(() => {
     if (game) {
@@ -74,6 +88,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
       setRating(game.rating);
       setNotes(game.notes ?? "");
       setFields(game.scoring_spec?.fields ?? []);
+      setSelectedTags(game.tags ?? []);
     } else {
       setName("");
       setMinPlayers(1);
@@ -81,6 +96,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
       setRating(null);
       setNotes("");
       setFields([]);
+      setSelectedTags([]);
     }
   }, [game, open]);
 
@@ -93,7 +109,39 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
         fields.length > 0 ? { version: 1, fields } : null,
       rating,
       notes: notes.trim() || null,
+      tag_ids: selectedTags.map((t) => t.id),
     });
+  };
+
+  const handleTagChange = async (
+    _event: React.SyntheticEvent,
+    value: (Tag | string)[],
+  ) => {
+    const result: Tag[] = [];
+    for (const item of value) {
+      if (typeof item === "string") {
+        const trimmed = item.trim();
+        if (!trimmed) continue;
+        // Check if it already exists (case-insensitive)
+        const existing = availableTags.find(
+          (t) => t.name.toLowerCase() === trimmed.toLowerCase(),
+        );
+        if (existing) {
+          if (!result.some((r) => r.id === existing.id)) result.push(existing);
+          continue;
+        }
+        try {
+          const newTag = await createTag({ name: trimmed });
+          setAvailableTags((prev) => [...prev, newTag]);
+          result.push(newTag);
+        } catch (err) {
+          showSnackbar(extractErrorMessage(err), "error");
+        }
+      } else {
+        result.push(item);
+      }
+    }
+    setSelectedTags(result);
   };
 
   const updateField = (index: number, updated: ScoringField) => {
@@ -160,6 +208,35 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
             minRows={2}
             maxRows={4}
             placeholder="Personal notes about this game..."
+          />
+
+          <Autocomplete
+            multiple
+            freeSolo
+            options={availableTags}
+            getOptionLabel={(option) =>
+              typeof option === "string" ? option : option.name
+            }
+            value={selectedTags}
+            onChange={handleTagChange}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            renderTags={(value, getTagProps) =>
+              value.map((tag, index) => (
+                <Chip
+                  label={tag.name}
+                  size="small"
+                  {...getTagProps({ index })}
+                  key={tag.id}
+                />
+              ))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Tags"
+                placeholder="Type to search or create tags..."
+              />
+            )}
           />
 
           <Typography variant="subtitle1" sx={{ pt: 1 }}>

@@ -196,6 +196,13 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }:
             />
           )}
         </Stack>
+        {game.tags.length > 0 && (
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+            {game.tags.map((tag) => (
+              <Chip key={tag.id} label={tag.name} size="small" variant="outlined" />
+            ))}
+          </Stack>
+        )}
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           {game.session_count > 0
             ? `Played ${game.session_count} time${game.session_count !== 1 ? "s" : ""} · Last: ${formatLastPlayed(game.last_played_at)}`
