@@ -103,3 +103,35 @@ class TestGameReadSessionFields:
     def test_image_url_accepts_string(self):
         g = GameRead(**self._BASE, image_url="/api/uploads/games/1/cover.jpg")
         assert g.image_url == "/api/uploads/games/1/cover.jpg"
+
+    def test_bgg_id_defaults_to_none(self):
+        g = GameRead(**self._BASE)
+        assert g.bgg_id is None
+
+    def test_bgg_id_accepts_value(self):
+        g = GameRead(**self._BASE, bgg_id=13)
+        assert g.bgg_id == 13
+
+
+class TestGameCreateBggId:
+    def test_bgg_id_defaults_to_none(self):
+        g = GameCreate(name="Test")
+        assert g.bgg_id is None
+
+    def test_bgg_id_accepts_value(self):
+        g = GameCreate(name="Test", bgg_id=13)
+        assert g.bgg_id == 13
+
+    def test_bgg_id_none_explicit(self):
+        g = GameCreate(name="Test", bgg_id=None)
+        assert g.bgg_id is None
+
+
+class TestGameUpdateBggId:
+    def test_bgg_id_defaults_to_none(self):
+        g = GameUpdate()
+        assert g.bgg_id is None
+
+    def test_bgg_id_accepts_value(self):
+        g = GameUpdate(bgg_id=42)
+        assert g.bgg_id == 42
