@@ -1,4 +1,5 @@
 import {
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -24,13 +25,14 @@ import ScoreSheet from "./ScoreSheet";
 interface Props {
   open: boolean;
   games: Game[];
+  defaultGame?: Game | null;
   onClose: () => void;
   onSave: (data: GameSessionCreate | GameSessionUpdate) => void;
   editSession?: GameSession | null;
   saving?: boolean;
 }
 
-export default function SessionForm({ open, games, onClose, onSave, editSession, saving = false }: Props) {
+export default function SessionForm({ open, games, defaultGame, onClose, onSave, editSession, saving = false }: Props) {
   const isEditMode = !!editSession;
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -69,7 +71,7 @@ export default function SessionForm({ open, games, onClose, onSave, editSession,
         setNotes(editSession.notes ?? "");
         setSelectedExpansionIds(new Set(editSession.expansions.map((e) => e.id)));
       } else {
-        setSelectedGame(null);
+        setSelectedGame(defaultGame ?? null);
         setSelectedPlayers([]);
         setScoreData({});
         setSelectedExpansionIds(new Set());
@@ -172,6 +174,12 @@ export default function SessionForm({ open, games, onClose, onSave, editSession,
             )}
           />
 
+          {selectedGame && (
+            <Typography variant="body2" color="text.secondary">
+              Supports {selectedGame.min_players}&#8211;{selectedGame.max_players} players
+            </Typography>
+          )}
+
           <TextField
             label="Played At"
             type="datetime-local"
@@ -245,6 +253,15 @@ export default function SessionForm({ open, games, onClose, onSave, editSession,
               />
             ))}
           </Stack>
+
+          {selectedGame && selectedPlayers.length > 0 &&
+            (selectedPlayers.length < selectedGame.min_players ||
+              selectedPlayers.length > selectedGame.max_players) && (
+              <Alert severity="warning" variant="outlined">
+                {selectedGame.name} supports {selectedGame.min_players}&#8211;{selectedGame.max_players} players,
+                but {selectedPlayers.length} {selectedPlayers.length === 1 ? "is" : "are"} selected.
+              </Alert>
+            )}
 
           {effectiveSpec && selectedPlayers.length > 0 && (
             <>

@@ -29,17 +29,23 @@ import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
 import { extractErrorMessage } from "../utils/errors";
 import { filterSessionsByPlayerName } from "../utils/filters";
+import { useSearchParams } from "react-router-dom";
 
 const PAGE_SIZE = 20;
 
 export default function SessionsPage() {
   const { isAdmin } = useAuth();
   const { showSnackbar } = useSnackbar();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sessions, setSessions] = useState<GameSession[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [games, setGames] = useState<Game[]>([]);
   const [formOpen, setFormOpen] = useState(false);
+  const [quicklogGameId, setQuicklogGameId] = useState<number | null>(() => {
+    const id = searchParams.get("quicklog");
+    return id ? Number(id) : null;
+  });
   const [detailSession, setDetailSession] = useState<GameSession | null>(null);
   const [editSession, setEditSession] = useState<GameSession | null>(null);
   const [pendingDeleteSession, setPendingDeleteSession] = useState<GameSession | null>(null);
@@ -56,6 +62,20 @@ export default function SessionsPage() {
   );
 
   const hasFilters = filterGameId !== undefined || filterDateFrom !== "" || filterDateTo !== "" || playerSearch !== "";
+
+  // Clear quicklog URL param after consuming it
+  useEffect(() => {
+    if (searchParams.has("quicklog")) {
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Open session form when quicklog game is set and games are loaded
+  useEffect(() => {
+    if (quicklogGameId !== null && games.length > 0) {
+      setFormOpen(true);
+    }
+  }, [quicklogGameId, games]);
 
   // Reset page when server-side filters change
   useEffect(() => {
@@ -226,6 +246,7 @@ export default function SessionsPage() {
           page={page}
           rowsPerPage={PAGE_SIZE}
           onPageChange={setPage}
+          onAddNew={isAdmin ? () => setFormOpen(true) : undefined}
         />
       )}
 
@@ -256,7 +277,8 @@ export default function SessionsPage() {
       <SessionForm
         open={formOpen || editSession !== null}
         games={games}
-        onClose={() => { setFormOpen(false); setEditSession(null); }}
+        defaultGame={quicklogGameId !== null ? games.find((g) => g.id === quicklogGameId) ?? null : null}
+        onClose={() => { setFormOpen(false); setEditSession(null); setQuicklogGameId(null); }}
         onSave={handleSave}
         editSession={editSession}
         saving={saving}
@@ -264,6 +286,7 @@ export default function SessionsPage() {
 
       <SessionDetail
         session={detailSession}
+        games={games}
         onClose={() => setDetailSession(null)}
         onEdit={handleEdit}
         isAdmin={isAdmin}

@@ -1,10 +1,13 @@
 import {
+  Box,
+  Button,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
   TablePagination,
+  TableSortLabel,
   Paper,
   IconButton,
   Chip,
@@ -15,8 +18,13 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { Delete as DeleteIcon } from "@mui/icons-material";
+import {
+  Delete as DeleteIcon,
+  EmojiEvents as EmojiEventsIcon,
+  History as HistoryIcon,
+} from "@mui/icons-material";
 import type { GameSession } from "../../types/session";
+import useSortableTable from "../../hooks/useSortableTable";
 import SessionCard from "./SessionCard";
 
 interface Props {
@@ -28,6 +36,7 @@ interface Props {
   page: number;
   rowsPerPage: number;
   onPageChange: (page: number) => void;
+  onAddNew?: () => void;
 }
 
 export default function SessionList({
@@ -39,17 +48,36 @@ export default function SessionList({
   page,
   rowsPerPage,
   onPageChange,
+  onAddNew,
 }: Props) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { sorted, orderBy, order, onSort } = useSortableTable(sessions, "played_at", "desc");
 
   if (sessions.length === 0) {
     return (
-      <Typography color="text.secondary" sx={{ mt: 2 }}>
-        No sessions logged yet.
-      </Typography>
+      <Box sx={{ textAlign: "center", mt: 6 }}>
+        <HistoryIcon sx={{ fontSize: 48, color: "text.secondary", mb: 1 }} />
+        <Typography variant="h6" gutterBottom>
+          No sessions logged yet.
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 2 }}>
+          Log a game session to start tracking your plays.
+        </Typography>
+        {onAddNew && (
+          <Button variant="contained" onClick={onAddNew}>
+            Log your first session
+          </Button>
+        )}
+      </Box>
     );
   }
+
+  const sortableHeader = (label: string, key: string) => (
+    <TableSortLabel active={orderBy === key} direction={orderBy === key ? order : "asc"} onClick={() => onSort(key)}>
+      {label}
+    </TableSortLabel>
+  );
 
   return (
     <Paper variant="outlined">
@@ -69,15 +97,15 @@ export default function SessionList({
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Date</TableCell>
-              <TableCell>Game</TableCell>
+              <TableCell>{sortableHeader("Date", "played_at")}</TableCell>
+              <TableCell>{sortableHeader("Game", "game.name")}</TableCell>
               <TableCell>Players</TableCell>
               <TableCell>Winner</TableCell>
               {isAdmin && <TableCell align="right">Actions</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
-            {sessions.map((s) => {
+            {sorted.map((s) => {
               const winners = s.players.filter((p) => p.winner);
               return (
                 <TableRow
@@ -95,9 +123,10 @@ export default function SessionList({
                       {s.players.map((p) => (
                         <Chip
                           key={p.id}
-                          label={`${p.player.name}${p.total_score != null ? ` (${p.total_score})` : ""}`}
+                          label={`${p.player.name}${p.total_score != null ? ` - ${p.total_score} pts` : ""}`}
                           size="small"
                           color={p.winner ? "primary" : "default"}
+                          icon={p.winner ? <EmojiEventsIcon /> : undefined}
                         />
                       ))}
                     </Stack>

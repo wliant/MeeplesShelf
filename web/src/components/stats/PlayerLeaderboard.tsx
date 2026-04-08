@@ -1,13 +1,18 @@
 import { Link as RouterLink } from "react-router-dom";
+import { useState } from "react";
 import {
+  FormControlLabel,
   Link,
   Paper,
+  Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Typography,
   useMediaQuery,
   useTheme,
@@ -22,6 +27,7 @@ import {
   YAxis,
 } from "recharts";
 import type { PlayerStats } from "../../types/stats";
+import useSortableTable from "../../hooks/useSortableTable";
 import { formatWinRate } from "../../utils/stats";
 
 interface Props {
@@ -31,8 +37,11 @@ interface Props {
 export default function PlayerLeaderboard({ data }: Props) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [showAll, setShowAll] = useState(false);
+  const displayData = showAll ? data : data.filter((p) => p.sessions_played > 0);
+  const { sorted, orderBy, order, onSort } = useSortableTable(displayData, "win_rate", "desc");
 
-  const top10 = data.slice(0, 10);
+  const top10 = displayData.slice(0, 10);
   const chartData = top10.map((p) => ({
     name: p.player_name,
     winRate: Math.round(p.win_rate * 1000) / 10,
@@ -40,9 +49,14 @@ export default function PlayerLeaderboard({ data }: Props) {
 
   return (
     <>
-      <Typography variant="h6" gutterBottom>
-        Player Leaderboard
-      </Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+        <Typography variant="h6">Player Leaderboard</Typography>
+        <FormControlLabel
+          control={<Switch size="small" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />}
+          label="Show all"
+          slotProps={{ typography: { variant: "body2" } }}
+        />
+      </Stack>
 
       {!isMobile && top10.length > 0 && (
         <ResponsiveContainer width="100%" height={250}>
@@ -67,14 +81,30 @@ export default function PlayerLeaderboard({ data }: Props) {
           <TableHead>
             <TableRow>
               <TableCell>#</TableCell>
-              <TableCell>Player</TableCell>
-              <TableCell align="right">Played</TableCell>
-              <TableCell align="right">Wins</TableCell>
-              <TableCell align="right">Win Rate</TableCell>
+              <TableCell>
+                <TableSortLabel active={orderBy === "player_name"} direction={orderBy === "player_name" ? order : "asc"} onClick={() => onSort("player_name")}>
+                  Player
+                </TableSortLabel>
+              </TableCell>
+              <TableCell align="right">
+                <TableSortLabel active={orderBy === "sessions_played"} direction={orderBy === "sessions_played" ? order : "asc"} onClick={() => onSort("sessions_played")}>
+                  Played
+                </TableSortLabel>
+              </TableCell>
+              <TableCell align="right">
+                <TableSortLabel active={orderBy === "wins"} direction={orderBy === "wins" ? order : "asc"} onClick={() => onSort("wins")}>
+                  Wins
+                </TableSortLabel>
+              </TableCell>
+              <TableCell align="right">
+                <TableSortLabel active={orderBy === "win_rate"} direction={orderBy === "win_rate" ? order : "asc"} onClick={() => onSort("win_rate")}>
+                  Win Rate
+                </TableSortLabel>
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map((p, i) => (
+            {sorted.map((p, i) => (
               <TableRow key={p.player_id}>
                 <TableCell>{i + 1}</TableCell>
                 <TableCell>

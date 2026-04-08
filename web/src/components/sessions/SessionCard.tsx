@@ -9,7 +9,10 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Delete as DeleteIcon } from "@mui/icons-material";
+import {
+  Delete as DeleteIcon,
+  EmojiEvents as EmojiEventsIcon,
+} from "@mui/icons-material";
 import type { GameSession } from "../../types/session";
 
 interface Props {
@@ -53,9 +56,10 @@ export default function SessionCard({
             {session.players.map((p) => (
               <Chip
                 key={p.id}
-                label={`${p.player.name}${p.total_score != null ? ` (${p.total_score})` : ""}`}
+                label={`${p.player.name}${p.total_score != null ? ` - ${p.total_score} pts` : ""}`}
                 size="small"
                 color={p.winner ? "primary" : "default"}
+                icon={p.winner ? <EmojiEventsIcon /> : undefined}
               />
             ))}
           </Stack>
