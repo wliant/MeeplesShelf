@@ -6,6 +6,7 @@ export interface Player {
 
 export interface PlayerWithCount extends Player {
   session_count: number;
+  last_played: string | null;
 }
 
 export interface SessionPlayer {

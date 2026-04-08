@@ -27,6 +27,7 @@ class PlayerReadWithCount(BaseModel):
     name: str
     created_at: datetime
     session_count: int
+    last_played: datetime | None = None
 
     model_config = {"from_attributes": True}
 

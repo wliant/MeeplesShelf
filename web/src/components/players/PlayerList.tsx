@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import {
+  Box,
+  Button,
   Card,
   CardContent,
   Divider,
@@ -13,6 +15,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   TextField,
   Tooltip,
   Typography,
@@ -23,8 +26,11 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon,
   Close as CloseIcon,
+  People as PeopleIcon,
 } from "@mui/icons-material";
 import type { PlayerWithCount } from "../../types/session";
+import useSortableTable from "../../hooks/useSortableTable";
+import { formatLastPlayed } from "../../utils/stats";
 
 interface Props {
   players: PlayerWithCount[];
@@ -41,6 +47,7 @@ export default function PlayerList({
 }: Props) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { sorted, orderBy, order, onSort } = useSortableTable(players, "name", "asc");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,11 +59,22 @@ export default function PlayerList({
     }
   }, [editingId]);
 
+  const navigate = useNavigate();
+
   if (players.length === 0) {
     return (
-      <Typography color="text.secondary" sx={{ mt: 2 }}>
-        No players yet. Players are created when you log a game session.
-      </Typography>
+      <Box sx={{ textAlign: "center", mt: 6 }}>
+        <PeopleIcon sx={{ fontSize: 48, color: "text.secondary", mb: 1 }} />
+        <Typography variant="h6" gutterBottom>
+          No players yet.
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 2 }}>
+          Players are created when you log a game session.
+        </Typography>
+        <Button variant="contained" onClick={() => navigate("/sessions")}>
+          Go to Sessions
+        </Button>
+      </Box>
     );
   }
 
@@ -148,7 +166,7 @@ export default function PlayerList({
                     {p.session_count} session{p.session_count !== 1 ? "s" : ""}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Added {new Date(p.created_at).toLocaleDateString()}
+                    Last played: {formatLastPlayed(p.last_played)}
                   </Typography>
                 </Stack>
               </CardContent>
@@ -164,18 +182,30 @@ export default function PlayerList({
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Sessions</TableCell>
-            <TableCell>Created</TableCell>
+            <TableCell>
+              <TableSortLabel active={orderBy === "name"} direction={orderBy === "name" ? order : "asc"} onClick={() => onSort("name")}>
+                Name
+              </TableSortLabel>
+            </TableCell>
+            <TableCell>
+              <TableSortLabel active={orderBy === "session_count"} direction={orderBy === "session_count" ? order : "asc"} onClick={() => onSort("session_count")}>
+                Sessions
+              </TableSortLabel>
+            </TableCell>
+            <TableCell>
+              <TableSortLabel active={orderBy === "last_played"} direction={orderBy === "last_played" ? order : "asc"} onClick={() => onSort("last_played")}>
+                Last Played
+              </TableSortLabel>
+            </TableCell>
             {isAdmin && <TableCell align="right">Actions</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
-          {players.map((p) => (
+          {sorted.map((p) => (
             <TableRow key={p.id}>
               <TableCell>{renderNameCell(p)}</TableCell>
               <TableCell>{p.session_count}</TableCell>
-              <TableCell>{new Date(p.created_at).toLocaleDateString()}</TableCell>
+              <TableCell>{formatLastPlayed(p.last_played)}</TableCell>
               {isAdmin && (
                 <TableCell align="right">
                   {editingId !== p.id && (

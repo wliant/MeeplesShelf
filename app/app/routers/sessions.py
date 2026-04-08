@@ -34,16 +34,31 @@ async def list_players(db: AsyncSession = Depends(get_db)):
         .group_by(SessionPlayer.player_id)
         .subquery()
     )
+    last_played_subq = (
+        select(
+            SessionPlayer.player_id,
+            func.max(GameSession.played_at).label("last_played"),
+        )
+        .join(GameSession, GameSession.id == SessionPlayer.session_id)
+        .group_by(SessionPlayer.player_id)
+        .subquery()
+    )
     result = await db.execute(
-        select(Player, func.coalesce(count_subq.c.session_count, 0).label("session_count"))
+        select(
+            Player,
+            func.coalesce(count_subq.c.session_count, 0).label("session_count"),
+            last_played_subq.c.last_played,
+        )
         .outerjoin(count_subq, Player.id == count_subq.c.player_id)
+        .outerjoin(last_played_subq, Player.id == last_played_subq.c.player_id)
         .order_by(Player.name)
     )
     return [
         PlayerReadWithCount(
-            id=p.id, name=p.name, created_at=p.created_at, session_count=sc,
+            id=p.id, name=p.name, created_at=p.created_at,
+            session_count=sc, last_played=lp,
         )
-        for p, sc in result.all()
+        for p, sc, lp in result.all()
     ]
 
 
