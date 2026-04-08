@@ -9,6 +9,7 @@
 | Primary colour | `#5c6bc0` (MUI indigo 400) |
 | Secondary colour | `#ff7043` (MUI deep orange 400) |
 | CSS baseline | Enabled (MUI `CssBaseline`) |
+| Focus indicator | `MuiButtonBase` override: 2px solid `#5c6bc0` outline, 2px offset on `:focus-visible` |
 
 ---
 
@@ -541,6 +542,40 @@ Reusable confirmation dialog used before all destructive operations. Uses `maxWi
 | Role chip in AppShell | "Admin" | "Guest" |
 
 Reading data (games, expansions, sessions, session details) is available to both roles.
+
+---
+
+## Accessibility (a11y)
+
+### Focus Indicators
+
+The MUI theme includes a global `MuiButtonBase` style override that applies a 2px primary-colour (`#5c6bc0`) outline with 2px offset on `:focus-visible`. This covers all interactive elements that extend `ButtonBase`: `Button`, `IconButton`, `Fab`, `ListItemButton`, `CardActionArea`, etc.
+
+### Skip-to-Content Link
+
+A visually-hidden `<MuiLink href="#main-content">Skip to main content</MuiLink>` is rendered as the first child inside `AppShell`'s root `Box`. It is positioned off-screen by default (`left: -9999px`) and becomes visible with a styled primary-colour pill when focused via keyboard (`Tab`). The link targets the `<Box component="main" id="main-content">` element.
+
+### Navigation Landmarks
+
+- **Desktop:** The four navigation `Button` links (Inventory, Sessions, Players, Statistics) in the `AppBar` toolbar are wrapped in `<Box component="nav" aria-label="Main navigation">`.
+- **Mobile:** The navigation `List` inside the `Drawer` is wrapped in `<Box component="nav" aria-label="Main navigation">`.
+- The main content area uses `<Box component="main" id="main-content">` for the `<main>` landmark.
+
+### Icon Button Accessibility
+
+All icon-only buttons have:
+- An `aria-label` attribute describing the action and target (e.g., `"Edit Catan"`, `"Delete session for Five Tribes"`, `"Show details"` / `"Hide details"`)
+- A `<Tooltip>` wrapper providing a visible hover hint (e.g., "Edit game", "Delete session", "Cancel editing")
+
+The `aria-label` includes the specific entity name for unique identification when multiple instances appear on screen. The `Tooltip` title uses a generic label since sighted users can already see which card they are interacting with.
+
+### FAB Accessibility
+
+Floating action buttons have `aria-label` attributes: "Add new game" on `InventoryPage`, "Log new session" on `SessionsPage`.
+
+### Dialog Focus Management
+
+MUI `Dialog` components automatically trap focus within the dialog when open and return focus to the trigger element on close. No additional focus management code is needed.
 
 ---
 

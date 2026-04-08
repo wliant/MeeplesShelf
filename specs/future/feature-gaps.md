@@ -423,20 +423,28 @@ Files changed: `web/src/components/sessions/SessionCard.tsx` (new),
 
 ---
 
-### Gap 20 — No Accessibility (a11y) Support
+### ~~Gap 20 — No Accessibility (a11y) Support~~ (Done)
 
-**Description.** Icon buttons (edit, delete, expand) have no `aria-label` attributes — screen
-readers announce them as unlabelled buttons. There is no skip-to-content link, no landmark
-roles beyond basic semantic HTML, no visible focus indicators beyond browser defaults, and
-no keyboard navigation shortcuts. The delete and edit icons are visually ambiguous without
-hover tooltips.
+**Status.** Implemented. All icon buttons now have `aria-label` attributes and `<Tooltip>` wrappers
+for screen reader and hover-text support. A skip-to-content link (visually hidden, visible on focus)
+was added to `AppShell.tsx` before the `<AppBar>`, targeting `<Box component="main" id="main-content">`.
+Desktop and mobile navigation sections are wrapped in `<nav aria-label="Main navigation">` landmarks.
+The MUI theme (`App.tsx`) now includes a global `MuiButtonBase` style override with a 2px primary-colour
+`:focus-visible` outline for enhanced keyboard navigation visibility. FABs on `InventoryPage` and
+`SessionsPage` have `aria-label` attributes. Files changed: `web/src/App.tsx`,
+`web/src/components/layout/AppShell.tsx`, `web/src/components/games/GameCard.tsx`,
+`web/src/components/sessions/SessionCard.tsx`, `web/src/components/sessions/SessionList.tsx`,
+`web/src/components/players/PlayerList.tsx`, `web/src/components/games/ExpansionList.tsx`,
+`web/src/components/games/GameForm.tsx`, `web/src/pages/InventoryPage.tsx`,
+`web/src/pages/SessionsPage.tsx`. Covered by 7 E2E regression tests
+(`e2e-test/tests/test_accessibility.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — the app is inaccessible to users relying on assistive technology; icon-only buttons are also confusing for sighted users unfamiliar with the icons |
 | **Technical Complexity** | Low-Medium — add `aria-label` to all `<IconButton>` components; add `<Tooltip>` wrappers for icon buttons; add a skip-to-content link; verify focus management in dialogs |
 | **Dependencies / Prerequisites** | None |
-| **Suggested Priority** | P2 |
+| **Suggested Priority** | ~~P2~~ Done |
 
 ---
 
@@ -555,7 +563,7 @@ access. File changed: `web/src/pages/LoginPage.tsx`. Covered by 2 E2E regression
 | 17 | ~~Success/Error Toast Notifications~~ | ~~P1~~ Done | Low | — |
 | 18 | ~~Mobile Navigation Bar Overflow~~ | ~~P1~~ Done | Medium | — |
 | 19 | ~~Sessions Table Not Responsive~~ | ~~P1~~ Done | Medium | — |
-| 20 | Accessibility (a11y) Support | P2 | Low-Medium | — |
+| 20 | ~~Accessibility (a11y) Support~~ | ~~P2~~ Done | Low-Medium | — |
 | 21 | ~~Player Management (Rename/Delete)~~ | ~~P1~~ Done | Medium | — |
 | 22 | ~~Session Detail Modal Lacks Context~~ | ~~P2~~ Done | Low | — |
 | 23 | ~~Game Card Shows No Session History~~ | ~~P2~~ Done | Low-Medium | — |
