@@ -11,6 +11,7 @@ const makeGame = (id: number, name: string): Game => ({
   scoring_spec: null,
   rating: null,
   notes: null,
+  image_url: null,
   created_at: "2025-01-01T00:00:00Z",
   updated_at: "2025-01-01T00:00:00Z",
   expansions: [],

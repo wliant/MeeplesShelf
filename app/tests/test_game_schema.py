@@ -95,3 +95,11 @@ class TestGameReadSessionFields:
         g = GameRead(**self._BASE, session_count=5, last_played_at=ts)
         assert g.session_count == 5
         assert g.last_played_at == ts
+
+    def test_image_url_defaults_to_none(self):
+        g = GameRead(**self._BASE)
+        assert g.image_url is None
+
+    def test_image_url_accepts_string(self):
+        g = GameRead(**self._BASE, image_url="/api/uploads/games/1/cover.jpg")
+        assert g.image_url == "/api/uploads/games/1/cover.jpg"
