@@ -11,13 +11,15 @@ services:
       APP_DATABASE_URL: ${APP_DATABASE_URL}
       APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
       APP_SECRET_KEY: ${APP_SECRET_KEY}
+      APP_S3_ENDPOINT_URL: ${APP_S3_ENDPOINT_URL}
+      APP_S3_ACCESS_KEY: ${APP_S3_ACCESS_KEY}
+      APP_S3_SECRET_KEY: ${APP_S3_SECRET_KEY}
+      APP_S3_BUCKET: ${APP_S3_BUCKET:-meeplesshelf}
+      APP_S3_PUBLIC_URL: ${APP_S3_PUBLIC_URL}
     ports:
       - "${APP_PORT:-8000}:8000"
-    volumes:
-      - uploads:/srv/uploads
     depends_on:
       db:
         condition: service_healthy
-
-volumes:
-  uploads:
+      minio:
+        condition: service_healthy

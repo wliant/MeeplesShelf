@@ -29,8 +29,6 @@ COPY --from=web-builder /build/web/dist /srv/static
 
 ENV PYTHONPATH=/srv
 ENV STATIC_DIR=/srv/static
-RUN mkdir -p /srv/uploads
-ENV APP_UPLOAD_DIR=/srv/uploads
 
 EXPOSE 8000
 

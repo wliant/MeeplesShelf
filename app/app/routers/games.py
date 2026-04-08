@@ -1,15 +1,11 @@
-import os
 import uuid
 from datetime import datetime
-from pathlib import Path
 
-import aiofiles
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.config import settings
 from app.database import get_db
 from app.dependencies import require_admin
 from app.models.game import Expansion, Game
@@ -22,6 +18,7 @@ from app.schemas.game import (
     GameUpdate,
 )
 from app.schemas.pagination import PaginatedResponse
+from app.services import storage
 from app.services.seed import SEED_GAMES
 
 _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
@@ -58,20 +55,8 @@ def _enrich_game(
     game_read.session_count = count
     game_read.last_played_at = last
     if game.image_filename:
-        game_read.image_url = f"/api/uploads/games/{game.id}/{game.image_filename}"
+        game_read.image_url = storage.get_public_url(game.id, game.image_filename)
     return game_read
-
-
-def _delete_image_file(game_id: int, filename: str) -> None:
-    """Remove an image file and its parent directory if empty."""
-    dir_path = Path(settings.upload_dir) / "games" / str(game_id)
-    file_path = dir_path / filename
-    if file_path.is_file():
-        file_path.unlink()
-    try:
-        dir_path.rmdir()
-    except OSError:
-        pass
 
 
 @router.get("/games", response_model=PaginatedResponse[GameRead])
@@ -176,7 +161,7 @@ async def delete_game(
     if not game:
         raise HTTPException(404, "Game not found")
     if game.image_filename:
-        _delete_image_file(game.id, game.image_filename)
+        await storage.delete_image(game.id, game.image_filename)
     await db.delete(game)
     await db.commit()
 
@@ -206,15 +191,11 @@ async def upload_game_image(
         raise HTTPException(404, "Game not found")
 
     if game.image_filename:
-        _delete_image_file(game.id, game.image_filename)
+        await storage.delete_image(game.id, game.image_filename)
 
     ext = _CONTENT_TYPE_EXT[file.content_type]
     filename = f"{uuid.uuid4().hex}{ext}"
-    dir_path = Path(settings.upload_dir) / "games" / str(game_id)
-    os.makedirs(dir_path, exist_ok=True)
-
-    async with aiofiles.open(dir_path / filename, "wb") as f:
-        await f.write(contents)
+    await storage.upload_image(game_id, filename, contents, file.content_type)
 
     game.image_filename = filename
     await db.commit()
@@ -240,7 +221,7 @@ async def delete_game_image(
     if not game.image_filename:
         raise HTTPException(404, "No image to delete")
 
-    _delete_image_file(game.id, game.image_filename)
+    await storage.delete_image(game.id, game.image_filename)
     game.image_filename = None
     await db.commit()
 

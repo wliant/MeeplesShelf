@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -7,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.routers import auth, export, games, players, sessions, stats
+from app.services.storage import ensure_bucket
 
 
 class SPAStaticFiles(StaticFiles):
@@ -21,7 +23,13 @@ class SPAStaticFiles(StaticFiles):
             raise
 
 
-app = FastAPI(title="MeeplesShelf", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await ensure_bucket()
+    yield
+
+
+app = FastAPI(title="MeeplesShelf", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,13 +45,6 @@ app.include_router(sessions.router, prefix="/api")
 app.include_router(export.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(players.router, prefix="/api")
-
-# Serve uploaded images (must be mounted before the SPA catch-all).
-from app.config import settings as _settings  # noqa: E402
-
-_upload_dir = _settings.upload_dir
-if Path(_upload_dir).is_dir():
-    app.mount("/api/uploads", StaticFiles(directory=_upload_dir), name="uploads")
 
 # Serve compiled React SPA in production.
 # The guard makes local dev startup safe when no static dir exists.
