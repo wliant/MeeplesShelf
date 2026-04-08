@@ -168,6 +168,7 @@ Renders one `GameCard` per game.
 - Rating display: MUI `<Rating>` component (`value={game.rating}`, `max={10}`, `readOnly`, `size="small"`) — only shown when `game.rating` is not null
 - Player count chip: e.g. "3-4 players" (outlined)
 - Scoring fields chip: e.g. "5 scoring fields" (primary colour, filled) — only if `scoring_spec` exists and has fields
+- Session history line (body2, text.secondary): "Played 5 times · Last: 3/15/2025" when `session_count > 0`, or "Never played" when `session_count === 0`. Uses `formatLastPlayed()` from `utils/stats.ts`.
 - Admin-only row:
   - Edit icon button (pencil) → opens `GameForm` in "edit" mode with game pre-populated
   - Delete icon button (trash) → opens a `ConfirmDialog` ("Delete Game") with cascade warning; on confirm calls `DELETE /api/games/{id}`

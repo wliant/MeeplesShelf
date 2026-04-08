@@ -489,19 +489,27 @@ Files changed: `web/src/components/sessions/SessionDetail.tsx`,
 
 ---
 
-### Gap 23 — Game Card Shows No Session History
+### ~~Gap 23 — Game Card Shows No Session History~~ (Done)
 
-**Description.** A game card in the inventory shows only its name, player range, and scoring
-field count. There is no indication of how many times it has been played, when it was last
-played, or who usually wins. The inventory and sessions pages are entirely disconnected — you
-must mentally cross-reference them.
+**Status.** Implemented. `session_count` (int, default 0) and `last_played_at` (datetime, nullable)
+fields added to the `GameRead` schema (`app/app/schemas/game.py`). Both `GET /api/games` and
+`GET /api/games/{id}` now return these fields, computed via a lightweight aggregation query
+(`COUNT` + `MAX(played_at)`) over `game_sessions` using a shared `_load_session_stats` helper
+in `app/app/routers/games.py`. Games with no sessions return `session_count=0` and
+`last_played_at=null`. The `GameCard` component (`web/src/components/games/GameCard.tsx`) displays
+a body2 text line below the chip stack: "Played N times · Last: date" or "Never played".
+Date formatting uses `formatLastPlayed()` from `web/src/utils/stats.ts`. A pre-existing bug in
+`delete_session` (missing `.unique()` call) was fixed in `app/app/routers/sessions.py`. Covered
+by 3 backend unit tests (`app/tests/test_game_schema.py`), 2 frontend unit tests
+(`web/src/utils/stats.test.ts`), and 8 E2E integration tests
+(`e2e-test/tests/test_game_session_history.py`).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium — "what should we play tonight?" requires switching between pages and scanning; a "Last played: 3 weeks ago" line on each card would answer the question at a glance |
 | **Technical Complexity** | Low-Medium — add a `session_count` and `last_played_at` to the game list API response (or a lightweight `/api/games/{id}/summary` endpoint); display on `GameCard` |
 | **Dependencies / Prerequisites** | None; lighter-weight than full Statistics (Gap 3) |
-| **Suggested Priority** | P2 |
+| **Suggested Priority** | ~~P2~~ Done |
 
 ---
 
@@ -550,5 +558,5 @@ access. File changed: `web/src/pages/LoginPage.tsx`. Covered by 2 E2E regression
 | 20 | Accessibility (a11y) Support | P2 | Low-Medium | — |
 | 21 | ~~Player Management (Rename/Delete)~~ | ~~P1~~ Done | Medium | — |
 | 22 | ~~Session Detail Modal Lacks Context~~ | ~~P2~~ Done | Low | — |
-| 23 | Game Card Shows No Session History | P2 | Low-Medium | — |
+| 23 | ~~Game Card Shows No Session History~~ | ~~P2~~ Done | Low-Medium | — |
 | 24 | ~~Password Field UX / Onboarding~~ | ~~P2~~ Done | Low | — |

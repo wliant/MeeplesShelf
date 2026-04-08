@@ -83,9 +83,11 @@ All fields optional (partial update).
   "scoring_spec": "ScoringSpec | null",
   "rating":       "integer | null",
   "notes":        "string | null",
-  "created_at":   "datetime (ISO 8601, UTC)",
-  "updated_at":   "datetime (ISO 8601, UTC)",
-  "expansions":   "ExpansionRead[]"
+  "created_at":      "datetime (ISO 8601, UTC)",
+  "updated_at":      "datetime (ISO 8601, UTC)",
+  "expansions":      "ExpansionRead[]",
+  "session_count":   "integer (default 0)",
+  "last_played_at":  "datetime (ISO 8601, UTC) | null"
 }
 ```
 
