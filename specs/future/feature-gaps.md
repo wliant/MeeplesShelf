@@ -259,8 +259,9 @@ a cover image (JPEG, PNG, or WebP, max 5MB) with UUID-based filenames stored at
 `{upload_dir}/games/{game_id}/`. `DELETE /api/games/{game_id}/image` (admin-only) removes the image.
 Images are served publicly via `/api/uploads/` using FastAPI's `StaticFiles`. The `GameRead` schema
 includes a computed `image_url` field. Image files are cleaned up on game deletion or image replacement.
-Database: `image_filename` column added to `games` table via Alembic migration 003. Docker: uploads
-volume (`/srv/uploads`) persists images across container rebuilds. Frontend: `GameCard` displays cover
+Database: `image_filename` column added to `games` table via Alembic migration 003. Storage: images
+are stored in MinIO (S3-compatible) via `aiobotocore`; bucket is auto-created with public-read policy
+on app startup (`app/app/services/storage.py`). Frontend: `GameCard` displays cover
 images with `CardMedia` (180px height, object-fit cover) or a placeholder icon when no image exists.
 Admin users see camera/remove icon overlays for upload and deletion with loading states and snackbar
 feedback. Client-side validation mirrors backend (type + size). Files changed: `app/pyproject.toml`,

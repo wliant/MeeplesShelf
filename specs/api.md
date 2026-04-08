@@ -83,7 +83,7 @@ All fields optional (partial update).
   "scoring_spec": "ScoringSpec | null",
   "rating":       "integer | null",
   "notes":        "string | null",
-  "image_url":    "string | null",        // computed: /api/uploads/games/{id}/{filename} or null
+  "image_url":    "string | null",        // computed: {S3_PUBLIC_URL}/{bucket}/games/{id}/{filename} or null
   "created_at":      "datetime (ISO 8601, UTC)",
   "updated_at":      "datetime (ISO 8601, UTC)",
   "expansions":      "ExpansionRead[]",

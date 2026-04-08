@@ -39,8 +39,6 @@ FastAPI application (uvicorn)
   │
   ├── /api/*        REST API endpoints
   │
-  ├── /api/uploads/* Uploaded game cover images (StaticFiles)
-  │
   ├── /docs         Swagger UI (interactive API docs)
   │
   └── /*            React SPA (served from compiled static files)
@@ -62,7 +60,8 @@ In production (Docker), the React app is built into a `static/` directory served
 | `http://localhost:8000` | Full application (SPA + API in Docker) |
 | `http://localhost:8000/docs` | Swagger UI (interactive API reference) |
 | `http://localhost:8000/api/*` | REST API endpoints |
-| `http://localhost:8000/api/uploads/*` | Uploaded game cover images |
+| `http://localhost:9002` | MinIO S3 API (game cover images served here) |
+| `http://localhost:9003` | MinIO Console (web UI for object storage) |
 | `http://localhost:5173` | Vite dev server (frontend dev only) |
 
 ---
@@ -82,7 +81,15 @@ All variables are defined in `.env` (copy from `.env.example`). Docker Compose r
 | `APP_PORT` | yes | `8000` | Host port for the backend/app container |
 | `APP_ADMIN_PASSWORD` | yes | *(must set)* | Shared admin password for obtaining a JWT |
 | `APP_SECRET_KEY` | yes | *(must set)* | Secret used to sign and verify JWTs (min 32 random bytes recommended) |
-| `APP_UPLOAD_DIR` | no | `/srv/uploads` | Directory for uploaded game cover images (Docker volume mount) |
+| `MINIO_ROOT_USER` | no | `minioadmin` | MinIO root username |
+| `MINIO_ROOT_PASSWORD` | no | `minioadmin` | MinIO root password |
+| `MINIO_API_PORT` | no | `9000` | Host port for MinIO S3 API |
+| `MINIO_CONSOLE_PORT` | no | `9001` | Host port for MinIO web console |
+| `APP_S3_ENDPOINT_URL` | yes | `http://minio:9000` | Internal S3 endpoint (backend → MinIO, Docker network) |
+| `APP_S3_ACCESS_KEY` | yes | `minioadmin` | S3 access key (matches `MINIO_ROOT_USER`) |
+| `APP_S3_SECRET_KEY` | yes | `minioadmin` | S3 secret key (matches `MINIO_ROOT_PASSWORD`) |
+| `APP_S3_BUCKET` | no | `meeplesshelf` | S3 bucket for game cover images |
+| `APP_S3_PUBLIC_URL` | yes | `http://localhost:9000` | External S3 URL for browser image access |
 | `VITE_API_BASE_URL` | no | `http://localhost:8000/api` | API base URL injected into the frontend build |
 
 Backend settings are loaded by Pydantic Settings with prefix `APP_` and will read from `.env` or `../.env`. The `extra = "ignore"` config means unknown env vars are silently ignored.
@@ -93,11 +100,12 @@ Backend settings are loaded by Pydantic Settings with prefix `APP_` and will rea
 
 Two Compose files are used together:
 
-**`docker-compose.yml`** — infrastructure only
+**`docker-compose.infra.yml`** — infrastructure only
 - `db` service: PostgreSQL 16, persistent volume `pgdata`, port `${POSTGRES_PORT}:5432`
+- `minio` service: MinIO S3-compatible object storage, persistent volume `miniodata`, ports `${MINIO_API_PORT}:9000` (S3 API) and `${MINIO_CONSOLE_PORT}:9001` (web console)
 
 **`docker-compose.app.yml`** — application
-- `app` service: multi-stage Docker image (builds frontend then serves from FastAPI), port `${APP_PORT}:8000`, depends on `db`, receives `APP_DATABASE_URL`, `APP_ADMIN_PASSWORD`, `APP_SECRET_KEY` from environment. Named volume `uploads` mounted at `/srv/uploads` for persistent game cover images.
+- `app` service: multi-stage Docker image (builds frontend then serves from FastAPI), port `${APP_PORT}:8000`, depends on `db` and `minio`, receives `APP_DATABASE_URL`, `APP_ADMIN_PASSWORD`, `APP_SECRET_KEY`, and `APP_S3_*` vars from environment. Game cover images are stored in MinIO and served directly to browsers via the S3 public URL.
 
 Start both together:
 ```bash
