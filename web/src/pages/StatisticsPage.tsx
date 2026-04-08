@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Box,
+  Button,
   CircularProgress,
   Grid,
   Paper,
@@ -8,6 +9,7 @@ import {
   Typography,
 } from "@mui/material";
 import BarChartIcon from "@mui/icons-material/BarChart";
+import { useNavigate } from "react-router-dom";
 import {
   getOverviewStats,
   getPlayerStats,
@@ -26,6 +28,7 @@ import MostPlayedGames from "../components/stats/MostPlayedGames";
 import ActivityChart from "../components/stats/ActivityChart";
 
 export default function StatisticsPage() {
+  const navigate = useNavigate();
   const [overview, setOverview] = useState<OverviewStats | null>(null);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [gameStats, setGameStats] = useState<GameStats[]>([]);
@@ -64,9 +67,12 @@ export default function StatisticsPage() {
         <Typography variant="h5" gutterBottom>
           No statistics yet
         </Typography>
-        <Typography color="text.secondary">
+        <Typography color="text.secondary" sx={{ mb: 2 }}>
           Log some game sessions to see statistics here.
         </Typography>
+        <Button variant="contained" onClick={() => navigate("/sessions")}>
+          Log a Session
+        </Button>
       </Box>
     );
   }
