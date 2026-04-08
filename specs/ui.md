@@ -224,6 +224,19 @@ Renders one `GameCard` per game.
 
 **Title:** "Add Game" (create) or "Edit Game" (edit)
 
+**BGG Import section (create mode only, top of dialog):**
+- Visible only when creating a new game (not editing)
+- Bordered box with subtitle "Import from BoardGameGeek"
+- Text input with placeholder "Search BGG by game name..." and "Search" button with `SearchIcon`
+- Enter key triggers search; button disabled while searching or importing
+- Search results displayed in a scrollable list (max 200px) showing game name and year published
+- Clicking a result fetches full details via `GET /api/bgg/details/{bgg_id}` and auto-fills: Game Name, Min Players, Max Players, Notes (from BGG description)
+- Stores `bgg_id` in component state, included in submit payload
+- Shows "Linked to BGG ID: {id}" caption after import
+- Error states: "BGG search failed" / "Failed to fetch game details" / "No results found"
+- Loading: `CircularProgress` on search button during search, centered spinner during detail fetch
+- Requires `APP_BGG_API_TOKEN` configured on the server; shows error from API when not set
+
 **Fields:**
 
 | Field | Type | Default | Validation |

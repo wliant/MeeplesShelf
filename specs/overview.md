@@ -90,6 +90,7 @@ All variables are defined in `.env` (copy from `.env.example`). Docker Compose r
 | `APP_S3_SECRET_KEY` | yes | `minioadmin` | S3 secret key (matches `MINIO_ROOT_PASSWORD`) |
 | `APP_S3_BUCKET` | no | `meeplesshelf` | S3 bucket for game cover images |
 | `APP_S3_PUBLIC_URL` | yes | `http://localhost:9000` | External S3 URL for browser image access |
+| `APP_BGG_API_TOKEN` | no | *(none)* | BoardGameGeek XML API bearer token; enables BGG search/import in GameForm. Register at boardgamegeek.com/using_the_xml_api |
 | `VITE_API_BASE_URL` | no | `http://localhost:8000/api` | API base URL injected into the frontend build |
 
 Backend settings are loaded by Pydantic Settings with prefix `APP_` and will read from `.env` or `../.env`. The `extra = "ignore"` config means unknown env vars are silently ignored.

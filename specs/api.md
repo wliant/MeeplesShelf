@@ -72,7 +72,8 @@ See [scoring-system.md](./scoring-system.md) for full `ScoringField` definitions
   "scoring_spec": ScoringSpec | null, // optional, default null
   "rating":       "integer | null",  // optional, default null; must be 1–10 if provided
   "notes":        "string | null",   // optional, default null; free-text personal notes
-  "tag_ids":      "integer[]"        // optional, default []; list of existing tag IDs to assign
+  "tag_ids":      "integer[]",       // optional, default []; list of existing tag IDs to assign
+  "bgg_id":       "integer | null"   // optional, default null; BoardGameGeek game ID
 }
 ```
 
@@ -86,7 +87,8 @@ All fields optional (partial update).
   "scoring_spec": "ScoringSpec | null",
   "rating":       "integer | null",
   "notes":        "string | null",
-  "tag_ids":      "integer[] | null" // null = don't change; [] = clear all tags
+  "tag_ids":      "integer[] | null", // null = don't change; [] = clear all tags
+  "bgg_id":       "integer | null"   // optional; BoardGameGeek game ID
 }
 ```
 `rating` is validated to 1–10 when not null. Sending `null` clears the rating.
@@ -107,6 +109,7 @@ All fields optional (partial update).
   "updated_at":      "datetime (ISO 8601, UTC)",
   "expansions":      "ExpansionRead[]",
   "tags":            "TagRead[]",
+  "bgg_id":          "integer | null",
   "session_count":   "integer (default 0)",
   "last_played_at":  "datetime (ISO 8601, UTC) | null"
 }
@@ -436,6 +439,109 @@ The `seeded` array lists only the games that were newly created. If all games al
 |---|---|
 | `401` | Missing or invalid token |
 | `403` | Not admin |
+
+---
+
+## BGG Integration Endpoints
+
+All BGG endpoints require admin auth and a configured `APP_BGG_API_TOKEN` environment variable.
+If the token is not set, endpoints return `503 Service Unavailable` with a setup message.
+
+### `BGGSearchResult`
+```json
+{
+  "bgg_id":          "integer",
+  "name":            "string",
+  "year_published":  "integer | null"
+}
+```
+
+### `BGGSearchResponse`
+```json
+{ "results": "BGGSearchResult[]" }
+```
+
+### `BGGGameDetail`
+```json
+{
+  "bgg_id":          "integer",
+  "name":            "string",
+  "year_published":  "integer | null",
+  "description":     "string | null",   // HTML-stripped text from BGG
+  "min_players":     "integer | null",
+  "max_players":     "integer | null",
+  "image_url":       "string | null",   // full-size image URL on BGG CDN
+  "thumbnail_url":   "string | null",
+  "categories":      "string[]",
+  "mechanics":       "string[]"
+}
+```
+
+---
+
+### `GET /api/bgg/search` 🔒
+
+Search BoardGameGeek for board games by name.
+
+**Auth required:** Yes (Admin)  
+**Query parameters:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `query` | string | *(required)* | Search term, min 2 chars, max 200 |
+
+**Response:** `200 OK` → `BGGSearchResponse` (capped at 25 results)
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `401` | Missing or invalid token |
+| `422` | Query too short (< 2 chars) |
+| `502` | BGG API unavailable or returned an error |
+| `503` | `APP_BGG_API_TOKEN` not configured |
+
+---
+
+### `GET /api/bgg/details/{bgg_id}` 🔒
+
+Fetch detailed game information from BoardGameGeek by BGG game ID.
+
+**Auth required:** Yes (Admin)  
+**Response:** `200 OK` → `BGGGameDetail`
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `401` | Missing or invalid token |
+| `404` | Game not found on BGG |
+| `502` | BGG API unavailable |
+| `503` | `APP_BGG_API_TOKEN` not configured |
+
+---
+
+### `POST /api/bgg/import-image/{bgg_id}` 🔒
+
+Download a cover image from BoardGameGeek and store it in S3 for a local game.
+
+**Auth required:** Yes (Admin)  
+**Query parameters:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `game_id` | integer | *(required)* | Local game ID to attach the image to |
+
+**Response:** `200 OK` → `{ "image_url": "string" }`
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `401` | Missing or invalid token |
+| `404` | Local game not found, or no image available on BGG |
+| `502` | BGG API or image download failed |
+| `503` | `APP_BGG_API_TOKEN` not configured |
 
 ---
 

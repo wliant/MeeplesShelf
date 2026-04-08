@@ -43,6 +43,7 @@ Stores board games in the collection.
 | `rating` | `INTEGER` | NULLABLE | `NULL` | Group rating 1–10; validated by Pydantic, not DB constraint |
 | `notes` | `TEXT` | NULLABLE | `NULL` | Free-text personal notes about the game |
 | `image_filename` | `VARCHAR(255)` | NULLABLE | `NULL` | Filename of uploaded cover image (stored in S3 under `games/{id}/`) |
+| `bgg_id` | `INTEGER` | NULLABLE, UNIQUE (partial) | `NULL` | BoardGameGeek game ID; partial unique index on non-null values (`ix_games_bgg_id`) |
 | `created_at` | `TIMESTAMPTZ` | — | `now()` (server default) | Record creation time |
 | `updated_at` | `TIMESTAMPTZ` | — | `now()` (server default) | Auto-updated on every write via SQLAlchemy `onupdate=func.now()` |
 

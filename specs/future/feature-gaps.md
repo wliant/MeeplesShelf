@@ -291,19 +291,31 @@ feedback. Client-side validation mirrors backend (type + size). Files changed: `
 
 ---
 
-### Gap 11 — BoardGameGeek (BGG) Integration
+### ~~Gap 11 — BoardGameGeek (BGG) Integration~~ (Done)
 
-**Description.** All game metadata (name, player counts, scoring spec) must be entered
-manually. BoardGameGeek's public XML API (BGGAPI2) provides rich game data including
-canonical names, player counts, descriptions, and cover art for virtually every published
-board game. Integrating with BGG would dramatically reduce setup time for new games.
+**Status.** Implemented. Backend acts as a proxy to the BGG XML API v2 with three new endpoints:
+`GET /api/bgg/search` (search by name, capped at 25 results), `GET /api/bgg/details/{bgg_id}`
+(detailed game info), and `POST /api/bgg/import-image/{bgg_id}?game_id=...` (download BGG cover
+image to S3). Rate limiting (1 req/sec via `asyncio.Lock`) and Bearer token auth for BGG's API
+(via `APP_BGG_API_TOKEN` env var). `bgg_id` (INTEGER, nullable, partial unique index) added to
+the `games` table via Alembic migration 005. GameCreate/GameUpdate/GameRead schemas extended with
+`bgg_id`. The `GameForm` component includes an "Import from BoardGameGeek" collapsible search
+panel (create mode only) that auto-fills name, min/max players, and notes from BGG. After game
+creation, `InventoryPage` automatically downloads the BGG cover image. Graceful degradation: when
+`APP_BGG_API_TOKEN` is not configured, endpoints return 503 with a helpful setup message.
+Backend: `app/app/services/bgg.py`, `app/app/routers/bgg.py`, `app/app/schemas/bgg.py`,
+`app/app/config.py`, `app/alembic/versions/005_add_bgg_id.py`. Frontend: `web/src/api/bgg.ts`,
+`web/src/types/bgg.ts`, `web/src/components/games/GameForm.tsx`, `web/src/pages/InventoryPage.tsx`.
+Covered by 23 backend unit tests (`app/tests/test_bgg_service.py`, `app/tests/test_bgg_schema.py`,
+`app/tests/test_game_schema.py`), and 17 E2E integration tests
+(`e2e-test/tests/test_bgg_integration.py`, 5 skipped without BGG token).
 
 | Attribute | Detail |
 |---|---|
 | **Business Impact** | Medium-High — manual game setup is the highest-friction part of onboarding; a BGG search-and-import flow would reduce it to a few clicks for supported games |
 | **Technical Complexity** | High — BGG XML API integration in the backend; name search + game lookup; mapping BGG fields to internal schema; image download and storage; scoring spec still requires manual configuration (BGG has no machine-readable scoring rules) |
 | **Dependencies / Prerequisites** | Game Cover Images (Gap 10) for the image display component |
-| **Suggested Priority** | P2 |
+| **Suggested Priority** | ~~P2~~ Done |
 
 ---
 
@@ -587,9 +599,9 @@ access. File changed: `web/src/pages/LoginPage.tsx`. Covered by 2 E2E regression
 | 6 | ~~Data Export and Backup~~ | ~~P1~~ Done | Low-Medium | — |
 | 7 | ~~Per-Player Profiles~~ | ~~P2~~ Done | Medium | Gap 3 |
 | 8 | ~~Game Ratings and Notes~~ | ~~P2~~ Done | Low | — |
-| 9 | Tags and Categories | P2 | Medium | Gap 4 |
+| 9 | ~~Tags and Categories~~ | ~~P2~~ Done | Medium | Gap 4 |
 | 10 | ~~Game Cover Images~~ | ~~P2~~ Done | Medium | — |
-| 11 | BoardGameGeek Integration | P2 | High | Gap 10 |
+| 11 | ~~BoardGameGeek Integration~~ | ~~P2~~ Done | High | Gap 10 |
 | 12 | ~~Multiple Admin Accounts~~ | ~~P3~~ Will Not Do | High | — |
 | 13 | ~~PWA and Offline Support~~ | ~~P3~~ Will Not Do | High | — |
 | 14 | AI Image-Based Scoring | P3 | Very High | Gaps 2, 10 |
