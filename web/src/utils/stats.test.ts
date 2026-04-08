@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatWinRate, formatMonth, formatLastPlayed } from "./stats";
+import { formatWinRate, formatMonth, formatLastPlayed, formatScore } from "./stats";
 
 describe("formatWinRate", () => {
   it("formats zero", () => {
@@ -43,5 +43,19 @@ describe("formatLastPlayed", () => {
 
   it("returns Never for null", () => {
     expect(formatLastPlayed(null)).toBe("Never");
+  });
+});
+
+describe("formatScore", () => {
+  it("formats a number", () => {
+    expect(formatScore(42)).toBe("42");
+  });
+
+  it("formats zero", () => {
+    expect(formatScore(0)).toBe("0");
+  });
+
+  it("returns -- for null", () => {
+    expect(formatScore(null)).toBe("--");
   });
 });
