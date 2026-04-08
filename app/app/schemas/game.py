@@ -67,5 +67,7 @@ class GameRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     expansions: list[ExpansionRead] = []
+    session_count: int = 0
+    last_played_at: datetime | None = None
 
     model_config = {"from_attributes": True}

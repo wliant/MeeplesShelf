@@ -358,7 +358,7 @@ async def delete_session(
     result = await db.execute(
         select(GameSession).where(GameSession.id == session_id)
     )
-    session = result.scalar_one_or_none()
+    session = result.unique().scalar_one_or_none()
     if not session:
         raise HTTPException(404, "Session not found")
     await db.delete(session)

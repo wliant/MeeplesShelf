@@ -17,6 +17,7 @@ import {
 } from "@mui/icons-material";
 import { useState } from "react";
 import type { Game } from "../../types/game";
+import { formatLastPlayed } from "../../utils/stats";
 import ExpansionList from "./ExpansionList";
 
 interface Props {
@@ -59,6 +60,11 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }:
             />
           )}
         </Stack>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          {game.session_count > 0
+            ? `Played ${game.session_count} time${game.session_count !== 1 ? "s" : ""} · Last: ${formatLastPlayed(game.last_played_at)}`
+            : "Never played"}
+        </Typography>
       </CardContent>
       <CardActions>
         {isAdmin && (

@@ -19,6 +19,8 @@ export interface Game {
   created_at: string;
   updated_at: string;
   expansions: Expansion[];
+  session_count: number;
+  last_played_at: string | null;
 }
 
 export interface GameCreate {

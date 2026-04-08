@@ -24,3 +24,8 @@ export function formatMonth(isoMonth: string): string {
   const monthIndex = parseInt(monthStr, 10) - 1;
   return `${MONTH_NAMES[monthIndex]} ${yearStr}`;
 }
+
+/** Format an ISO date string as a localized date, or "Never" for null */
+export function formatLastPlayed(isoDate: string | null): string {
+  return isoDate ? new Date(isoDate).toLocaleDateString() : "Never";
+}

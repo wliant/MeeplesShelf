@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies import require_admin
 from app.models.game import Expansion, Game
+from app.models.session import GameSession
 from app.schemas.game import (
     ExpansionCreate,
     ExpansionRead,
@@ -17,6 +20,35 @@ from app.schemas.pagination import PaginatedResponse
 from app.services.seed import SEED_GAMES
 
 router = APIRouter(tags=["games"])
+
+
+async def _load_session_stats(
+    db: AsyncSession, game_ids: list[int]
+) -> dict[int, tuple[int, datetime | None]]:
+    """Return {game_id: (session_count, last_played_at)} for the given IDs."""
+    if not game_ids:
+        return {}
+    stmt = (
+        select(
+            GameSession.game_id,
+            func.count(GameSession.id).label("session_count"),
+            func.max(GameSession.played_at).label("last_played_at"),
+        )
+        .where(GameSession.game_id.in_(game_ids))
+        .group_by(GameSession.game_id)
+    )
+    result = await db.execute(stmt)
+    return {row.game_id: (row.session_count, row.last_played_at) for row in result.all()}
+
+
+def _enrich_game(
+    game: Game, stats: dict[int, tuple[int, datetime | None]]
+) -> GameRead:
+    game_read = GameRead.model_validate(game)
+    count, last = stats.get(game.id, (0, None))
+    game_read.session_count = count
+    game_read.last_played_at = last
+    return game_read
 
 
 @router.get("/games", response_model=PaginatedResponse[GameRead])
@@ -42,7 +74,10 @@ async def list_games(
     result = await db.execute(query)
     items = list(result.scalars().all())
 
-    return PaginatedResponse(items=items, total=total, skip=skip, limit=limit)
+    game_ids = [g.id for g in items]
+    stats = await _load_session_stats(db, game_ids)
+    enriched = [_enrich_game(g, stats) for g in items]
+    return PaginatedResponse(items=enriched, total=total, skip=skip, limit=limit)
 
 
 @router.post("/games", response_model=GameRead, status_code=201)
@@ -75,7 +110,8 @@ async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
     game = result.scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
-    return game
+    stats = await _load_session_stats(db, [game.id])
+    return _enrich_game(game, stats)
 
 
 @router.put("/games/{game_id}", response_model=GameRead)
