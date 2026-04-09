@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.dependencies import require_admin
+from app.dependencies import AuthUser, require_admin, require_auth
 from app.models.game import Expansion, Game
 from app.models.session import GameSession, Player, SessionPlayer
 from app.schemas.pagination import PaginatedResponse
@@ -66,7 +66,7 @@ async def list_players(db: AsyncSession = Depends(get_db)):
 async def create_player(
     payload: PlayerCreate,
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(require_admin),
+    _: AuthUser = Depends(require_auth),
 ):
     existing = await db.execute(select(Player).where(Player.name == payload.name))
     if existing.scalar_one_or_none():
@@ -176,7 +176,7 @@ async def list_sessions(
 async def create_session(
     payload: GameSessionCreate,
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(require_admin),
+    _: AuthUser = Depends(require_auth),
 ):
     # Fetch game with scoring spec
     result = await db.execute(select(Game).where(Game.id == payload.game_id))
@@ -275,7 +275,7 @@ async def update_session(
     session_id: int,
     payload: GameSessionUpdate,
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(require_admin),
+    _: AuthUser = Depends(require_auth),
 ):
     # Fetch session with its game (need scoring_spec) and players (to clear)
     result = await db.execute(

@@ -9,3 +9,14 @@ export async function loginAdmin(
   );
   return res.data;
 }
+
+export async function loginGuest(
+  name: string
+): Promise<{ access_token: string; player_id: number; player_name: string }> {
+  const res = await client.post<{
+    access_token: string;
+    player_id: number;
+    player_name: string;
+  }>("/auth/guest", { name });
+  return res.data;
+}

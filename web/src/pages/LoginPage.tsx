@@ -15,20 +15,34 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
-import { loginAdmin } from "../api/auth";
+import { loginAdmin, loginGuest } from "../api/auth";
 import MeepleIcon from "../components/common/MeepleIcon";
 
 export default function LoginPage() {
   const auth = useAuth();
   const navigate = useNavigate();
+  const [guestName, setGuestName] = useState("");
+  const [guestLoading, setGuestLoading] = useState(false);
+  const [guestError, setGuestError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleGuestLogin = () => {
-    auth.enterAsGuest();
-    navigate("/inventory");
+  const handleGuestLogin = async () => {
+    setGuestError(null);
+    setGuestLoading(true);
+    try {
+      const { access_token, player_id, player_name } = await loginGuest(
+        guestName.trim()
+      );
+      auth.enterAsGuest(access_token, player_id, player_name);
+      navigate("/inventory");
+    } catch {
+      setGuestError("Could not log in. Please try again.");
+    } finally {
+      setGuestLoading(false);
+    }
   };
 
   const handleAdminLogin = async () => {
@@ -69,14 +83,30 @@ export default function LoginPage() {
             align="center"
             sx={{ mb: 1 }}
           >
-            Admin access requires the shared password configured on your
-            server. Guests can browse the collection without a password.
+            Enter your name to log game sessions and scores.
+            Admin access requires the shared password.
           </Typography>
           <Stack spacing={2}>
-            <Button variant="outlined" fullWidth onClick={handleGuestLogin}>
-              Continue as Guest
+            <TextField
+              label="Your Name"
+              fullWidth
+              size="small"
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === "Enter" && guestName.trim() && handleGuestLogin()
+              }
+            />
+            {guestError && <Alert severity="error">{guestError}</Alert>}
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={handleGuestLogin}
+              disabled={!guestName.trim() || guestLoading}
+            >
+              Continue as Player
             </Button>
-            <Divider>or</Divider>
+            <Divider>admin</Divider>
             <TextField
               label="Admin Password"
               type={showPassword ? "text" : "password"}
@@ -87,7 +117,6 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdminLogin()}
-              helperText="Enter the shared household password set in your server configuration"
               slotProps={{
                 input: {
                   endAdornment: (

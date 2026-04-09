@@ -32,10 +32,10 @@ interface Props {
   games?: Game[];
   onClose: () => void;
   onEdit?: (session: GameSession) => void;
-  isAdmin?: boolean;
+  canEdit?: boolean;
 }
 
-export default function SessionDetail({ session, games, onClose, onEdit, isAdmin }: Props) {
+export default function SessionDetail({ session, games, onClose, onEdit, canEdit }: Props) {
   const navigate = useNavigate();
 
   if (!session) return null;
@@ -176,7 +176,7 @@ export default function SessionDetail({ session, games, onClose, onEdit, isAdmin
         </Stack>
       </DialogContent>
       <DialogActions>
-        {isAdmin && onEdit && (
+        {canEdit && onEdit && (
           <Button onClick={() => onEdit(session)}>Edit</Button>
         )}
         <Button onClick={onClose}>Close</Button>

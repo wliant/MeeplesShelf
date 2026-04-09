@@ -34,7 +34,7 @@ import { useSearchParams } from "react-router-dom";
 const PAGE_SIZE = 20;
 
 export default function SessionsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, canLogSessions } = useAuth();
   const { showSnackbar } = useSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
   const [sessions, setSessions] = useState<GameSession[]>([]);
@@ -246,11 +246,11 @@ export default function SessionsPage() {
           page={page}
           rowsPerPage={PAGE_SIZE}
           onPageChange={setPage}
-          onAddNew={isAdmin ? () => setFormOpen(true) : undefined}
+          onAddNew={canLogSessions ? () => setFormOpen(true) : undefined}
         />
       )}
 
-      {isAdmin && (
+      {canLogSessions && (
         <Fab
           color="primary"
           aria-label="Log new session"
@@ -289,7 +289,7 @@ export default function SessionsPage() {
         games={games}
         onClose={() => setDetailSession(null)}
         onEdit={handleEdit}
-        isAdmin={isAdmin}
+        canEdit={canLogSessions}
       />
     </Box>
   );
