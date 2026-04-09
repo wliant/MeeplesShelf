@@ -455,7 +455,7 @@ async def upload_session_image(
     result = await db.execute(
         select(GameSession).where(GameSession.id == session_id)
     )
-    session = result.scalar_one_or_none()
+    session = result.unique().scalar_one_or_none()
     if not session:
         raise HTTPException(404, "Session not found")
     if session.sealed:
@@ -500,7 +500,7 @@ async def delete_session_image(
     sess_result = await db.execute(
         select(GameSession).where(GameSession.id == session_id)
     )
-    session = sess_result.scalar_one_or_none()
+    session = sess_result.unique().scalar_one_or_none()
     if session and session.sealed:
         raise HTTPException(403, "Session is sealed")
 
