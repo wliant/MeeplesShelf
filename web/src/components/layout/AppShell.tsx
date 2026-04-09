@@ -2,7 +2,6 @@ import { useRef, useState } from "react";
 import {
   AppBar,
   Box,
-  Button,
   Chip,
   CircularProgress,
   Divider,
@@ -14,13 +13,12 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Menu,
-  MenuItem,
   Toolbar,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
@@ -31,7 +29,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import PeopleIcon from "@mui/icons-material/People";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useSnackbar } from "../../context/SnackbarContext";
 import { useThemeMode } from "../../context/ThemeContext";
@@ -39,19 +37,42 @@ import MeepleIcon from "../common/MeepleIcon";
 import { downloadJsonExport, downloadCsvExport, uploadJsonImport } from "../../api/export";
 import { downloadBlob } from "../../utils/download";
 
+const DRAWER_WIDTH = 240;
+
+const NAV_ITEMS = [
+  { path: "/inventory", label: "Inventory", icon: <SportsEsportsIcon /> },
+  { path: "/sessions", label: "Sessions", icon: <HistoryIcon /> },
+  { path: "/players", label: "Players", icon: <PeopleIcon /> },
+  { path: "/statistics", label: "Statistics", icon: <BarChartIcon /> },
+];
+
+const PAGE_TITLES: Record<string, string> = {
+  "/inventory": "Game Inventory",
+  "/sessions": "Game Sessions",
+  "/players": "Players",
+  "/statistics": "Statistics",
+};
+
 export default function AppShell() {
   const auth = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showSnackbar } = useSnackbar();
   const { mode, toggleTheme } = useThemeMode();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
+
+  const pageTitle =
+    PAGE_TITLES[location.pathname] ??
+    (location.pathname.startsWith("/players/") ? "Player Profile" : "MeeplesShelf");
 
   const handleLogout = () => {
     auth.logout();
@@ -59,7 +80,7 @@ export default function AppShell() {
   };
 
   const handleExport = async (format: "json" | "csv") => {
-    setAnchorEl(null);
+    setMobileOpen(false);
     setExporting(true);
     try {
       const date = new Date().toISOString().slice(0, 10);
@@ -78,24 +99,13 @@ export default function AppShell() {
     }
   };
 
-  const handleDrawerNav = (path: string) => {
-    setDrawerOpen(false);
+  const handleNav = (path: string) => {
+    setMobileOpen(false);
     navigate(path);
   };
 
-  const handleDrawerExport = (format: "json" | "csv") => {
-    setDrawerOpen(false);
-    handleExport(format);
-  };
-
-  const handleDrawerLogout = () => {
-    setDrawerOpen(false);
-    handleLogout();
-  };
-
   const handleImportClick = () => {
-    setAnchorEl(null);
-    setDrawerOpen(false);
+    setMobileOpen(false);
     fileInputRef.current?.click();
   };
 
@@ -121,8 +131,166 @@ export default function AppShell() {
     }
   };
 
+  /* ------------------------------------------------------------------ */
+  /*  Sidebar content (shared between permanent & temporary drawer)     */
+  /* ------------------------------------------------------------------ */
+  const sidebarContent = (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Header / branding */}
+      <Box
+        component={Link}
+        to="/inventory"
+        onClick={() => setMobileOpen(false)}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          px: 2.5,
+          py: 2.5,
+          textDecoration: "none",
+          color: "text.primary",
+        }}
+      >
+        <MeepleIcon sx={{ fontSize: 32, color: "primary.main" }} />
+        <Typography variant="h6" noWrap sx={{ fontWeight: 700 }}>
+          MeeplesShelf
+        </Typography>
+      </Box>
+
+      <Divider />
+
+      {/* Primary navigation */}
+      <Box component="nav" aria-label="Main navigation">
+        <List sx={{ px: 1, py: 1 }}>
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.path);
+            return (
+              <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
+                <ListItemButton
+                  onClick={() => handleNav(item.path)}
+                  aria-current={active ? "page" : undefined}
+                  sx={{
+                    borderRadius: 2,
+                    pl: active ? 1.75 : 2,
+                    borderLeft: active ? `3px solid ${theme.palette.primary.main}` : "3px solid transparent",
+                    bgcolor: active ? alpha(theme.palette.primary.main, 0.1) : "transparent",
+                    color: active ? "primary.main" : "text.primary",
+                    "&:hover": {
+                      bgcolor: active
+                        ? alpha(theme.palette.primary.main, 0.16)
+                        : alpha(theme.palette.action.hover, 0.08),
+                    },
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      color: active ? "primary.main" : "text.secondary",
+                      minWidth: 40,
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{ fontWeight: active ? 600 : 400 }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
+      </Box>
+
+      {/* Spacer */}
+      <Box sx={{ flexGrow: 1 }} />
+
+      {/* Admin data section */}
+      {auth.isAdmin && (
+        <>
+          <Divider />
+          <List sx={{ px: 1, py: 0.5 }}>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => handleExport("json")}
+                disabled={exporting}
+                sx={{ borderRadius: 2 }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>
+                  {exporting ? <CircularProgress size={20} /> : <FileDownloadIcon />}
+                </ListItemIcon>
+                <ListItemText primary="Export JSON" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => handleExport("csv")}
+                disabled={exporting}
+                sx={{ borderRadius: 2 }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>
+                  {exporting ? <CircularProgress size={20} /> : <FileDownloadIcon />}
+                </ListItemIcon>
+                <ListItemText primary="Export CSV" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={handleImportClick}
+                disabled={importing}
+                sx={{ borderRadius: 2 }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>
+                  {importing ? <CircularProgress size={20} /> : <FileUploadIcon />}
+                </ListItemIcon>
+                <ListItemText primary="Import JSON" />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </>
+      )}
+
+      {/* Theme toggle */}
+      <Divider />
+      <List sx={{ px: 1, py: 0.5 }}>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={toggleTheme}
+            sx={{ borderRadius: 2 }}
+            aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <ListItemIcon sx={{ minWidth: 40 }}>
+              {mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+            </ListItemIcon>
+            <ListItemText primary={mode === "dark" ? "Light Mode" : "Dark Mode"} />
+          </ListItemButton>
+        </ListItem>
+      </List>
+
+      {/* User info & logout */}
+      <Divider />
+      <Box sx={{ px: 2, py: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
+        <Chip
+          label={auth.isAdmin ? "Admin" : auth.playerName ?? "Guest"}
+          size="small"
+          color="primary"
+          variant="outlined"
+          sx={{ flexShrink: 0 }}
+        />
+        <Box sx={{ flexGrow: 1 }} />
+        <IconButton size="small" onClick={handleLogout} aria-label="Logout">
+          <LogoutIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    </Box>
+  );
+
+  /* ------------------------------------------------------------------ */
+  /*  Render                                                            */
+  /* ------------------------------------------------------------------ */
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+      {/* Skip to content */}
       <MuiLink
         href="#main-content"
         sx={{
@@ -144,220 +312,94 @@ export default function AppShell() {
       >
         Skip to main content
       </MuiLink>
-      <AppBar position="static">
-        <Toolbar>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexGrow: 1 }}>
-            <MeepleIcon />
-            <Typography variant="h6">MeeplesShelf</Typography>
-          </Box>
-          {isMobile ? (
-            <IconButton
-              color="inherit"
-              edge="end"
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Open navigation menu"
-            >
-              <MenuIcon />
-            </IconButton>
-          ) : (
-            <>
-              <Box component="nav" aria-label="Main navigation" sx={{ display: "flex" }}>
-                <Button color="inherit" component={Link} to="/inventory">
-                  Inventory
-                </Button>
-                <Button color="inherit" component={Link} to="/sessions">
-                  Sessions
-                </Button>
-                <Button color="inherit" component={Link} to="/players">
-                  Players
-                </Button>
-                <Button color="inherit" component={Link} to="/statistics">
-                  Statistics
-                </Button>
-              </Box>
+
+      {/* Sidebar — permanent on desktop, temporary on mobile */}
+      {isDesktop ? (
+        <Drawer
+          variant="permanent"
+          sx={{
+            width: DRAWER_WIDTH,
+            flexShrink: 0,
+            "& .MuiDrawer-paper": {
+              width: DRAWER_WIDTH,
+              boxSizing: "border-box",
+              borderRight: 1,
+              borderColor: "divider",
+            },
+          }}
+        >
+          {sidebarContent}
+        </Drawer>
+      ) : (
+        <Drawer
+          variant="temporary"
+          anchor="left"
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            "& .MuiDrawer-paper": {
+              width: DRAWER_WIDTH,
+              boxSizing: "border-box",
+            },
+          }}
+        >
+          {sidebarContent}
+        </Drawer>
+      )}
+
+      {/* Right side: top bar + main content */}
+      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        {/* Thin top bar */}
+        <AppBar
+          position="sticky"
+          elevation={0}
+          sx={{
+            bgcolor: "background.paper",
+            color: "text.primary",
+            borderBottom: 1,
+            borderColor: "divider",
+          }}
+        >
+          <Toolbar variant="dense">
+            {!isDesktop && (
               <IconButton
+                edge="start"
                 color="inherit"
-                onClick={toggleTheme}
-                aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                onClick={() => setMobileOpen(true)}
+                aria-label="Open navigation menu"
+                sx={{ mr: 1 }}
               >
-                {mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+                <MenuIcon />
               </IconButton>
-              {auth.isAdmin && (
-                <>
-                  <IconButton
-                    color="inherit"
-                    onClick={(e) => setAnchorEl(e.currentTarget)}
-                    disabled={exporting || importing}
-                    aria-label="Data management"
-                  >
-                    {exporting ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : (
-                      <FileDownloadIcon />
-                    )}
-                  </IconButton>
-                  <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={() => setAnchorEl(null)}
-                  >
-                    <MenuItem onClick={() => handleExport("json")}>
-                      Export JSON (Full Backup)
-                    </MenuItem>
-                    <MenuItem onClick={() => handleExport("csv")}>
-                      Export Sessions CSV
-                    </MenuItem>
-                    <Divider />
-                    <MenuItem onClick={handleImportClick} disabled={importing}>
-                      Import JSON Backup
-                    </MenuItem>
-                  </Menu>
-                </>
-              )}
-              <Chip
-                label={auth.isAdmin ? "Admin" : auth.playerName ?? "Guest"}
-                size="small"
-                sx={{
-                  mx: 1,
-                  bgcolor: "rgba(255,255,255,0.2)",
-                  color: "inherit",
-                }}
-              />
-              <Button color="inherit" onClick={handleLogout}>
-                Logout
-              </Button>
-            </>
-          )}
-        </Toolbar>
-      </AppBar>
-      <Drawer
-        anchor="right"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-      >
-        <Box sx={{ width: 260 }} role="presentation">
-          <Box sx={{ p: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-            <MeepleIcon sx={{ fontSize: 32, color: "primary.main" }} />
+            )}
+            <Typography variant="h6" noWrap sx={{ flexGrow: 1, fontWeight: 600, fontSize: "1.1rem" }}>
+              {pageTitle}
+            </Typography>
             <Chip
               label={auth.isAdmin ? "Admin" : auth.playerName ?? "Guest"}
               size="small"
               color="primary"
               variant="outlined"
+              sx={{ mr: 1 }}
             />
-          </Box>
-          <Divider />
-          <Box component="nav" aria-label="Main navigation">
-            <List>
-              <ListItem disablePadding>
-                <ListItemButton onClick={() => handleDrawerNav("/inventory")}>
-                  <ListItemIcon>
-                    <SportsEsportsIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Inventory" />
-                </ListItemButton>
-              </ListItem>
-              <ListItem disablePadding>
-                <ListItemButton onClick={() => handleDrawerNav("/sessions")}>
-                  <ListItemIcon>
-                    <HistoryIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Sessions" />
-                </ListItemButton>
-              </ListItem>
-              <ListItem disablePadding>
-                <ListItemButton onClick={() => handleDrawerNav("/players")}>
-                  <ListItemIcon>
-                    <PeopleIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Players" />
-                </ListItemButton>
-              </ListItem>
-              <ListItem disablePadding>
-                <ListItemButton onClick={() => handleDrawerNav("/statistics")}>
-                  <ListItemIcon>
-                    <BarChartIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Statistics" />
-                </ListItemButton>
-              </ListItem>
-            </List>
-          </Box>
-          {auth.isAdmin && (
-            <>
-              <Divider />
-              <List>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    onClick={() => handleDrawerExport("json")}
-                    disabled={exporting}
-                  >
-                    <ListItemIcon>
-                      {exporting ? (
-                        <CircularProgress size={20} />
-                      ) : (
-                        <FileDownloadIcon />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText primary="Export JSON (Full Backup)" />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    onClick={() => handleDrawerExport("csv")}
-                    disabled={exporting}
-                  >
-                    <ListItemIcon>
-                      {exporting ? (
-                        <CircularProgress size={20} />
-                      ) : (
-                        <FileDownloadIcon />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText primary="Export Sessions CSV" />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                  <ListItemButton onClick={handleImportClick} disabled={importing}>
-                    <ListItemIcon>
-                      {importing ? (
-                        <CircularProgress size={20} />
-                      ) : (
-                        <FileUploadIcon />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText primary="Import JSON Backup" />
-                  </ListItemButton>
-                </ListItem>
-              </List>
-            </>
-          )}
-          <Divider />
-          <List>
-            <ListItem disablePadding>
-              <ListItemButton onClick={toggleTheme}>
-                <ListItemIcon>
-                  {mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
-                </ListItemIcon>
-                <ListItemText primary={mode === "dark" ? "Light Mode" : "Dark Mode"} />
-              </ListItemButton>
-            </ListItem>
-          </List>
-          <Divider />
-          <List>
-            <ListItem disablePadding>
-              <ListItemButton onClick={handleDrawerLogout}>
-                <ListItemIcon>
-                  <LogoutIcon />
-                </ListItemIcon>
-                <ListItemText primary="Logout" />
-              </ListItemButton>
-            </ListItem>
-          </List>
+            <IconButton
+              size="small"
+              onClick={toggleTheme}
+              aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {mode === "dark" ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
+            </IconButton>
+          </Toolbar>
+        </AppBar>
+
+        {/* Main content */}
+        <Box component="main" id="main-content" sx={{ flexGrow: 1, p: 3 }}>
+          <Outlet />
         </Box>
-      </Drawer>
-      <Box component="main" id="main-content" sx={{ flexGrow: 1, p: 3 }}>
-        <Outlet />
       </Box>
+
+      {/* Hidden file input for import */}
       <input
         type="file"
         accept=".json,application/json"
