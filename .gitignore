@@ -13,6 +13,7 @@ env/
 .env
 .env.local
 *.local
+.local/
 
 # Node
 node_modules/
