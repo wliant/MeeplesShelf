@@ -27,6 +27,7 @@ import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import BarChartIcon from "@mui/icons-material/BarChart";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -39,7 +40,8 @@ import { downloadBlob } from "../../utils/download";
 
 const DRAWER_WIDTH = 240;
 
-const NAV_ITEMS = [
+const ALL_NAV_ITEMS = [
+  { path: "/dashboard", label: "Dashboard", icon: <DashboardIcon />, guestOnly: true },
   { path: "/inventory", label: "Inventory", icon: <SportsEsportsIcon /> },
   { path: "/sessions", label: "Sessions", icon: <HistoryIcon /> },
   { path: "/players", label: "Players", icon: <PeopleIcon /> },
@@ -47,6 +49,7 @@ const NAV_ITEMS = [
 ];
 
 const PAGE_TITLES: Record<string, string> = {
+  "/dashboard": "Dashboard",
   "/inventory": "Game Inventory",
   "/sessions": "Game Sessions",
   "/players": "Players",
@@ -66,6 +69,10 @@ export default function AppShell() {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navItems = ALL_NAV_ITEMS.filter(
+    (item) => !item.guestOnly || auth.role === "guest",
+  );
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
@@ -162,7 +169,7 @@ export default function AppShell() {
       {/* Primary navigation */}
       <Box component="nav" aria-label="Main navigation">
         <List sx={{ px: 1, py: 1 }}>
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = isActive(item.path);
             return (
               <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>

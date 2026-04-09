@@ -10,6 +10,7 @@ import SessionsPage from "./pages/SessionsPage";
 import PlayersPage from "./pages/PlayersPage";
 import StatisticsPage from "./pages/StatisticsPage";
 import PlayerProfilePage from "./pages/PlayerProfilePage";
+import DashboardPage from "./pages/DashboardPage";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route element={<RequireAuth />}>
                 <Route element={<AppShell />}>
+                  <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/inventory" element={<InventoryPage />} />
                   <Route path="/sessions" element={<SessionsPage />} />
                   <Route path="/players" element={<PlayersPage />} />
