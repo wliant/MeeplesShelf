@@ -18,3 +18,13 @@ class FullExport(BaseModel):
     games: list[GameRead]
     players: list[PlayerRead]
     sessions: list[GameSessionRead]
+
+
+class ImportResult(BaseModel):
+    games_created: int = 0
+    expansions_created: int = 0
+    players_created: int = 0
+    players_reused: int = 0
+    tags_created: int = 0
+    tags_reused: int = 0
+    sessions_created: int = 0

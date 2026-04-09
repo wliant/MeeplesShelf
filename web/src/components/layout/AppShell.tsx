@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   AppBar,
   Box,
@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 import HistoryIcon from "@mui/icons-material/History";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -35,7 +36,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useSnackbar } from "../../context/SnackbarContext";
 import { useThemeMode } from "../../context/ThemeContext";
 import MeepleIcon from "../common/MeepleIcon";
-import { downloadJsonExport, downloadCsvExport } from "../../api/export";
+import { downloadJsonExport, downloadCsvExport, uploadJsonImport } from "../../api/export";
 import { downloadBlob } from "../../utils/download";
 
 export default function AppShell() {
@@ -45,6 +46,8 @@ export default function AppShell() {
   const { mode, toggleTheme } = useThemeMode();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -88,6 +91,34 @@ export default function AppShell() {
   const handleDrawerLogout = () => {
     setDrawerOpen(false);
     handleLogout();
+  };
+
+  const handleImportClick = () => {
+    setAnchorEl(null);
+    setDrawerOpen(false);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setImporting(true);
+    try {
+      const result = await uploadJsonImport(file);
+      const parts: string[] = [];
+      if (result.games_created) parts.push(`${result.games_created} games`);
+      if (result.sessions_created) parts.push(`${result.sessions_created} sessions`);
+      if (result.players_created) parts.push(`${result.players_created} new players`);
+      showSnackbar(
+        parts.length ? `Import complete: ${parts.join(", ")}` : "Import complete (no new data)",
+        "success",
+      );
+    } catch {
+      showSnackbar("Import failed", "error");
+    } finally {
+      setImporting(false);
+    }
   };
 
   return (
@@ -156,8 +187,8 @@ export default function AppShell() {
                   <IconButton
                     color="inherit"
                     onClick={(e) => setAnchorEl(e.currentTarget)}
-                    disabled={exporting}
-                    aria-label="Export data"
+                    disabled={exporting || importing}
+                    aria-label="Data management"
                   >
                     {exporting ? (
                       <CircularProgress size={20} color="inherit" />
@@ -176,11 +207,15 @@ export default function AppShell() {
                     <MenuItem onClick={() => handleExport("csv")}>
                       Export Sessions CSV
                     </MenuItem>
+                    <Divider />
+                    <MenuItem onClick={handleImportClick} disabled={importing}>
+                      Import JSON Backup
+                    </MenuItem>
                   </Menu>
                 </>
               )}
               <Chip
-                label={auth.isAdmin ? "Admin" : "Guest"}
+                label={auth.isAdmin ? "Admin" : auth.playerName ?? "Guest"}
                 size="small"
                 sx={{
                   mx: 1,
@@ -204,7 +239,7 @@ export default function AppShell() {
           <Box sx={{ p: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
             <MeepleIcon sx={{ fontSize: 32, color: "primary.main" }} />
             <Chip
-              label={auth.isAdmin ? "Admin" : "Guest"}
+              label={auth.isAdmin ? "Admin" : auth.playerName ?? "Guest"}
               size="small"
               color="primary"
               variant="outlined"
@@ -281,6 +316,18 @@ export default function AppShell() {
                     <ListItemText primary="Export Sessions CSV" />
                   </ListItemButton>
                 </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={handleImportClick} disabled={importing}>
+                    <ListItemIcon>
+                      {importing ? (
+                        <CircularProgress size={20} />
+                      ) : (
+                        <FileUploadIcon />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText primary="Import JSON Backup" />
+                  </ListItemButton>
+                </ListItem>
               </List>
             </>
           )}
@@ -311,6 +358,13 @@ export default function AppShell() {
       <Box component="main" id="main-content" sx={{ flexGrow: 1, p: 3 }}>
         <Outlet />
       </Box>
+      <input
+        type="file"
+        accept=".json,application/json"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={handleFileSelected}
+      />
     </Box>
   );
 }
