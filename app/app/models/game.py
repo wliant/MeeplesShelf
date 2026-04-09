@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -36,6 +36,8 @@ class Game(Base):
     max_players: Mapped[int] = mapped_column(Integer, default=4)
     scoring_spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    scoring_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     image_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
     bgg_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -64,3 +66,21 @@ class Expansion(Base):
     )
 
     game: Mapped["Game"] = relationship(back_populates="expansions")
+
+
+class GameRating(Base):
+    __tablename__ = "game_ratings"
+    __table_args__ = (
+        UniqueConstraint("game_id", "player_id", name="uq_game_ratings_game_player"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    game_id: Mapped[int] = mapped_column(ForeignKey("games.id", ondelete="CASCADE"))
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"))
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

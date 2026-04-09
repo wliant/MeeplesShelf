@@ -55,6 +55,38 @@ async def delete_image(game_id: int, filename: str) -> None:
         await client.delete_object(Bucket=settings.s3_bucket, Key=key)
 
 
+def _session_object_key(session_id: int, filename: str) -> str:
+    return f"sessions/{session_id}/{filename}"
+
+
+def get_session_image_url(session_id: int, filename: str) -> str:
+    """Construct the public URL for a session image."""
+    key = _session_object_key(session_id, filename)
+    return f"{settings.s3_public_url}/{settings.s3_bucket}/{key}"
+
+
+async def upload_session_image(
+    session_id: int, filename: str, contents: bytes, content_type: str
+) -> str:
+    """Upload a session image to S3 and return its public URL."""
+    key = _session_object_key(session_id, filename)
+    async with _get_client() as client:
+        await client.put_object(
+            Bucket=settings.s3_bucket,
+            Key=key,
+            Body=contents,
+            ContentType=content_type,
+        )
+    return get_session_image_url(session_id, filename)
+
+
+async def delete_session_image(session_id: int, filename: str) -> None:
+    """Delete a session image from S3."""
+    key = _session_object_key(session_id, filename)
+    async with _get_client() as client:
+        await client.delete_object(Bucket=settings.s3_bucket, Key=key)
+
+
 async def ensure_bucket() -> None:
     """Create the bucket if it doesn't exist and set public-read policy."""
     async with _get_client() as client:

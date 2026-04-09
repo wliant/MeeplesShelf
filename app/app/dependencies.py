@@ -53,3 +53,27 @@ async def require_auth(
             player_name=payload.get("player_name"),
         )
     raise HTTPException(status_code=403, detail="Forbidden")
+
+
+async def optional_auth(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> AuthUser | None:
+    """Return AuthUser if a valid token is present, else None."""
+    if credentials is None:
+        return None
+    try:
+        payload = jwt.decode(
+            credentials.credentials, settings.secret_key, algorithms=[_ALGORITHM]
+        )
+    except JWTError:
+        return None
+    sub = payload.get("sub")
+    if sub == "admin":
+        return AuthUser(role="admin")
+    if sub == "player":
+        return AuthUser(
+            role="player",
+            player_id=payload.get("player_id"),
+            player_name=payload.get("player_name"),
+        )
+    return None

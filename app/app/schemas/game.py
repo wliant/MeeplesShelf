@@ -34,15 +34,11 @@ class GameCreate(BaseModel):
     min_players: int = 1
     max_players: int = 4
     scoring_spec: ScoringSpec | None = None
-    rating: int | None = None
     notes: str | None = None
+    description: str | None = None
+    scoring_summary: str | None = None
     tag_ids: list[int] = []
     bgg_id: int | None = None
-
-    @field_validator("rating")
-    @classmethod
-    def check_rating(cls, v: int | None) -> int | None:
-        return _validate_rating(v)
 
 
 class GameUpdate(BaseModel):
@@ -50,15 +46,11 @@ class GameUpdate(BaseModel):
     min_players: int | None = None
     max_players: int | None = None
     scoring_spec: ScoringSpec | None = None
-    rating: int | None = None
     notes: str | None = None
+    description: str | None = None
+    scoring_summary: str | None = None
     tag_ids: list[int] | None = None
     bgg_id: int | None = None
-
-    @field_validator("rating")
-    @classmethod
-    def check_rating(cls, v: int | None) -> int | None:
-        return _validate_rating(v)
 
 
 class GameRead(BaseModel):
@@ -67,8 +59,9 @@ class GameRead(BaseModel):
     min_players: int
     max_players: int
     scoring_spec: ScoringSpec | None = None
-    rating: int | None = None
     notes: str | None = None
+    description: str | None = None
+    scoring_summary: str | None = None
     image_url: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -77,5 +70,30 @@ class GameRead(BaseModel):
     bgg_id: int | None = None
     session_count: int = 0
     last_played_at: datetime | None = None
+    average_rating: float | None = None
+    user_rating: int | None = None
+    rating_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class GameRatingCreate(BaseModel):
+    rating: int
+
+    @field_validator("rating")
+    @classmethod
+    def check_rating(cls, v: int) -> int:
+        if not (1 <= v <= 10):
+            raise ValueError("Rating must be between 1 and 10")
+        return v
+
+
+class GameRatingRead(BaseModel):
+    id: int
+    game_id: int
+    player_id: int
+    rating: int
+    created_at: datetime
+    updated_at: datetime
 
     model_config = {"from_attributes": True}

@@ -41,6 +41,7 @@ import { listTags } from "../api/tags";
 import { importBGGImage } from "../api/bgg";
 import GameList from "../components/games/GameList";
 import GameForm from "../components/games/GameForm";
+import GameDetailDialog from "../components/games/GameDetailDialog";
 import ConfirmDialog, { buildGameDeleteMessage } from "../components/common/ConfirmDialog";
 import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
@@ -61,6 +62,7 @@ export default function InventoryPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [pendingDeleteGame, setPendingDeleteGame] = useState<Game | null>(null);
+  const [detailGame, setDetailGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
@@ -325,6 +327,7 @@ export default function InventoryPage() {
             onDelete={handleDeleteClick}
             onRefresh={refresh}
             isAdmin={isAdmin}
+            onViewDetails={setDetailGame}
           />
           {total > PAGE_SIZE && (
             <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
@@ -351,10 +354,10 @@ export default function InventoryPage() {
               </TableHead>
               <TableBody>
                 {games.map((g) => (
-                  <TableRow key={g.id} hover sx={{ cursor: "pointer" }} onClick={() => handleEdit(g)}>
+                  <TableRow key={g.id} hover sx={{ cursor: "pointer" }} onClick={() => setDetailGame(g)}>
                     <TableCell>{g.name}</TableCell>
                     <TableCell>{g.min_players}&#8211;{g.max_players}</TableCell>
-                    <TableCell>{g.rating !== null ? <Rating value={g.rating} max={10} readOnly size="small" /> : "-"}</TableCell>
+                    <TableCell>{g.average_rating !== null ? <Rating value={g.average_rating} max={10} readOnly size="small" precision={0.5} /> : "-"}</TableCell>
                     <TableCell>{g.session_count}</TableCell>
                     <TableCell>{formatLastPlayed(g.last_played_at)}</TableCell>
                   </TableRow>
@@ -410,6 +413,13 @@ export default function InventoryPage() {
         }}
         onSave={handleSave}
         saving={saving}
+      />
+
+      <GameDetailDialog
+        open={detailGame !== null}
+        game={detailGame}
+        onClose={() => setDetailGame(null)}
+        onRatingChange={refresh}
       />
     </Box>
   );

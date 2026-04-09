@@ -1,6 +1,7 @@
+import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -8,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies import AuthUser, require_admin, require_auth
 from app.models.game import Expansion, Game
-from app.models.session import GameSession, Player, SessionPlayer
+from app.models.session import GameSession, Player, ScoreReaction, SessionImage, SessionPlayer
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.session import (
     GameSessionCreate,
@@ -18,10 +19,39 @@ from app.schemas.session import (
     PlayerRead,
     PlayerReadWithCount,
     PlayerUpdate,
+    ReactionSet,
+    SessionImageRead,
+    VALID_REACTIONS,
 )
+from app.services import storage
 from app.services.scoring import calculate_total, merge_scoring_spec
 
+_ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_CONTENT_TYPE_EXT = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+_MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
+
 router = APIRouter(tags=["sessions"])
+
+
+def _session_load_options():
+    return [
+        selectinload(GameSession.players)
+        .selectinload(SessionPlayer.player),
+        selectinload(GameSession.players)
+        .selectinload(SessionPlayer.reactions)
+        .selectinload(ScoreReaction.player),
+        selectinload(GameSession.game),
+        selectinload(GameSession.expansions),
+        selectinload(GameSession.images)
+        .selectinload(SessionImage.player),
+    ]
+
+
+def _populate_image_urls(session: GameSession) -> GameSession:
+    """Set image_url on each SessionImage for serialization."""
+    for img in session.images:
+        img.image_url = storage.get_session_image_url(img.session_id, img.filename)
+    return session
 
 
 # --- Players ---
@@ -156,18 +186,14 @@ async def list_sessions(
 
     query = (
         select(GameSession)
-        .options(
-            selectinload(GameSession.players).selectinload(SessionPlayer.player),
-            selectinload(GameSession.game),
-            selectinload(GameSession.expansions),
-        )
+        .options(*_session_load_options())
         .order_by(GameSession.played_at.desc())
     )
     for cond in conditions:
         query = query.where(cond)
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
-    items = list(result.scalars().unique().all())
+    items = [_populate_image_urls(s) for s in result.scalars().unique().all()]
 
     return PaginatedResponse(items=items, total=total, skip=skip, limit=limit)
 
@@ -243,31 +269,23 @@ async def create_session(
     # Re-fetch with all relationships
     result = await db.execute(
         select(GameSession)
-        .options(
-            selectinload(GameSession.players).selectinload(SessionPlayer.player),
-            selectinload(GameSession.game),
-            selectinload(GameSession.expansions),
-        )
+        .options(*_session_load_options())
         .where(GameSession.id == session.id)
     )
-    return result.scalar_one()
+    return _populate_image_urls(result.scalar_one())
 
 
 @router.get("/sessions/{session_id}", response_model=GameSessionRead)
 async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(GameSession)
-        .options(
-            selectinload(GameSession.players).selectinload(SessionPlayer.player),
-            selectinload(GameSession.game),
-            selectinload(GameSession.expansions),
-        )
+        .options(*_session_load_options())
         .where(GameSession.id == session_id)
     )
     session = result.scalar_one_or_none()
     if not session:
         raise HTTPException(404, "Session not found")
-    return session
+    return _populate_image_urls(session)
 
 
 @router.put("/sessions/{session_id}", response_model=GameSessionRead)
@@ -289,6 +307,8 @@ async def update_session(
     session = result.unique().scalar_one_or_none()
     if not session:
         raise HTTPException(404, "Session not found")
+    if session.sealed:
+        raise HTTPException(403, "Session is sealed and cannot be modified")
 
     # Update scalar fields
     if payload.played_at is not None:
@@ -354,14 +374,10 @@ async def update_session(
     # Re-fetch with all relationships (use session_id param, not session.id which would lazy-load)
     result = await db.execute(
         select(GameSession)
-        .options(
-            selectinload(GameSession.players).selectinload(SessionPlayer.player),
-            selectinload(GameSession.game),
-            selectinload(GameSession.expansions),
-        )
+        .options(*_session_load_options())
         .where(GameSession.id == session_id)
     )
-    return result.unique().scalar_one()
+    return _populate_image_urls(result.unique().scalar_one())
 
 
 @router.delete("/sessions/{session_id}", status_code=204)
@@ -376,5 +392,190 @@ async def delete_session(
     session = result.unique().scalar_one_or_none()
     if not session:
         raise HTTPException(404, "Session not found")
+    if session.sealed:
+        raise HTTPException(403, "Session is sealed and cannot be deleted")
     await db.delete(session)
     await db.commit()
+
+
+# --- Seal ---
+
+
+@router.put("/sessions/{session_id}/seal", response_model=GameSessionRead)
+async def toggle_seal_session(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
+):
+    result = await db.execute(
+        select(GameSession).where(GameSession.id == session_id)
+    )
+    session = result.unique().scalar_one_or_none()
+    if not session:
+        raise HTTPException(404, "Session not found")
+
+    if session.sealed:
+        session.sealed = False
+        session.sealed_at = None
+    else:
+        session.sealed = True
+        session.sealed_at = datetime.now(timezone.utc)
+
+    await db.commit()
+
+    result = await db.execute(
+        select(GameSession)
+        .options(*_session_load_options())
+        .where(GameSession.id == session_id)
+    )
+    return _populate_image_urls(result.unique().scalar_one())
+
+
+# --- Session Images ---
+
+
+@router.post(
+    "/sessions/{session_id}/images",
+    response_model=SessionImageRead,
+    status_code=201,
+)
+async def upload_session_image(
+    session_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    auth: AuthUser = Depends(require_auth),
+):
+    if file.content_type not in _ALLOWED_CONTENT_TYPES:
+        raise HTTPException(400, "Unsupported file type. Allowed: JPEG, PNG, WebP")
+
+    contents = await file.read()
+    if len(contents) > _MAX_IMAGE_SIZE:
+        raise HTTPException(400, "File too large. Maximum size: 5MB")
+
+    result = await db.execute(
+        select(GameSession).where(GameSession.id == session_id)
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(404, "Session not found")
+    if session.sealed:
+        raise HTTPException(403, "Session is sealed")
+
+    ext = _CONTENT_TYPE_EXT[file.content_type]
+    filename = f"{uuid.uuid4().hex}{ext}"
+    await storage.upload_session_image(session_id, filename, contents, file.content_type)
+
+    img = SessionImage(
+        session_id=session_id,
+        player_id=auth.player_id,
+        filename=filename,
+        original_filename=file.filename or filename,
+        content_type=file.content_type,
+    )
+    db.add(img)
+    await db.commit()
+    await db.refresh(img, ["player"])
+    img.image_url = storage.get_session_image_url(session_id, filename)
+    return img
+
+
+@router.delete("/sessions/{session_id}/images/{image_id}", status_code=204)
+async def delete_session_image(
+    session_id: int,
+    image_id: int,
+    db: AsyncSession = Depends(get_db),
+    auth: AuthUser = Depends(require_auth),
+):
+    result = await db.execute(
+        select(SessionImage).where(
+            SessionImage.id == image_id,
+            SessionImage.session_id == session_id,
+        )
+    )
+    img = result.scalar_one_or_none()
+    if not img:
+        raise HTTPException(404, "Image not found")
+
+    # Check session sealed
+    sess_result = await db.execute(
+        select(GameSession).where(GameSession.id == session_id)
+    )
+    session = sess_result.scalar_one_or_none()
+    if session and session.sealed:
+        raise HTTPException(403, "Session is sealed")
+
+    # Only uploader or admin can delete
+    if auth.role != "admin" and auth.player_id != img.player_id:
+        raise HTTPException(403, "Not allowed to delete this image")
+
+    await storage.delete_session_image(session_id, img.filename)
+    await db.delete(img)
+    await db.commit()
+
+
+# --- Score Reactions ---
+
+
+@router.put("/sessions/{session_id}/players/{session_player_id}/reaction")
+async def set_reaction(
+    session_id: int,
+    session_player_id: int,
+    payload: ReactionSet,
+    db: AsyncSession = Depends(get_db),
+    auth: AuthUser = Depends(require_auth),
+):
+    if auth.player_id is None:
+        raise HTTPException(403, "Only player accounts can react")
+    if payload.reaction not in VALID_REACTIONS:
+        raise HTTPException(400, f"Invalid reaction. Valid: {', '.join(VALID_REACTIONS)}")
+
+    # Verify session_player belongs to session
+    sp_result = await db.execute(
+        select(SessionPlayer).where(
+            SessionPlayer.id == session_player_id,
+            SessionPlayer.session_id == session_id,
+        )
+    )
+    if not sp_result.scalar_one_or_none():
+        raise HTTPException(404, "Session player not found")
+
+    existing = (
+        await db.execute(
+            select(ScoreReaction).where(
+                ScoreReaction.session_player_id == session_player_id,
+                ScoreReaction.player_id == auth.player_id,
+            )
+        )
+    ).scalar_one_or_none()
+
+    if existing:
+        if existing.reaction == payload.reaction:
+            # Toggle off
+            await db.delete(existing)
+            await db.commit()
+            return {"removed": True}
+        else:
+            existing.reaction = payload.reaction
+            await db.commit()
+            await db.refresh(existing, ["player"])
+            return ScoreReaction.__table__.columns.keys() and {
+                "id": existing.id,
+                "session_player_id": existing.session_player_id,
+                "player_id": existing.player_id,
+                "reaction": existing.reaction,
+            }
+    else:
+        reaction = ScoreReaction(
+            session_player_id=session_player_id,
+            player_id=auth.player_id,
+            reaction=payload.reaction,
+        )
+        db.add(reaction)
+        await db.commit()
+        await db.refresh(reaction, ["player"])
+        return {
+            "id": reaction.id,
+            "session_player_id": reaction.session_player_id,
+            "player_id": reaction.player_id,
+            "reaction": reaction.reaction,
+        }

@@ -20,8 +20,9 @@ export interface Game {
   min_players: number;
   max_players: number;
   scoring_spec: ScoringSpec | null;
-  rating: number | null;
   notes: string | null;
+  description: string | null;
+  scoring_summary: string | null;
   image_url: string | null;
   bgg_id: number | null;
   created_at: string;
@@ -30,6 +31,9 @@ export interface Game {
   tags: Tag[];
   session_count: number;
   last_played_at: string | null;
+  average_rating: number | null;
+  user_rating: number | null;
+  rating_count: number;
 }
 
 export interface GameCreate {
@@ -37,8 +41,9 @@ export interface GameCreate {
   min_players: number;
   max_players: number;
   scoring_spec?: ScoringSpec | null;
-  rating?: number | null;
   notes?: string | null;
+  description?: string | null;
+  scoring_summary?: string | null;
   tag_ids?: number[];
   bgg_id?: number | null;
 }

@@ -37,6 +37,17 @@ class SessionPlayerCreate(BaseModel):
     score_data: dict[str, Any] = {}
 
 
+class ScoreReactionRead(BaseModel):
+    id: int
+    session_player_id: int
+    player_id: int
+    player: PlayerRead
+    reaction: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class SessionPlayerRead(BaseModel):
     id: int
     player_id: int
@@ -44,6 +55,7 @@ class SessionPlayerRead(BaseModel):
     score_data: dict[str, Any]
     total_score: int | None
     winner: bool
+    reactions: list[ScoreReactionRead] = []
 
     model_config = {"from_attributes": True}
 
@@ -63,17 +75,41 @@ class GameSessionUpdate(BaseModel):
     players: list[SessionPlayerCreate] = []
 
 
+class SessionImageRead(BaseModel):
+    id: int
+    session_id: int
+    player_id: int | None
+    player: PlayerRead | None = None
+    filename: str
+    original_filename: str
+    content_type: str
+    image_url: str = ""
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class GameSessionRead(BaseModel):
     id: int
     game_id: int
     game: GameBrief
     played_at: datetime
     notes: str | None
+    sealed: bool = False
+    sealed_at: datetime | None = None
     created_at: datetime
     players: list[SessionPlayerRead]
     expansions: list[ExpansionBrief] = []
+    images: list[SessionImageRead] = []
 
     model_config = {"from_attributes": True}
+
+
+class ReactionSet(BaseModel):
+    reaction: str
+
+
+VALID_REACTIONS = {"🏆", "👏", "🔥", "😱", "💀", "😂", "👍", "👎", "😮"}
 
 
 class GameBrief(BaseModel):

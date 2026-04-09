@@ -50,5 +50,11 @@ export const uploadGameImage = (gameId: number, file: File) => {
 export const deleteGameImage = (gameId: number) =>
   client.delete(`/games/${gameId}/image`);
 
+export const setGameRating = (gameId: number, rating: number) =>
+  client.put(`/games/${gameId}/rating`, { rating }).then((r) => r.data);
+
+export const deleteGameRating = (gameId: number) =>
+  client.delete(`/games/${gameId}/rating`);
+
 export const seedGames = () =>
   client.post<{ seeded: string[] }>("/seed").then((r) => r.data);

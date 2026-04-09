@@ -42,9 +42,14 @@ export default function SessionCard({
             <Typography variant="subtitle1" fontWeight="bold">
               {session.game.name}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {new Date(session.played_at).toLocaleDateString()}
-            </Typography>
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              {session.sealed && (
+                <Chip label="Sealed" size="small" color="warning" variant="outlined" sx={{ height: 20, fontSize: "0.65rem" }} />
+              )}
+              <Typography variant="body2" color="text.secondary">
+                {new Date(session.played_at).toLocaleDateString()}
+              </Typography>
+            </Stack>
           </Stack>
           <Stack
             direction="row"

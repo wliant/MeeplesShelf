@@ -9,6 +9,15 @@ export interface PlayerWithCount extends Player {
   last_played: string | null;
 }
 
+export interface ScoreReaction {
+  id: number;
+  session_player_id: number;
+  player_id: number;
+  player: Player;
+  reaction: string;
+  created_at: string;
+}
+
 export interface SessionPlayer {
   id: number;
   player_id: number;
@@ -16,6 +25,7 @@ export interface SessionPlayer {
   score_data: Record<string, unknown>;
   total_score: number | null;
   winner: boolean;
+  reactions: ScoreReaction[];
 }
 
 export interface GameBrief {
@@ -28,15 +38,30 @@ export interface ExpansionBrief {
   name: string;
 }
 
+export interface SessionImage {
+  id: number;
+  session_id: number;
+  player_id: number | null;
+  player: Player | null;
+  filename: string;
+  original_filename: string;
+  content_type: string;
+  image_url: string;
+  created_at: string;
+}
+
 export interface GameSession {
   id: number;
   game_id: number;
   game: GameBrief;
   played_at: string;
   notes: string | null;
+  sealed: boolean;
+  sealed_at: string | null;
   created_at: string;
   players: SessionPlayer[];
   expansions: ExpansionBrief[];
+  images: SessionImage[];
 }
 
 export interface SessionPlayerCreate {

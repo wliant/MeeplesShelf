@@ -42,6 +42,7 @@ interface Props {
   onDelete: (game: Game) => void;
   onRefresh: () => void;
   isAdmin: boolean;
+  onViewDetails?: (game: Game) => void;
 }
 
 function nameHue(name: string): number {
@@ -58,7 +59,7 @@ function scoringFieldLabel(field: ScoringField): string {
   }
 }
 
-export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }: Props) {
+export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin, onViewDetails }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
   const theme = useTheme();
@@ -193,12 +194,15 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }:
           onChange={handleFileSelect}
         />
       </Box>
-      <CardContent>
+      <CardContent
+        sx={onViewDetails ? { cursor: "pointer" } : undefined}
+        onClick={onViewDetails ? () => onViewDetails(game) : undefined}
+      >
         <Typography variant="h6" gutterBottom>
           {game.name}
         </Typography>
-        {game.rating !== null && (
-          <Rating value={game.rating} max={10} readOnly size="small" sx={{ mb: 1 }} />
+        {game.average_rating !== null && (
+          <Rating value={game.average_rating} max={10} readOnly size="small" precision={0.5} sx={{ mb: 1 }} />
         )}
         <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
           <Chip
@@ -272,6 +276,26 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin }:
       </CardActions>
       <Collapse in={expanded}>
         <Box sx={{ px: 2, pb: 2 }}>
+          {game.description && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                Description
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "pre-line" }}>
+                {game.description}
+              </Typography>
+            </Box>
+          )}
+          {game.scoring_summary && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                Scoring Summary
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "pre-line" }}>
+                {game.scoring_summary}
+              </Typography>
+            </Box>
+          )}
           {game.notes && (
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 0.5 }}>

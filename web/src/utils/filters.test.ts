@@ -15,8 +15,9 @@ const makeGame = (id: number, name: string, tags: Tag[] = []): Game => ({
   min_players: 2,
   max_players: 4,
   scoring_spec: null,
-  rating: null,
   notes: null,
+  description: null,
+  scoring_summary: null,
   image_url: null,
   bgg_id: null,
   created_at: "2025-01-01T00:00:00Z",
@@ -25,6 +26,9 @@ const makeGame = (id: number, name: string, tags: Tag[] = []): Game => ({
   tags,
   session_count: 0,
   last_played_at: null,
+  average_rating: null,
+  user_rating: null,
+  rating_count: 0,
 });
 
 const makeSession = (id: number, playerNames: string[]): GameSession => ({
@@ -33,6 +37,8 @@ const makeSession = (id: number, playerNames: string[]): GameSession => ({
   game: { id: 1, name: "TestGame" },
   played_at: "2025-01-01T00:00:00Z",
   notes: null,
+  sealed: false,
+  sealed_at: null,
   created_at: "2025-01-01T00:00:00Z",
   players: playerNames.map((name, i) => ({
     id: i + 1,
@@ -41,8 +47,10 @@ const makeSession = (id: number, playerNames: string[]): GameSession => ({
     score_data: {},
     total_score: null,
     winner: false,
+    reactions: [],
   })),
   expansions: [],
+  images: [],
 });
 
 describe("filterGamesByName", () => {

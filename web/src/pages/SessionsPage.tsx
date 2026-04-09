@@ -19,6 +19,11 @@ import {
   createSession,
   updateSession,
   deleteSession,
+  getSession,
+  toggleSealSession,
+  uploadSessionImage,
+  deleteSessionImage,
+  setReaction,
 } from "../api/sessions";
 import type { SessionFilters } from "../api/sessions";
 import SessionList from "../components/sessions/SessionList";
@@ -34,7 +39,7 @@ import { useSearchParams } from "react-router-dom";
 const PAGE_SIZE = 20;
 
 export default function SessionsPage() {
-  const { isAdmin, canLogSessions } = useAuth();
+  const { isAdmin, canLogSessions, playerId } = useAuth();
   const { showSnackbar } = useSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
   const [sessions, setSessions] = useState<GameSession[]>([]);
@@ -146,6 +151,57 @@ export default function SessionsPage() {
       } finally {
         setSaving(false);
       }
+    }
+  };
+
+  const refreshDetail = async (sessionId: number) => {
+    try {
+      const updated = await getSession(sessionId);
+      setDetailSession(updated);
+      refresh();
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSeal = async (session: GameSession) => {
+    try {
+      const updated = await toggleSealSession(session.id);
+      setDetailSession(updated);
+      showSnackbar(updated.sealed ? "Session sealed" : "Session unsealed");
+      refresh();
+    } catch (err) {
+      showSnackbar(extractErrorMessage(err), "error");
+    }
+  };
+
+  const handleUploadImage = async (sessionId: number, file: File) => {
+    try {
+      await uploadSessionImage(sessionId, file);
+      showSnackbar("Photo uploaded");
+      await refreshDetail(sessionId);
+    } catch (err) {
+      showSnackbar(extractErrorMessage(err), "error");
+    }
+  };
+
+  const handleDeleteImage = async (sessionId: number, imageId: number) => {
+    try {
+      await deleteSessionImage(sessionId, imageId);
+      showSnackbar("Photo deleted");
+      await refreshDetail(sessionId);
+    } catch (err) {
+      showSnackbar(extractErrorMessage(err), "error");
+    }
+  };
+
+  const handleReact = async (sessionPlayerId: number, reaction: string) => {
+    if (!detailSession) return;
+    try {
+      await setReaction(detailSession.id, sessionPlayerId, reaction);
+      await refreshDetail(detailSession.id);
+    } catch (err) {
+      showSnackbar(extractErrorMessage(err), "error");
     }
   };
 
@@ -290,6 +346,12 @@ export default function SessionsPage() {
         onClose={() => setDetailSession(null)}
         onEdit={handleEdit}
         canEdit={canLogSessions}
+        isAdmin={isAdmin}
+        playerId={playerId}
+        onSeal={handleSeal}
+        onUploadImage={handleUploadImage}
+        onDeleteImage={handleDeleteImage}
+        onReact={handleReact}
       />
     </Box>
   );

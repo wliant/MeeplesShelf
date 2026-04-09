@@ -7,13 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.dependencies import require_admin
-from app.models.game import Expansion, Game, Tag, game_tags
+from app.dependencies import AuthUser, optional_auth, require_admin, require_auth
+from app.models.game import Expansion, Game, GameRating, Tag, game_tags
 from app.models.session import GameSession
 from app.schemas.game import (
     ExpansionCreate,
     ExpansionRead,
     GameCreate,
+    GameRatingCreate,
+    GameRatingRead,
     GameRead,
     GameUpdate,
 )
@@ -47,15 +49,59 @@ async def _load_session_stats(
     return {row.game_id: (row.session_count, row.last_played_at) for row in result.all()}
 
 
+async def _load_rating_stats(
+    db: AsyncSession, game_ids: list[int], player_id: int | None = None
+) -> dict[int, tuple[float | None, int, int | None]]:
+    """Return {game_id: (average_rating, rating_count, user_rating)} for the given IDs."""
+    if not game_ids:
+        return {}
+    stmt = (
+        select(
+            GameRating.game_id,
+            func.avg(GameRating.rating).label("avg_rating"),
+            func.count(GameRating.id).label("rating_count"),
+        )
+        .where(GameRating.game_id.in_(game_ids))
+        .group_by(GameRating.game_id)
+    )
+    result = await db.execute(stmt)
+    stats: dict[int, tuple[float | None, int, int | None]] = {
+        row.game_id: (round(float(row.avg_rating), 1), row.rating_count, None)
+        for row in result.all()
+    }
+
+    if player_id is not None:
+        user_stmt = (
+            select(GameRating.game_id, GameRating.rating)
+            .where(GameRating.game_id.in_(game_ids), GameRating.player_id == player_id)
+        )
+        user_result = await db.execute(user_stmt)
+        for row in user_result.all():
+            if row.game_id in stats:
+                avg, count, _ = stats[row.game_id]
+                stats[row.game_id] = (avg, count, row.rating)
+            else:
+                stats[row.game_id] = (float(row.rating), 1, row.rating)
+
+    return stats
+
+
 def _enrich_game(
-    game: Game, stats: dict[int, tuple[int, datetime | None]]
+    game: Game,
+    session_stats: dict[int, tuple[int, datetime | None]],
+    rating_stats: dict[int, tuple[float | None, int, int | None]] | None = None,
 ) -> GameRead:
     game_read = GameRead.model_validate(game)
-    count, last = stats.get(game.id, (0, None))
+    count, last = session_stats.get(game.id, (0, None))
     game_read.session_count = count
     game_read.last_played_at = last
     if game.image_filename:
         game_read.image_url = storage.get_public_url(game.id, game.image_filename)
+    if rating_stats:
+        avg, rcount, user_r = rating_stats.get(game.id, (None, 0, None))
+        game_read.average_rating = avg
+        game_read.rating_count = rcount
+        game_read.user_rating = user_r
     return game_read
 
 
@@ -67,6 +113,7 @@ async def list_games(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    user: AuthUser | None = Depends(optional_auth),
 ):
     conditions = []
     if name:
@@ -97,17 +144,29 @@ async def list_games(
         .subquery()
     ) if needs_stats_join else None
 
+    needs_rating_join = sort == "rating_desc"
+    rating_subq = (
+        select(
+            GameRating.game_id,
+            func.avg(GameRating.rating).label("avg_rating"),
+        )
+        .group_by(GameRating.game_id)
+        .subquery()
+    ) if needs_rating_join else None
+
     query = select(Game).options(selectinload(Game.expansions), selectinload(Game.tags))
     if needs_stats_join and stats_subq is not None:
         query = query.outerjoin(stats_subq, Game.id == stats_subq.c.game_id)
+    if needs_rating_join and rating_subq is not None:
+        query = query.outerjoin(rating_subq, Game.id == rating_subq.c.game_id)
 
     for cond in conditions:
         query = query.where(cond)
 
     if sort == "name_desc":
         query = query.order_by(Game.name.desc())
-    elif sort == "rating_desc":
-        query = query.order_by(Game.rating.desc().nulls_last(), Game.name)
+    elif sort == "rating_desc" and rating_subq is not None:
+        query = query.order_by(rating_subq.c.avg_rating.desc().nulls_last(), Game.name)
     elif sort == "last_played" and stats_subq is not None:
         query = query.order_by(stats_subq.c.last_played_at.desc().nulls_last(), Game.name)
     elif sort == "most_played" and stats_subq is not None:
@@ -120,8 +179,10 @@ async def list_games(
     items = list(result.scalars().all())
 
     game_ids = [g.id for g in items]
-    stats = await _load_session_stats(db, game_ids)
-    enriched = [_enrich_game(g, stats) for g in items]
+    session_stats = await _load_session_stats(db, game_ids)
+    player_id = user.player_id if user else None
+    rating_stats = await _load_rating_stats(db, game_ids, player_id)
+    enriched = [_enrich_game(g, session_stats, rating_stats) for g in items]
     return PaginatedResponse(items=enriched, total=total, skip=skip, limit=limit)
 
 
@@ -146,8 +207,9 @@ async def create_game(
         min_players=payload.min_players,
         max_players=payload.max_players,
         scoring_spec=payload.scoring_spec.model_dump() if payload.scoring_spec else None,
-        rating=payload.rating,
         notes=payload.notes,
+        description=payload.description,
+        scoring_summary=payload.scoring_summary,
         bgg_id=payload.bgg_id,
     )
     game.tags = tags
@@ -158,7 +220,11 @@ async def create_game(
 
 
 @router.get("/games/{game_id}", response_model=GameRead)
-async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
+async def get_game(
+    game_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: AuthUser | None = Depends(optional_auth),
+):
     result = await db.execute(
         select(Game)
         .options(selectinload(Game.expansions), selectinload(Game.tags))
@@ -167,8 +233,10 @@ async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
     game = result.scalar_one_or_none()
     if not game:
         raise HTTPException(404, "Game not found")
-    stats = await _load_session_stats(db, [game.id])
-    return _enrich_game(game, stats)
+    session_stats = await _load_session_stats(db, [game.id])
+    player_id = user.player_id if user else None
+    rating_stats = await _load_rating_stats(db, [game.id], player_id)
+    return _enrich_game(game, session_stats, rating_stats)
 
 
 @router.put("/games/{game_id}", response_model=GameRead)
@@ -346,6 +414,72 @@ async def delete_expansion(
     if not expansion:
         raise HTTPException(404, "Expansion not found")
     await db.delete(expansion)
+    await db.commit()
+
+
+# --- Ratings ---
+
+
+@router.put("/games/{game_id}/rating", response_model=GameRatingRead)
+async def set_game_rating(
+    game_id: int,
+    payload: GameRatingCreate,
+    db: AsyncSession = Depends(get_db),
+    user: AuthUser = Depends(require_auth),
+):
+    if user.player_id is None:
+        raise HTTPException(400, "Cannot rate without a player identity")
+
+    game = (await db.execute(select(Game).where(Game.id == game_id))).scalar_one_or_none()
+    if not game:
+        raise HTTPException(404, "Game not found")
+
+    existing = (
+        await db.execute(
+            select(GameRating).where(
+                GameRating.game_id == game_id,
+                GameRating.player_id == user.player_id,
+            )
+        )
+    ).scalar_one_or_none()
+
+    if existing:
+        existing.rating = payload.rating
+    else:
+        db.add(GameRating(game_id=game_id, player_id=user.player_id, rating=payload.rating))
+
+    await db.commit()
+    result = (
+        await db.execute(
+            select(GameRating).where(
+                GameRating.game_id == game_id,
+                GameRating.player_id == user.player_id,
+            )
+        )
+    ).scalar_one()
+    return result
+
+
+@router.delete("/games/{game_id}/rating", status_code=204)
+async def delete_game_rating(
+    game_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: AuthUser = Depends(require_auth),
+):
+    if user.player_id is None:
+        raise HTTPException(400, "Cannot rate without a player identity")
+
+    existing = (
+        await db.execute(
+            select(GameRating).where(
+                GameRating.game_id == game_id,
+                GameRating.player_id == user.player_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not existing:
+        raise HTTPException(404, "No rating found")
+    await db.delete(existing)
     await db.commit()
 
 
