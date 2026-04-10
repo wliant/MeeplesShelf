@@ -18,8 +18,3 @@ services:
       APP_S3_PUBLIC_URL: ${APP_S3_PUBLIC_URL}
     ports:
       - "${APP_PORT:-8000}:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
