@@ -98,7 +98,7 @@ export default function PlayersPage() {
               ),
             },
           }}
-          sx={{ mb: 2, minWidth: 200 }}
+          sx={{ mb: 2, minWidth: { xs: 0, sm: 200 }, width: { xs: '100%', sm: 'auto' } }}
         />
       )}
 

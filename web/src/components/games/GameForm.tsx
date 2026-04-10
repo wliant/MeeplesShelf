@@ -17,6 +17,8 @@ import {
   Tooltip,
   Autocomplete,
   Chip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -84,6 +86,8 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
   const [bggImporting, setBggImporting] = useState(false);
   const [bggId, setBggId] = useState<number | null>(null);
   const [bggError, setBggError] = useState<string | null>(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
@@ -221,12 +225,12 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
   };
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth fullScreen={isMobile}>
       <DialogTitle>{game ? "Edit Game" : "Add Game"}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {!game && (
-            <Box sx={{ p: 2, border: "1px solid", borderColor: "divider", borderRadius: 1, bgcolor: "grey.50" }}>
+            <Box sx={{ p: 2, border: "1px solid", borderColor: "divider", borderRadius: 1, bgcolor: "action.hover" }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                 Import from BoardGameGeek
               </Typography>
@@ -402,7 +406,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
               sx={{ p: 2, border: "1px solid #ddd", borderRadius: 1 }}
             >
               <Stack spacing={1}>
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
                   <TextField
                     size="small"
                     label="Field ID"
@@ -421,7 +425,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
                     }
                     sx={{ flex: 1 }}
                   />
-                  <FormControl size="small" sx={{ minWidth: 180 }}>
+                  <FormControl size="small" sx={{ minWidth: { xs: 0, sm: 180 }, width: { xs: '100%', sm: 'auto' } }}>
                     <InputLabel>Type</InputLabel>
                     <Select
                       value={field.type}

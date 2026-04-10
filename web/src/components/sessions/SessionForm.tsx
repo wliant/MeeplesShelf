@@ -14,6 +14,8 @@ import {
   FormControlLabel,
   Checkbox,
   CircularProgress,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useState, useEffect, useMemo } from "react";
 import type { Game } from "../../types/game";
@@ -33,6 +35,8 @@ interface Props {
 }
 
 export default function SessionForm({ open, games, defaultGame, onClose, onSave, editSession, saving = false }: Props) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isEditMode = !!editSession;
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -159,7 +163,7 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
   };
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="lg" fullWidth>
+    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="lg" fullWidth fullScreen={isMobile}>
       <DialogTitle>{isEditMode ? "Edit Game Session" : "Log Game Session"}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>

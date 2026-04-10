@@ -206,7 +206,7 @@ export default function SessionsPage() {
   };
 
   return (
-    <Box>
+    <Box sx={{ pb: { xs: 10, sm: 0 } }}>
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -233,7 +233,7 @@ export default function SessionsPage() {
           renderInput={(params) => (
             <TextField {...params} placeholder="Filter by game" />
           )}
-          sx={{ minWidth: 200 }}
+          sx={{ minWidth: { xs: 0, sm: 200 }, width: { xs: '100%', sm: 'auto' } }}
         />
         <TextField
           size="small"
@@ -242,7 +242,7 @@ export default function SessionsPage() {
           value={filterDateFrom}
           onChange={(e) => setFilterDateFrom(e.target.value)}
           slotProps={{ inputLabel: { shrink: true } }}
-          sx={{ width: 160 }}
+          sx={{ width: { xs: '100%', sm: 160 } }}
         />
         <TextField
           size="small"
@@ -251,7 +251,7 @@ export default function SessionsPage() {
           value={filterDateTo}
           onChange={(e) => setFilterDateTo(e.target.value)}
           slotProps={{ inputLabel: { shrink: true } }}
-          sx={{ width: 160 }}
+          sx={{ width: { xs: '100%', sm: 160 } }}
         />
         <TextField
           size="small"
@@ -267,7 +267,7 @@ export default function SessionsPage() {
               ),
             },
           }}
-          sx={{ minWidth: 180 }}
+          sx={{ minWidth: { xs: 0, sm: 180 }, width: { xs: '100%', sm: 'auto' } }}
         />
         {hasFilters && (
           <Button

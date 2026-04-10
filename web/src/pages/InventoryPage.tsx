@@ -20,6 +20,8 @@ import {
   TableRow,
   Paper,
   Rating,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -54,6 +56,8 @@ const PAGE_SIZE = 20;
 export default function InventoryPage() {
   const { isAdmin } = useAuth();
   const { showSnackbar } = useSnackbar();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = useMemo(() => searchParams.get("search") ?? "", []);
   const [games, setGames] = useState<Game[]>([]);
@@ -194,7 +198,7 @@ export default function InventoryPage() {
   };
 
   return (
-    <Box>
+    <Box sx={{ pb: { xs: 10, sm: 0 } }}>
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -347,9 +351,9 @@ export default function InventoryPage() {
                 <TableRow>
                   <TableCell>Name</TableCell>
                   <TableCell>Players</TableCell>
-                  <TableCell>Rating</TableCell>
+                  {!isMobile && <TableCell>Rating</TableCell>}
                   <TableCell>Sessions</TableCell>
-                  <TableCell>Last Played</TableCell>
+                  {!isMobile && <TableCell>Last Played</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -357,9 +361,9 @@ export default function InventoryPage() {
                   <TableRow key={g.id} hover sx={{ cursor: "pointer" }} onClick={() => setDetailGame(g)}>
                     <TableCell>{g.name}</TableCell>
                     <TableCell>{g.min_players}&#8211;{g.max_players}</TableCell>
-                    <TableCell>{g.average_rating !== null ? <Rating value={g.average_rating} max={10} readOnly size="small" precision={0.5} /> : "-"}</TableCell>
+                    {!isMobile && <TableCell>{g.average_rating !== null ? <Rating value={g.average_rating} max={10} readOnly size="small" precision={0.5} /> : "-"}</TableCell>}
                     <TableCell>{g.session_count}</TableCell>
-                    <TableCell>{formatLastPlayed(g.last_played_at)}</TableCell>
+                    {!isMobile && <TableCell>{formatLastPlayed(g.last_played_at)}</TableCell>}
                   </TableRow>
                 ))}
               </TableBody>

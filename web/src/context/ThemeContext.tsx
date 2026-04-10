@@ -38,6 +38,13 @@ export function ThemeModeProvider({ children }: { children: ReactNode }) {
           primary: { main: "#5c6bc0" },
           secondary: { main: "#ff7043" },
         },
+        typography: {
+          h4: {
+            '@media (max-width:600px)': {
+              fontSize: '1.5rem',
+            },
+          },
+        },
         components: {
           MuiButtonBase: {
             styleOverrides: {

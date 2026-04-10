@@ -7,6 +7,8 @@ import {
   TableRow,
   Paper,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import type { ScoringSpec } from "../../types/scoring";
 import type { Player } from "../../types/session";
@@ -26,6 +28,9 @@ export default function ScoreSheet({
   scoreData,
   onChange,
 }: Props) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   return (
     <TableContainer component={Paper} variant="outlined">
       <Table size="small">
@@ -42,11 +47,11 @@ export default function ScoreSheet({
         <TableBody>
           {spec.fields.map((field) => (
             <TableRow key={field.id}>
-              <TableCell sx={{ minWidth: 140 }}>
+              <TableCell sx={{ minWidth: isMobile ? 100 : 140 }}>
                 <Typography variant="body2">{field.label}</Typography>
               </TableCell>
               {players.map((p) => (
-                <TableCell key={p.id} align="center" sx={{ minWidth: 140 }}>
+                <TableCell key={p.id} align="center" sx={{ minWidth: isMobile ? 80 : 140 }}>
                   <ScoreFieldRenderer
                     field={field}
                     value={scoreData[p.id]?.[field.id]}

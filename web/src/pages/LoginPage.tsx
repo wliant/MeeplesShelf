@@ -67,9 +67,10 @@ export default function LoginPage() {
         alignItems: "center",
         justifyContent: "center",
         bgcolor: "background.default",
+        px: 2,
       }}
     >
-      <Card sx={{ width: 360, p: 1 }}>
+      <Card sx={{ maxWidth: 360, width: '100%', p: 1 }}>
         <CardContent>
           <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
             <MeepleIcon sx={{ fontSize: 48, color: "primary.main" }} />

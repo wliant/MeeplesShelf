@@ -401,7 +401,7 @@ export default function AppShell() {
         </AppBar>
 
         {/* Main content */}
-        <Box component="main" id="main-content" sx={{ flexGrow: 1, p: 3 }}>
+        <Box component="main" id="main-content" sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2, md: 3 } }}>
           <Outlet />
         </Box>
       </Box>

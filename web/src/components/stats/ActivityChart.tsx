@@ -1,4 +1,4 @@
-import { Typography, useTheme } from "@mui/material";
+import { Typography, useMediaQuery, useTheme } from "@mui/material";
 import {
   Area,
   AreaChart,
@@ -17,6 +17,7 @@ interface Props {
 
 export default function ActivityChart({ data }: Props) {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const chartData = data.map((d) => ({
     month: formatMonth(d.month),
@@ -30,7 +31,7 @@ export default function ActivityChart({ data }: Props) {
       </Typography>
 
       {data.length > 0 ? (
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={isMobile ? 200 : 300}>
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">

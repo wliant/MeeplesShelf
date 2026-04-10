@@ -9,6 +9,7 @@ import {
   Rating,
   Stack,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import type { Game } from "../../types/game";
@@ -33,6 +34,7 @@ export default function GameDetailDialog({ open, game, onClose, onRatingChange }
   const { playerId } = useAuth();
   const { showSnackbar } = useSnackbar();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   if (!game) return null;
 
@@ -50,7 +52,7 @@ export default function GameDetailDialog({ open, game, onClose, onRatingChange }
   const hue = nameHue(game.name);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth fullScreen={isMobile}>
       <DialogTitle>
         <Stack direction="row" spacing={2} alignItems="center">
           {game.image_url ? (

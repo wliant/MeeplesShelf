@@ -19,6 +19,8 @@ import {
   Link as MuiLink,
   IconButton,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   EmojiEvents as EmojiEventsIcon,
@@ -64,6 +66,8 @@ export default function SessionDetail({
   onReact,
 }: Props) {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [reactionAnchor, setReactionAnchor] = useState<HTMLElement | null>(null);
@@ -111,7 +115,7 @@ export default function SessionDetail({
 
   return (
     <>
-      <Dialog open={!!session} onClose={onClose} maxWidth="md" fullWidth>
+      <Dialog open={!!session} onClose={onClose} maxWidth="md" fullWidth fullScreen={isMobile}>
         <DialogTitle>
           <Stack direction="row" spacing={2} alignItems="center">
             {game?.image_url && (
@@ -254,13 +258,13 @@ export default function SessionDetail({
 
             {/* Players table */}
             <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
+              <Table size="small" sx={isMobile ? { '& .MuiTableCell-root': { px: 1 } } : undefined}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Player</TableCell>
-                    <TableCell align="center">Total Score</TableCell>
+                    <TableCell align="center">Score</TableCell>
                     <TableCell align="center">Winner</TableCell>
-                    <TableCell align="center">Reactions</TableCell>
+                    {!isMobile && <TableCell align="center">Reactions</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -280,32 +284,34 @@ export default function SessionDetail({
                         <TableCell align="center">
                           {sp.winner ? <EmojiEventsIcon color="primary" fontSize="small" /> : null}
                         </TableCell>
-                        <TableCell align="center">
-                          <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" flexWrap="wrap" useFlexGap>
-                            {Object.entries(grouped).map(([emoji, { count, names }]) => (
-                              <Tooltip key={emoji} title={names.join(", ")}>
-                                <Chip
-                                  label={`${emoji} ${count}`}
+                        {!isMobile && (
+                          <TableCell align="center">
+                            <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" flexWrap="wrap" useFlexGap>
+                              {Object.entries(grouped).map(([emoji, { count, names }]) => (
+                                <Tooltip key={emoji} title={names.join(", ")}>
+                                  <Chip
+                                    label={`${emoji} ${count}`}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ fontSize: "0.75rem", height: 24 }}
+                                  />
+                                </Tooltip>
+                              ))}
+                              {playerId && onReact && (
+                                <IconButton
                                   size="small"
-                                  variant="outlined"
-                                  sx={{ fontSize: "0.75rem", height: 24 }}
-                                />
-                              </Tooltip>
-                            ))}
-                            {playerId && onReact && (
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  setReactionAnchor(e.currentTarget);
-                                  setReactionTarget(sp.id);
-                                }}
-                                sx={{ fontSize: "0.85rem", p: 0.5 }}
-                              >
-                                +
-                              </IconButton>
-                            )}
-                          </Stack>
-                        </TableCell>
+                                  onClick={(e) => {
+                                    setReactionAnchor(e.currentTarget);
+                                    setReactionTarget(sp.id);
+                                  }}
+                                  sx={{ fontSize: "0.85rem", p: 0.5 }}
+                                >
+                                  +
+                                </IconButton>
+                              )}
+                            </Stack>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })}
