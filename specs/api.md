@@ -66,14 +66,19 @@ See [scoring-system.md](./scoring-system.md) for full `ScoringField` definitions
 ### `GameCreate`
 ```json
 {
-  "name":         "string",          // required
-  "min_players":  1,                 // optional, default 1
-  "max_players":  4,                 // optional, default 4
-  "scoring_spec": ScoringSpec | null, // optional, default null
-  "rating":       "integer | null",  // optional, default null; must be 1–10 if provided
-  "notes":        "string | null",   // optional, default null; free-text personal notes
-  "tag_ids":      "integer[]",       // optional, default []; list of existing tag IDs to assign
-  "bgg_id":       "integer | null"   // optional, default null; BoardGameGeek game ID
+  "name":             "string",           // required
+  "min_players":      1,                  // optional, default 1
+  "max_players":      4,                  // optional, default 4
+  "year_published":   "integer | null",   // optional, default null
+  "min_playtime":     "integer | null",   // optional, default null
+  "max_playtime":     "integer | null",   // optional, default null
+  "description":      "string | null",    // optional, default null
+  "scoring_summary":  "string | null",    // optional, default null
+  "scoring_spec":     "ScoringSpec | null", // optional, default null
+  "rating":           "integer | null",   // optional, default null; must be 1–10 if provided
+  "notes":            "string | null",    // optional, default null; free-text personal notes
+  "tag_ids":          "integer[]",        // optional, default []; list of existing tag IDs to assign
+  "bgg_id":           "integer | null"    // optional, default null; BoardGameGeek game ID
 }
 ```
 
@@ -81,14 +86,19 @@ See [scoring-system.md](./scoring-system.md) for full `ScoringField` definitions
 All fields optional (partial update).
 ```json
 {
-  "name":         "string | null",
-  "min_players":  "integer | null",
-  "max_players":  "integer | null",
-  "scoring_spec": "ScoringSpec | null",
-  "rating":       "integer | null",
-  "notes":        "string | null",
-  "tag_ids":      "integer[] | null", // null = don't change; [] = clear all tags
-  "bgg_id":       "integer | null"   // optional; BoardGameGeek game ID
+  "name":             "string | null",
+  "min_players":      "integer | null",
+  "max_players":      "integer | null",
+  "year_published":   "integer | null",
+  "min_playtime":     "integer | null",
+  "max_playtime":     "integer | null",
+  "description":      "string | null",
+  "scoring_summary":  "string | null",
+  "scoring_spec":     "ScoringSpec | null",
+  "rating":           "integer | null",
+  "notes":            "string | null",
+  "tag_ids":          "integer[] | null", // null = don't change; [] = clear all tags
+  "bgg_id":           "integer | null"    // optional; BoardGameGeek game ID
 }
 ```
 `rating` is validated to 1–10 when not null. Sending `null` clears the rating.
@@ -97,21 +107,29 @@ All fields optional (partial update).
 ### `GameRead`
 ```json
 {
-  "id":           "integer",
-  "name":         "string",
-  "min_players":  "integer",
-  "max_players":  "integer",
-  "scoring_spec": "ScoringSpec | null",
-  "rating":       "integer | null",
-  "notes":        "string | null",
-  "image_url":    "string | null",        // computed: {S3_PUBLIC_URL}/{bucket}/games/{id}/{filename} or null
-  "created_at":      "datetime (ISO 8601, UTC)",
-  "updated_at":      "datetime (ISO 8601, UTC)",
-  "expansions":      "ExpansionRead[]",
-  "tags":            "TagRead[]",
-  "bgg_id":          "integer | null",
-  "session_count":   "integer (default 0)",
-  "last_played_at":  "datetime (ISO 8601, UTC) | null"
+  "id":               "integer",
+  "name":             "string",
+  "min_players":      "integer",
+  "max_players":      "integer",
+  "year_published":   "integer | null",
+  "min_playtime":     "integer | null",
+  "max_playtime":     "integer | null",
+  "description":      "string | null",
+  "scoring_summary":  "string | null",
+  "scoring_spec":     "ScoringSpec | null",
+  "rating":           "integer | null",
+  "notes":            "string | null",
+  "image_url":        "string | null",        // computed: {S3_PUBLIC_URL}/{bucket}/games/{id}/{filename} or null
+  "created_at":       "datetime (ISO 8601, UTC)",
+  "updated_at":       "datetime (ISO 8601, UTC)",
+  "expansions":       "ExpansionRead[]",
+  "tags":             "TagRead[]",
+  "bgg_id":           "integer | null",
+  "session_count":    "integer (default 0)",
+  "last_played_at":   "datetime (ISO 8601, UTC) | null",
+  "average_rating":   "float | null",
+  "user_rating":      "integer | null",
+  "rating_count":     "integer"
 }
 ```
 
@@ -470,10 +488,14 @@ If the token is not set, endpoints return `503 Service Unavailable` with a setup
   "description":     "string | null",   // HTML-stripped text from BGG
   "min_players":     "integer | null",
   "max_players":     "integer | null",
+  "min_playtime":    "integer | null",
+  "max_playtime":    "integer | null",
   "image_url":       "string | null",   // full-size image URL on BGG CDN
   "thumbnail_url":   "string | null",
   "categories":      "string[]",
-  "mechanics":       "string[]"
+  "mechanics":       "string[]",
+  "designers":       "string[]",
+  "publishers":      "string[]"
 }
 ```
 
@@ -541,6 +563,32 @@ Download a cover image from BoardGameGeek and store it in S3 for a local game.
 | `401` | Missing or invalid token |
 | `404` | Local game not found, or no image available on BGG |
 | `502` | BGG API or image download failed |
+| `503` | `APP_BGG_API_TOKEN` not configured |
+
+---
+
+### `POST /api/bgg/import-details/{bgg_id}` 🔒
+
+Fetch detailed game information from BoardGameGeek and apply it to a local game record.
+Updates `year_published`, `min_playtime`, `max_playtime`, `description`, `min_players`,
+`max_players`, and `bgg_id` on the target game.
+
+**Auth required:** Yes (Admin)
+**Query parameters:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `game_id` | integer | *(required)* | Local game ID to update |
+
+**Response:** `200 OK` → `GameRead`
+
+**Errors:**
+
+| Status | Condition |
+|---|---|
+| `401` | Missing or invalid token |
+| `404` | Local game not found, or BGG game not found for `bgg_id` |
+| `502` | BGG API unavailable |
 | `503` | `APP_BGG_API_TOKEN` not configured |
 
 ---
