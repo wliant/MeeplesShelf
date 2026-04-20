@@ -124,6 +124,18 @@ class TestBGGDetails:
         assert isinstance(data["categories"], list)
         assert isinstance(data["mechanics"], list)
 
+    @requires_bgg_token
+    def test_details_includes_playtime_and_credits(self, client, admin_headers):
+        resp = client.get("/bgg/details/13", headers=admin_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "min_playtime" in data
+        assert "max_playtime" in data
+        assert isinstance(data["designers"], list)
+        assert isinstance(data["publishers"], list)
+        assert len(data["designers"]) > 0
+        assert len(data["publishers"]) > 0
+
     def test_details_requires_admin(self, client):
         resp = client.get("/bgg/details/13")
         assert resp.status_code in (401, 403)
@@ -244,3 +256,54 @@ class TestGameWithBggId:
         assert any(g["bgg_id"] == 77 for g in items)
 
         client.delete(f"/games/{game_id}", headers=admin_headers)
+
+
+# ── BGG Details Import ───────────────────────────────────────
+
+
+class TestBGGImportDetails:
+    @requires_bgg_token
+    def test_import_details_from_bgg(self, client, admin_headers, game):
+        resp = client.post(
+            "/bgg/import-details/13",
+            headers=admin_headers,
+            params={"game_id": game["id"]},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "year_published" in data
+        assert "min_playtime" in data
+        assert "max_playtime" in data
+        assert "description" in data
+
+        # Verify game detail reflects imported fields
+        detail = client.get(f"/games/{game['id']}")
+        assert detail.status_code == 200
+        d = detail.json()
+        assert d["year_published"] is not None
+        assert d["description"] is not None
+
+    def test_import_details_requires_admin(self, client, game):
+        resp = client.post(
+            "/bgg/import-details/13", params={"game_id": game["id"]}
+        )
+        assert resp.status_code in (401, 403)
+
+    def test_import_details_nonexistent_game(self, client, admin_headers):
+        resp = client.post(
+            "/bgg/import-details/13",
+            headers=admin_headers,
+            params={"game_id": 99999},
+        )
+        assert resp.status_code == 404
+
+    def test_import_details_without_token_returns_503(self, client, admin_headers, game):
+        if BGG_TOKEN:
+            pytest.skip("BGG token is configured — cannot test 503 path")
+        resp = client.post(
+            "/bgg/import-details/13",
+            headers=admin_headers,
+            params={"game_id": game["id"]},
+        )
+        assert resp.status_code == 503
+        assert "APP_BGG_API_TOKEN" in resp.json()["detail"]

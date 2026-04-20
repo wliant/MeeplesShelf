@@ -83,12 +83,16 @@ class TestParseGameDetail:
                 <yearpublished value="1995"/>
                 <minplayers value="3"/>
                 <maxplayers value="4"/>
+                <minplaytime value="60"/>
+                <maxplaytime value="120"/>
                 <description>Trade and build!</description>
                 <image>https://cf.geekdo-images.com/catan.jpg</image>
                 <thumbnail>https://cf.geekdo-images.com/catan_t.jpg</thumbnail>
                 <link type="boardgamecategory" value="Economic"/>
                 <link type="boardgamecategory" value="Negotiation"/>
                 <link type="boardgamemechanic" value="Dice Rolling"/>
+                <link type="boardgamedesigner" value="Klaus Teuber"/>
+                <link type="boardgamepublisher" value="KOSMOS"/>
             </item>
         </items>"""
         detail = _parse_game_detail(xml)
@@ -98,11 +102,15 @@ class TestParseGameDetail:
         assert detail.year_published == 1995
         assert detail.min_players == 3
         assert detail.max_players == 4
+        assert detail.min_playtime == 60
+        assert detail.max_playtime == 120
         assert detail.description == "Trade and build!"
         assert detail.image_url == "https://cf.geekdo-images.com/catan.jpg"
         assert detail.thumbnail_url == "https://cf.geekdo-images.com/catan_t.jpg"
         assert detail.categories == ["Economic", "Negotiation"]
         assert detail.mechanics == ["Dice Rolling"]
+        assert detail.designers == ["Klaus Teuber"]
+        assert detail.publishers == ["KOSMOS"]
 
     def test_no_item_returns_none(self):
         xml = b"<items></items>"
@@ -125,6 +133,10 @@ class TestParseGameDetail:
         assert detail.thumbnail_url is None
         assert detail.categories == []
         assert detail.mechanics == []
+        assert detail.min_playtime is None
+        assert detail.max_playtime is None
+        assert detail.designers == []
+        assert detail.publishers == []
 
     def test_html_description_is_stripped(self):
         xml = b"""<items>

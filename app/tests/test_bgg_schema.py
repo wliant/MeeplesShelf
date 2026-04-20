@@ -53,3 +53,7 @@ class TestBGGGameDetail:
         assert d.thumbnail_url is None
         assert d.categories == []
         assert d.mechanics == []
+        assert d.min_playtime is None
+        assert d.max_playtime is None
+        assert d.designers == []
+        assert d.publishers == []
