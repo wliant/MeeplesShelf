@@ -8,6 +8,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
+      APP_BGG_API_TOKEN: ${APP_BGG_API_TOKEN}
       APP_DATABASE_URL: ${APP_DATABASE_URL}
       APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
       APP_SECRET_KEY: ${APP_SECRET_KEY}
