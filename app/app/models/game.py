@@ -40,6 +40,9 @@ class Game(Base):
     scoring_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     image_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    year_published: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    min_playtime: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_playtime: Mapped[int | None] = mapped_column(Integer, nullable=True)
     bgg_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

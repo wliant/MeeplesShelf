@@ -33,6 +33,9 @@ class GameCreate(BaseModel):
     name: str
     min_players: int = 1
     max_players: int = 4
+    year_published: int | None = None
+    min_playtime: int | None = None
+    max_playtime: int | None = None
     scoring_spec: ScoringSpec | None = None
     notes: str | None = None
     description: str | None = None
@@ -45,6 +48,9 @@ class GameUpdate(BaseModel):
     name: str | None = None
     min_players: int | None = None
     max_players: int | None = None
+    year_published: int | None = None
+    min_playtime: int | None = None
+    max_playtime: int | None = None
     scoring_spec: ScoringSpec | None = None
     notes: str | None = None
     description: str | None = None
@@ -58,6 +64,9 @@ class GameRead(BaseModel):
     name: str
     min_players: int
     max_players: int
+    year_published: int | None = None
+    min_playtime: int | None = None
+    max_playtime: int | None = None
     scoring_spec: ScoringSpec | None = None
     notes: str | None = None
     description: str | None = None

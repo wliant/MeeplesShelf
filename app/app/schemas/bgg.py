@@ -18,7 +18,11 @@ class BGGGameDetail(BaseModel):
     description: str | None = None
     min_players: int | None = None
     max_players: int | None = None
+    min_playtime: int | None = None
+    max_playtime: int | None = None
     image_url: str | None = None
     thumbnail_url: str | None = None
     categories: list[str] = []
     mechanics: list[str] = []
+    designers: list[str] = []
+    publishers: list[str] = []
