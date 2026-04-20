@@ -133,6 +133,14 @@ async def bgg_import_details(
         game.min_playtime = detail.min_playtime
     if detail.max_playtime is not None:
         game.max_playtime = detail.max_playtime
+    if detail.categories:
+        game.categories = detail.categories
+    if detail.mechanics:
+        game.mechanics = detail.mechanics
+    if detail.designers:
+        game.designers = detail.designers
+    if detail.publishers:
+        game.publishers = detail.publishers
 
     await db.commit()
     await db.refresh(game)
@@ -142,4 +150,8 @@ async def bgg_import_details(
         "year_published": game.year_published,
         "min_playtime": game.min_playtime,
         "max_playtime": game.max_playtime,
+        "categories": game.categories or [],
+        "mechanics": game.mechanics or [],
+        "designers": game.designers or [],
+        "publishers": game.publishers or [],
     }
