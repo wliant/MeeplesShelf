@@ -210,6 +210,9 @@ async def create_game(
         notes=payload.notes,
         description=payload.description,
         scoring_summary=payload.scoring_summary,
+        year_published=payload.year_published,
+        min_playtime=payload.min_playtime,
+        max_playtime=payload.max_playtime,
         bgg_id=payload.bgg_id,
     )
     game.tags = tags

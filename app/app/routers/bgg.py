@@ -99,3 +99,47 @@ async def bgg_import_image(
     await db.commit()
 
     return {"image_url": storage.get_public_url(game.id, filename)}
+
+
+@router.post("/bgg/import-details/{bgg_id}", status_code=200)
+async def bgg_import_details(
+    bgg_id: int,
+    game_id: int = Query(...),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_admin),
+):
+    """Populate game fields (description, year_published, min/max playtime) from BGG."""
+    result = await db.execute(select(Game).where(Game.id == game_id))
+    game = result.scalar_one_or_none()
+    if not game:
+        raise HTTPException(404, "Game not found")
+
+    try:
+        detail = await bgg.get_game_details(bgg_id)
+    except BGGNotConfiguredError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except Exception as exc:
+        logger.warning("BGG details fetch for import failed: %s", exc)
+        raise HTTPException(502, "Could not fetch BGG game details") from exc
+
+    if not detail:
+        raise HTTPException(404, "Game not found on BGG")
+
+    if detail.description is not None:
+        game.description = detail.description
+    if detail.year_published is not None:
+        game.year_published = detail.year_published
+    if detail.min_playtime is not None:
+        game.min_playtime = detail.min_playtime
+    if detail.max_playtime is not None:
+        game.max_playtime = detail.max_playtime
+
+    await db.commit()
+    await db.refresh(game)
+
+    return {
+        "description": game.description,
+        "year_published": game.year_published,
+        "min_playtime": game.min_playtime,
+        "max_playtime": game.max_playtime,
+    }
