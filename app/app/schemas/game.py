@@ -40,6 +40,10 @@ class GameCreate(BaseModel):
     notes: str | None = None
     description: str | None = None
     scoring_summary: str | None = None
+    categories: list[str] = []
+    mechanics:  list[str] = []
+    designers:  list[str] = []
+    publishers: list[str] = []
     tag_ids: list[int] = []
     bgg_id: int | None = None
 
@@ -55,6 +59,10 @@ class GameUpdate(BaseModel):
     notes: str | None = None
     description: str | None = None
     scoring_summary: str | None = None
+    categories: list[str] | None = None
+    mechanics:  list[str] | None = None
+    designers:  list[str] | None = None
+    publishers: list[str] | None = None
     tag_ids: list[int] | None = None
     bgg_id: int | None = None
 
@@ -76,6 +84,10 @@ class GameRead(BaseModel):
     updated_at: datetime
     expansions: list[ExpansionRead] = []
     tags: list[TagRead] = []
+    categories: list[str] = []
+    mechanics:  list[str] = []
+    designers:  list[str] = []
+    publishers: list[str] = []
     bgg_id: int | None = None
     session_count: int = 0
     last_played_at: datetime | None = None

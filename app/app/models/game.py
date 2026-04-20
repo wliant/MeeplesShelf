@@ -43,6 +43,10 @@ class Game(Base):
     year_published: Mapped[int | None] = mapped_column(Integer, nullable=True)
     min_playtime: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_playtime: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    categories: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    mechanics:  Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    designers:  Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    publishers: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     bgg_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
