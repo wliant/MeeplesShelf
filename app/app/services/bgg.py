@@ -45,7 +45,9 @@ async def _throttled_get(url: str, params: dict) -> httpx.Response:
     async with _lock:
         elapsed = time.monotonic() - _last_request_time
         if elapsed < _MIN_INTERVAL:
-            await asyncio.sleep(_MIN_INTERVAL - elapsed)
+            sleep_for = _MIN_INTERVAL - elapsed
+            logger.debug("BGG rate limit: sleeping %.2fs before request to %s", sleep_for, url)
+            await asyncio.sleep(sleep_for)
         async with httpx.AsyncClient(
             timeout=_TIMEOUT, headers=_bgg_headers()
         ) as client:
@@ -81,7 +83,11 @@ def _parse_search_results(xml_bytes: bytes) -> list[BGGSearchResult]:
 
 def _parse_game_detail(xml_bytes: bytes) -> BGGGameDetail | None:
     """Parse BGG thing XML into a game detail object."""
-    root = ET.fromstring(xml_bytes)
+    try:
+        root = ET.fromstring(xml_bytes)
+    except ET.ParseError as exc:
+        logger.warning("BGG XML parse failure: %s", exc)
+        return None
     item = root.find("item")
     if item is None:
         return None
@@ -95,6 +101,9 @@ def _parse_game_detail(xml_bytes: bytes) -> BGGGameDetail | None:
     img_el = item.find("image")
     thumb_el = item.find("thumbnail")
 
+    minpt_el = item.find("minplaytime")
+    maxpt_el = item.find("maxplaytime")
+
     categories = [
         link.attrib["value"]
         for link in item.findall("link[@type='boardgamecategory']")
@@ -103,19 +112,33 @@ def _parse_game_detail(xml_bytes: bytes) -> BGGGameDetail | None:
         link.attrib["value"]
         for link in item.findall("link[@type='boardgamemechanic']")
     ]
+    designers = [
+        link.attrib["value"]
+        for link in item.findall("link[@type='boardgamedesigner']")
+    ]
+    publishers = [
+        link.attrib["value"]
+        for link in item.findall("link[@type='boardgamepublisher']")
+    ]
 
-    return BGGGameDetail(
+    detail = BGGGameDetail(
         bgg_id=int(item.attrib["id"]),
         name=name,
         year_published=int(year_el.attrib["value"]) if year_el is not None else None,
         description=_strip_html(desc_el.text if desc_el is not None else None),
         min_players=int(minp_el.attrib["value"]) if minp_el is not None else None,
         max_players=int(maxp_el.attrib["value"]) if maxp_el is not None else None,
+        min_playtime=int(minpt_el.attrib["value"]) if minpt_el is not None else None,
+        max_playtime=int(maxpt_el.attrib["value"]) if maxpt_el is not None else None,
         image_url=img_el.text.strip() if img_el is not None and img_el.text else None,
         thumbnail_url=thumb_el.text.strip() if thumb_el is not None and thumb_el.text else None,
         categories=categories,
         mechanics=mechanics,
+        designers=designers,
+        publishers=publishers,
     )
+    logger.debug("BGG parsed game detail: id=%s name=%r", detail.bgg_id, detail.name)
+    return detail
 
 
 async def search_games(query: str) -> list[BGGSearchResult]:
