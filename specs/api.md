@@ -77,6 +77,10 @@ See [scoring-system.md](./scoring-system.md) for full `ScoringField` definitions
   "scoring_spec":     "ScoringSpec | null", // optional, default null
   "rating":           "integer | null",   // optional, default null; must be 1–10 if provided
   "notes":            "string | null",    // optional, default null; free-text personal notes
+  "categories":       "string[]",         // optional, default []
+  "mechanics":        "string[]",         // optional, default []
+  "designers":        "string[]",         // optional, default []
+  "publishers":       "string[]",         // optional, default []
   "tag_ids":          "integer[]",        // optional, default []; list of existing tag IDs to assign
   "bgg_id":           "integer | null"    // optional, default null; BoardGameGeek game ID
 }
@@ -97,6 +101,10 @@ All fields optional (partial update).
   "scoring_spec":     "ScoringSpec | null",
   "rating":           "integer | null",
   "notes":            "string | null",
+  "categories":       "string[] | null",  // null = don't change
+  "mechanics":        "string[] | null",  // null = don't change
+  "designers":        "string[] | null",  // null = don't change
+  "publishers":       "string[] | null",  // null = don't change
   "tag_ids":          "integer[] | null", // null = don't change; [] = clear all tags
   "bgg_id":           "integer | null"    // optional; BoardGameGeek game ID
 }
@@ -124,6 +132,10 @@ All fields optional (partial update).
   "updated_at":       "datetime (ISO 8601, UTC)",
   "expansions":       "ExpansionRead[]",
   "tags":             "TagRead[]",
+  "categories":       "string[]",
+  "mechanics":        "string[]",
+  "designers":        "string[]",
+  "publishers":       "string[]",
   "bgg_id":           "integer | null",
   "session_count":    "integer (default 0)",
   "last_played_at":   "datetime (ISO 8601, UTC) | null",
@@ -570,8 +582,8 @@ Download a cover image from BoardGameGeek and store it in S3 for a local game.
 ### `POST /api/bgg/import-details/{bgg_id}` 🔒
 
 Fetch detailed game information from BoardGameGeek and apply it to a local game record.
-Updates `year_published`, `min_playtime`, `max_playtime`, `description`, `min_players`,
-`max_players`, and `bgg_id` on the target game.
+Updates `year_published`, `min_playtime`, `max_playtime`, `description`, `categories`,
+`mechanics`, `designers`, and `publishers` on the target game.
 
 **Auth required:** Yes (Admin)
 **Query parameters:**
@@ -580,7 +592,19 @@ Updates `year_published`, `min_playtime`, `max_playtime`, `description`, `min_pl
 |---|---|---|---|
 | `game_id` | integer | *(required)* | Local game ID to update |
 
-**Response:** `200 OK` → `GameRead`
+**Response:** `200 OK`
+```json
+{
+  "description":    "string | null",
+  "year_published": "integer | null",
+  "min_playtime":   "integer | null",
+  "max_playtime":   "integer | null",
+  "categories":     "string[]",
+  "mechanics":      "string[]",
+  "designers":      "string[]",
+  "publishers":     "string[]"
+}
+```
 
 **Errors:**
 

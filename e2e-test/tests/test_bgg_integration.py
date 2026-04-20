@@ -275,6 +275,10 @@ class TestBGGImportDetails:
         assert "min_playtime" in data
         assert "max_playtime" in data
         assert "description" in data
+        assert isinstance(data["categories"], list)
+        assert isinstance(data["mechanics"], list)
+        assert isinstance(data["designers"], list)
+        assert isinstance(data["publishers"], list)
 
         # Verify game detail reflects imported fields
         detail = client.get(f"/games/{game['id']}")
@@ -282,6 +286,10 @@ class TestBGGImportDetails:
         d = detail.json()
         assert d["year_published"] is not None
         assert d["description"] is not None
+        assert isinstance(d["categories"], list)
+        assert isinstance(d["mechanics"], list)
+        assert isinstance(d["designers"], list)
+        assert isinstance(d["publishers"], list)
 
     def test_import_details_requires_admin(self, client, game):
         resp = client.post(
