@@ -213,10 +213,10 @@ async def create_game(
         year_published=payload.year_published,
         min_playtime=payload.min_playtime,
         max_playtime=payload.max_playtime,
-        categories=payload.categories or None,
-        mechanics=payload.mechanics or None,
-        designers=payload.designers or None,
-        publishers=payload.publishers or None,
+        categories=payload.categories,
+        mechanics=payload.mechanics,
+        designers=payload.designers,
+        publishers=payload.publishers,
         bgg_id=payload.bgg_id,
     )
     game.tags = tags

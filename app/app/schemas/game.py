@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 from app.schemas.scoring import ScoringSpec
 from app.schemas.tag import TagRead
@@ -94,6 +94,19 @@ class GameRead(BaseModel):
     average_rating: float | None = None
     user_rating: int | None = None
     rating_count: int = 0
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_null_lists(cls, data: object) -> object:
+        if hasattr(data, "__dict__"):
+            for field in ("categories", "mechanics", "designers", "publishers"):
+                if getattr(data, field, None) is None:
+                    object.__setattr__(data, field, [])
+        elif isinstance(data, dict):
+            for field in ("categories", "mechanics", "designers", "publishers"):
+                if data.get(field) is None:
+                    data[field] = []
+        return data
 
     model_config = {"from_attributes": True}
 
