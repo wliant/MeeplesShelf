@@ -119,6 +119,7 @@ def session_with_context(
                 {
                     "player_id": players[0]["id"],
                     "score_data": {"points": 50, "harbor": 10},
+                    "winner": True,
                 },
                 {
                     "player_id": players[1]["id"],
@@ -183,7 +184,8 @@ class TestSessionDetailReturnsExpansions:
 
 
 class TestSessionDetailWinners:
-    def test_winner_flag_on_highest_scorer(self, session_with_context):
+    def test_winner_flag_round_trips(self, session_with_context):
+        """The session was created with DetailAlice marked as winner; verify it round-trips."""
         players = session_with_context["players"]
         winner = [p for p in players if p["winner"]]
         loser = [p for p in players if not p["winner"]]

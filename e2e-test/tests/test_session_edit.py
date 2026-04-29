@@ -104,7 +104,7 @@ def two_players(client: httpx.Client, admin_headers: dict):
 def _create_session(client, admin_headers, game, players, expansion_ids=None, score_overrides=None):
     """Helper to create a session and return the response JSON."""
     default_scores = [
-        {"player_id": players[0]["id"], "score_data": {"points": 10, "bonus": 3}},
+        {"player_id": players[0]["id"], "score_data": {"points": 10, "bonus": 3}, "winner": True},
         {"player_id": players[1]["id"], "score_data": {"points": 8, "bonus": 2}},
     ]
     if score_overrides:
@@ -345,7 +345,7 @@ class TestSessionEdit:
         sp1_orig = next(sp for sp in session["players"] if sp["player_id"] == p1["id"])
         assert sp1_orig["winner"] is True
 
-        # Update: flip scores so p2 wins
+        # Update: flip scores so p2 wins (manual winner is now explicit)
         resp = client.put(
             f"/sessions/{session_id}",
             headers=admin_headers,
@@ -353,7 +353,7 @@ class TestSessionEdit:
                 "expansion_ids": [],
                 "players": [
                     {"player_id": p1["id"], "score_data": {"points": 1, "bonus": 0}},
-                    {"player_id": p2["id"], "score_data": {"points": 50, "bonus": 10}},
+                    {"player_id": p2["id"], "score_data": {"points": 50, "bonus": 10}, "winner": True},
                 ],
             },
         )

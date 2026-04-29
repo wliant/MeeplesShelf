@@ -76,6 +76,7 @@ class SessionPlayer(Base):
     score_data: Mapped[dict] = mapped_column(JSONB, default=dict)
     total_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     winner: Mapped[bool] = mapped_column(Boolean, default=False)
+    win_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     session: Mapped["GameSession"] = relationship(back_populates="players")
     player: Mapped["Player"] = relationship(lazy="joined")

@@ -137,7 +137,8 @@ One row per player per session. Stores raw score data and the computed total.
 | `player_id` | `INTEGER` | FK → `players.id` ON DELETE CASCADE, NOT NULL | — | — |
 | `score_data` | `JSONB` | NOT NULL | `{}` (application default) | Per-field score data; structure mirrors `ScoringSpec.fields` |
 | `total_score` | `INTEGER` | NULLABLE | `NULL` | Computed by server on session creation; `NULL` if game has no `scoring_spec` |
-| `winner` | `BOOLEAN` | NOT NULL | `False` (application default) | `True` for player(s) with the highest `total_score`; `False` if no scoring spec |
+| `winner` | `BOOLEAN` | NOT NULL | `False` (application default) | Set explicitly by the client when recording the session (more than one player may be marked) |
+| `win_note` | `TEXT` | NULLABLE | `NULL` | Optional free-text reason; only stored when `winner = True` |
 
 **Table constraint:** `UNIQUE(session_id, player_id)` — a player can appear at most once per session.
 

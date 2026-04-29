@@ -81,7 +81,7 @@ def sample_data(client: httpx.Client, admin_headers: dict):
             "game_id": game["id"],
             "played_at": "2025-06-15T14:00:00",
             "players": [
-                {"player_id": players[0]["id"], "score_data": {"points": 50}},
+                {"player_id": players[0]["id"], "score_data": {"points": 50}, "winner": True},
                 {"player_id": players[1]["id"], "score_data": {"points": 30}},
             ],
         },
@@ -96,7 +96,7 @@ def sample_data(client: httpx.Client, admin_headers: dict):
             "game_id": game["id"],
             "played_at": "2025-06-20T18:00:00",
             "players": [
-                {"player_id": players[0]["id"], "score_data": {"points": 40}},
+                {"player_id": players[0]["id"], "score_data": {"points": 40}, "winner": True},
                 {"player_id": players[1]["id"], "score_data": {"points": 20}},
             ],
         },

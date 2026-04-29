@@ -47,6 +47,7 @@ const makeSession = (id: number, playerNames: string[]): GameSession => ({
     score_data: {},
     total_score: null,
     winner: false,
+    win_note: null,
     reactions: [],
   })),
   expansions: [],

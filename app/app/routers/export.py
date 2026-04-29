@@ -253,10 +253,7 @@ async def import_json(
             patches = [e.scoring_spec_patch for e in active_expansions]
             effective_spec = merge_scoring_spec(effective_spec, patches)
 
-        # Create session players and compute scores
-        session_players: list[SessionPlayer] = []
-        max_score: int | None = None
-
+        # Create session players, recompute scores, preserve winner/win_note from import
         for sp in s.players:
             new_player_id = player_id_map.get(sp.player_id)
             if new_player_id is None:
@@ -265,24 +262,17 @@ async def import_json(
             total = None
             if effective_spec:
                 total = calculate_total(effective_spec, sp.score_data)
-                if max_score is None or total > max_score:
-                    max_score = total
 
-            new_sp = SessionPlayer(
-                session_id=new_session.id,
-                player_id=new_player_id,
-                score_data=sp.score_data,
-                total_score=total,
-                winner=False,
+            db.add(
+                SessionPlayer(
+                    session_id=new_session.id,
+                    player_id=new_player_id,
+                    score_data=sp.score_data,
+                    total_score=total,
+                    winner=sp.winner,
+                    win_note=sp.win_note if sp.winner else None,
+                )
             )
-            db.add(new_sp)
-            session_players.append(new_sp)
-
-        # Determine winners
-        if max_score is not None:
-            for sp in session_players:
-                if sp.total_score is not None and sp.total_score == max_score:
-                    sp.winner = True
 
         result.sessions_created += 1
 

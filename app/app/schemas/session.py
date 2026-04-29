@@ -35,6 +35,8 @@ class PlayerReadWithCount(BaseModel):
 class SessionPlayerCreate(BaseModel):
     player_id: int
     score_data: dict[str, Any] = {}
+    winner: bool = False
+    win_note: str | None = None
 
 
 class ScoreReactionRead(BaseModel):
@@ -55,6 +57,7 @@ class SessionPlayerRead(BaseModel):
     score_data: dict[str, Any]
     total_score: int | None
     winner: bool
+    win_note: str | None = None
     reactions: list[ScoreReactionRead] = []
 
     model_config = {"from_attributes": True}

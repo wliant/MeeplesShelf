@@ -240,8 +240,6 @@ async def create_session(
     if scoring_spec and active_expansions:
         patches = [exp.scoring_spec_patch for exp in active_expansions]
         scoring_spec = merge_scoring_spec(scoring_spec, patches)
-    max_score = None
-    session_players = []
 
     for sp in payload.players:
         total = (
@@ -249,20 +247,16 @@ async def create_session(
             if scoring_spec
             else None
         )
-        session_player = SessionPlayer(
-            session_id=session.id,
-            player_id=sp.player_id,
-            score_data=sp.score_data,
-            total_score=total,
+        db.add(
+            SessionPlayer(
+                session_id=session.id,
+                player_id=sp.player_id,
+                score_data=sp.score_data,
+                total_score=total,
+                winner=sp.winner,
+                win_note=sp.win_note if sp.winner else None,
+            )
         )
-        session_players.append(session_player)
-        if total is not None and (max_score is None or total > max_score):
-            max_score = total
-
-    # Mark winner(s)
-    for sp in session_players:
-        sp.winner = sp.total_score is not None and sp.total_score == max_score
-        db.add(sp)
 
     await db.commit()
 
@@ -342,29 +336,22 @@ async def update_session(
         patches = [exp.scoring_spec_patch for exp in active_expansions]
         scoring_spec = merge_scoring_spec(scoring_spec, patches)
 
-    max_score = None
-    session_players = []
-
     for sp in payload.players:
         total = (
             calculate_total(scoring_spec, sp.score_data)
             if scoring_spec
             else None
         )
-        session_player = SessionPlayer(
-            session_id=session_id,
-            player_id=sp.player_id,
-            score_data=sp.score_data,
-            total_score=total,
+        db.add(
+            SessionPlayer(
+                session_id=session_id,
+                player_id=sp.player_id,
+                score_data=sp.score_data,
+                total_score=total,
+                winner=sp.winner,
+                win_note=sp.win_note if sp.winner else None,
+            )
         )
-        session_players.append(session_player)
-        if total is not None and (max_score is None or total > max_score):
-            max_score = total
-
-    # Mark winner(s)
-    for sp in session_players:
-        sp.winner = sp.total_score is not None and sp.total_score == max_score
-        db.add(sp)
 
     await db.commit()
 

@@ -21,7 +21,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { Game } from "../../types/game";
 import type { Player, GameSession, GameSessionCreate, GameSessionUpdate } from "../../types/session";
 import { listPlayers, createPlayer } from "../../api/sessions";
-import { mergeScoringSpec } from "../../utils/scoring";
+import { calculateTotal, mergeScoringSpec } from "../../utils/scoring";
 import ScoreSheet from "./ScoreSheet";
 
 interface Props {
@@ -53,6 +53,9 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
   const [selectedExpansionIds, setSelectedExpansionIds] = useState<Set<number>>(
     new Set()
   );
+  const [winnerIds, setWinnerIds] = useState<Set<number>>(new Set());
+  const [winNotes, setWinNotes] = useState<Record<number, string>>({});
+  const [winnersTouched, setWinnersTouched] = useState(false);
 
   const effectiveSpec = useMemo(() => {
     if (!selectedGame?.scoring_spec) return null;
@@ -74,6 +77,19 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
         setPlayedAt(new Date(editSession.played_at).toISOString().slice(0, 16));
         setNotes(editSession.notes ?? "");
         setSelectedExpansionIds(new Set(editSession.expansions.map((e) => e.id)));
+        setWinnerIds(
+          new Set(
+            editSession.players.filter((sp) => sp.winner).map((sp) => sp.player_id)
+          )
+        );
+        setWinNotes(
+          Object.fromEntries(
+            editSession.players
+              .filter((sp) => sp.winner && sp.win_note)
+              .map((sp) => [sp.player_id, sp.win_note ?? ""])
+          )
+        );
+        setWinnersTouched(true);
       } else {
         setSelectedGame(defaultGame ?? null);
         setSelectedPlayers([]);
@@ -81,6 +97,9 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
         setSelectedExpansionIds(new Set());
         setPlayedAt(new Date().toISOString().slice(0, 16));
         setNotes("");
+        setWinnerIds(new Set());
+        setWinNotes({});
+        setWinnersTouched(false);
       }
     }
   }, [open]);
@@ -106,6 +125,39 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
       setScoreData({});
     }
   }, [selectedGame]);
+
+  const autoWinnerIds = useMemo(() => {
+    if (!effectiveSpec || selectedPlayers.length === 0) return new Set<number>();
+    const totals = selectedPlayers.map(
+      (p) => [p.id, calculateTotal(effectiveSpec, scoreData[p.id] ?? {})] as const
+    );
+    const max = Math.max(...totals.map(([, t]) => t));
+    if (!Number.isFinite(max) || max <= 0) return new Set<number>();
+    return new Set(totals.filter(([, t]) => t === max).map(([id]) => id));
+  }, [effectiveSpec, selectedPlayers, scoreData]);
+
+  useEffect(() => {
+    if (!winnersTouched && autoWinnerIds.size > 0) {
+      setWinnerIds(autoWinnerIds);
+    }
+  }, [autoWinnerIds, winnersTouched]);
+
+  const toggleWinner = (playerId: number, checked: boolean) => {
+    setWinnersTouched(true);
+    setWinnerIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(playerId);
+      else next.delete(playerId);
+      return next;
+    });
+    if (!checked) {
+      setWinNotes((prev) => {
+        const next = { ...prev };
+        delete next[playerId];
+        return next;
+      });
+    }
+  };
 
   const handleAddPlayer = async () => {
     if (!newPlayerName.trim()) return;
@@ -140,10 +192,16 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
 
   const handleSubmit = () => {
     if (!selectedGame) return;
-    const playerData = selectedPlayers.map((p) => ({
-      player_id: p.id,
-      score_data: scoreData[p.id] ?? {},
-    }));
+    const playerData = selectedPlayers.map((p) => {
+      const isWinner = winnerIds.has(p.id);
+      const note = winNotes[p.id]?.trim();
+      return {
+        player_id: p.id,
+        score_data: scoreData[p.id] ?? {},
+        winner: isWinner,
+        win_note: isWinner && note ? note : null,
+      };
+    });
     if (isEditMode) {
       onSave({
         played_at: new Date(playedAt).toISOString(),
@@ -276,6 +334,46 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
                 scoreData={scoreData}
                 onChange={handleScoreChange}
               />
+            </>
+          )}
+
+          {selectedPlayers.length > 0 && (
+            <>
+              <Typography variant="subtitle1">Winners</Typography>
+              <Stack spacing={1}>
+                {selectedPlayers.map((p) => {
+                  const checked = winnerIds.has(p.id);
+                  return (
+                    <Stack
+                      key={p.id}
+                      direction={isMobile ? "column" : "row"}
+                      spacing={1}
+                      alignItems={isMobile ? "stretch" : "center"}
+                    >
+                      <FormControlLabel
+                        sx={{ minWidth: 180 }}
+                        control={
+                          <Checkbox
+                            checked={checked}
+                            onChange={(e) => toggleWinner(p.id, e.target.checked)}
+                          />
+                        }
+                        label={p.name}
+                      />
+                      <TextField
+                        size="small"
+                        placeholder="Winning reason (optional)"
+                        value={winNotes[p.id] ?? ""}
+                        onChange={(e) =>
+                          setWinNotes((prev) => ({ ...prev, [p.id]: e.target.value }))
+                        }
+                        disabled={!checked}
+                        sx={{ flex: 1 }}
+                      />
+                    </Stack>
+                  );
+                })}
+              </Stack>
             </>
           )}
 

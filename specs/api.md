@@ -197,7 +197,9 @@ All fields optional (partial update).
 ```json
 {
   "player_id":  "integer",          // required
-  "score_data": "object"            // optional, default {}
+  "score_data": "object",           // optional, default {}
+  "winner":     "boolean",          // optional, default false
+  "win_note":   "string | null"     // optional; only stored if winner=true
 }
 ```
 
@@ -234,7 +236,8 @@ Note: `game_id` is not included — the game cannot be changed after session cre
   "player":      "PlayerRead",
   "score_data":  "object",
   "total_score": "integer | null",
-  "winner":      "boolean"
+  "winner":      "boolean",
+  "win_note":    "string | null"
 }
 ```
 
@@ -764,7 +767,7 @@ All filters are combined with AND. Omitted filters are ignored. Pagination is ap
 
 ### `POST /api/sessions` 🔒
 
-Log a new game session. The server calculates `total_score` and `winner` for each player using the game's `scoring_spec`.
+Log a new game session. The server calculates `total_score` per player; `winner` is taken from the request body.
 
 **Auth required:** Yes (admin)  
 **Request body:** `GameSessionCreate`  
@@ -776,9 +779,8 @@ Log a new game session. The server calculates `total_score` and `winner` for eac
 3. Attach expansions from `expansion_ids`; validate they belong to the game (400 if mismatched).
 4. For each player in `players`:
    - Compute `total_score = calculate_total(game.scoring_spec, score_data)` if `scoring_spec` is not null; otherwise `total_score = null`.
-5. Set `winner = True` for all players whose `total_score` equals the maximum across all players.
-6. If no `scoring_spec`, all players have `total_score = null` and `winner = false`.
-7. A session can be created with zero players.
+   - Persist `winner` from the request (default `false`); store `win_note` only when `winner=true`.
+5. A session can be created with zero players, and with zero or many winners.
 
 **Errors:**
 
@@ -824,7 +826,7 @@ Update an existing session. The game cannot be changed (it is immutable once the
 5. For each player in `players`:
    - Merge the game's `scoring_spec` with active expansion patches.
    - Compute `total_score = calculate_total(merged_spec, score_data)` if spec is not null.
-6. Set `winner = True` for players with the maximum `total_score`.
+   - Persist `winner` from the request (default `false`); store `win_note` only when `winner=true`.
 
 **Errors:**
 

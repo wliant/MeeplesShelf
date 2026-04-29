@@ -91,7 +91,7 @@ def sample_data(client: httpx.Client, admin_headers: dict):
             "notes": "Export test session",
             "expansion_ids": [expansion["id"]],
             "players": [
-                {"player_id": player["id"], "score_data": {"points": 42}},
+                {"player_id": player["id"], "score_data": {"points": 42}, "winner": True},
             ],
         },
     )

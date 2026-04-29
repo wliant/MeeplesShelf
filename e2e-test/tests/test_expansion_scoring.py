@@ -122,7 +122,7 @@ class TestExpansionScoringPatches:
                 "game_id": game["id"],
                 "expansion_ids": [expansion["id"]],
                 "players": [
-                    {"player_id": p1["id"], "score_data": {"points": 10, "bonus": 3, "harbor": 5}},
+                    {"player_id": p1["id"], "score_data": {"points": 10, "bonus": 3, "harbor": 5}, "winner": True},
                     {"player_id": p2["id"], "score_data": {"points": 8, "bonus": 2, "harbor": 7}},
                 ],
             },

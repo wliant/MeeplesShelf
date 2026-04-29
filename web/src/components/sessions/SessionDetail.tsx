@@ -282,7 +282,27 @@ export default function SessionDetail({
                           {sp.total_score ?? "-"}
                         </TableCell>
                         <TableCell align="center">
-                          {sp.winner ? <EmojiEventsIcon color="primary" fontSize="small" /> : null}
+                          {sp.winner ? (
+                            <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
+                              <EmojiEventsIcon color="primary" fontSize="small" />
+                              {sp.win_note && (
+                                <Tooltip title={sp.win_note}>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{
+                                      maxWidth: 160,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {sp.win_note}
+                                  </Typography>
+                                </Tooltip>
+                              )}
+                            </Stack>
+                          ) : null}
                         </TableCell>
                         {!isMobile && (
                           <TableCell align="center">

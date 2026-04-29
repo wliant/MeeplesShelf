@@ -25,6 +25,7 @@ export interface SessionPlayer {
   score_data: Record<string, unknown>;
   total_score: number | null;
   winner: boolean;
+  win_note: string | null;
   reactions: ScoreReaction[];
 }
 
@@ -67,6 +68,8 @@ export interface GameSession {
 export interface SessionPlayerCreate {
   player_id: number;
   score_data: Record<string, unknown>;
+  winner?: boolean;
+  win_note?: string | null;
 }
 
 export interface GameSessionCreate {
