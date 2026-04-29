@@ -68,7 +68,13 @@ _TINY_PNG = bytes.fromhex(
 
 
 def _fetch_image(url: str) -> httpx.Response:
-    """Fetch an image by its absolute URL (served by the FastAPI proxy endpoint)."""
+    """Fetch an image by URL. URLs returned by the API are relative (e.g. `/api/games/1/image`),
+    so we resolve them against the API base."""
+    if url.startswith("/"):
+        # Strip leading "/api" because BASE_URL already ends with "/api".
+        suffix = url[len("/api"):] if url.startswith("/api/") else url
+        with httpx.Client(base_url=BASE_URL, timeout=10) as c:
+            return c.get(suffix)
     with httpx.Client(timeout=10) as c:
         return c.get(url)
 
@@ -111,9 +117,7 @@ class TestImageUpload:
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["image_url"] is not None
-        assert data["image_url"].startswith("http")
-        assert data["image_url"].endswith(f"/api/games/{game['id']}/image")
+        assert data["image_url"] == f"/api/games/{game['id']}/image"
 
     def test_upload_png(self, client, admin_headers, game):
         resp = client.post(
@@ -122,7 +126,7 @@ class TestImageUpload:
             files={"file": ("cover.png", _TINY_PNG, "image/png")},
         )
         assert resp.status_code == 200
-        assert resp.json()["image_url"].endswith(f"/api/games/{game['id']}/image")
+        assert resp.json()["image_url"] == f"/api/games/{game['id']}/image"
 
     def test_upload_requires_admin(self, client, game):
         resp = client.post(

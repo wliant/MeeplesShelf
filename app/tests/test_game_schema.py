@@ -101,8 +101,8 @@ class TestGameReadSessionFields:
         assert g.image_url is None
 
     def test_image_url_accepts_string(self):
-        g = GameRead(**self._BASE, image_url="http://localhost:8000/api/games/1/image")
-        assert g.image_url == "http://localhost:8000/api/games/1/image"
+        g = GameRead(**self._BASE, image_url="/api/games/1/image")
+        assert g.image_url == "/api/games/1/image"
 
     def test_bgg_id_defaults_to_none(self):
         g = GameRead(**self._BASE)

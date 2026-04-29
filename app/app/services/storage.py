@@ -31,8 +31,8 @@ def _object_key(game_id: int, filename: str) -> str:
 
 
 def get_public_url(game_id: int) -> str:
-    """Construct the in-app proxy URL for a game image."""
-    return f"{settings.public_url}/api/games/{game_id}/image"
+    """Construct the in-app proxy URL for a game image (relative to the app origin)."""
+    return f"/api/games/{game_id}/image"
 
 
 async def upload_image(
@@ -77,8 +77,8 @@ def _session_object_key(session_id: int, filename: str) -> str:
 
 
 def get_session_image_url(session_id: int, image_id: int) -> str:
-    """Construct the in-app proxy URL for a session image."""
-    return f"{settings.public_url}/api/sessions/{session_id}/images/{image_id}"
+    """Construct the in-app proxy URL for a session image (relative to the app origin)."""
+    return f"/api/sessions/{session_id}/images/{image_id}"
 
 
 async def upload_session_image(
