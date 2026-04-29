@@ -1,6 +1,5 @@
 """S3-compatible object storage for game cover images."""
 
-import json
 import logging
 
 from aiobotocore.session import get_session
@@ -11,6 +10,10 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 _S3_SESSION = get_session()
+
+
+class ImageNotFound(Exception):
+    """Raised when an image is not present in object storage."""
 
 
 def _get_client():
@@ -27,16 +30,15 @@ def _object_key(game_id: int, filename: str) -> str:
     return f"games/{game_id}/{filename}"
 
 
-def get_public_url(game_id: int, filename: str) -> str:
-    """Construct the public URL for a game image."""
-    key = _object_key(game_id, filename)
-    return f"{settings.s3_public_url}/{settings.s3_bucket}/{key}"
+def get_public_url(game_id: int) -> str:
+    """Construct the in-app proxy URL for a game image."""
+    return f"{settings.public_url}/api/games/{game_id}/image"
 
 
 async def upload_image(
     game_id: int, filename: str, contents: bytes, content_type: str
 ) -> str:
-    """Upload an image to S3 and return its public URL."""
+    """Upload an image to S3 and return its in-app proxy URL."""
     key = _object_key(game_id, filename)
     async with _get_client() as client:
         await client.put_object(
@@ -45,7 +47,7 @@ async def upload_image(
             Body=contents,
             ContentType=content_type,
         )
-    return get_public_url(game_id, filename)
+    return get_public_url(game_id)
 
 
 async def delete_image(game_id: int, filename: str) -> None:
@@ -55,20 +57,34 @@ async def delete_image(game_id: int, filename: str) -> None:
         await client.delete_object(Bucket=settings.s3_bucket, Key=key)
 
 
+async def fetch_image(game_id: int, filename: str) -> tuple[bytes, str | None]:
+    """Read a game image from S3, returning (body, content_type)."""
+    key = _object_key(game_id, filename)
+    async with _get_client() as client:
+        try:
+            obj = await client.get_object(Bucket=settings.s3_bucket, Key=key)
+        except ClientError as e:
+            code = e.response.get("Error", {}).get("Code")
+            if code in ("NoSuchKey", "404"):
+                raise ImageNotFound(key) from e
+            raise
+        body = await obj["Body"].read()
+        return body, obj.get("ContentType")
+
+
 def _session_object_key(session_id: int, filename: str) -> str:
     return f"sessions/{session_id}/{filename}"
 
 
-def get_session_image_url(session_id: int, filename: str) -> str:
-    """Construct the public URL for a session image."""
-    key = _session_object_key(session_id, filename)
-    return f"{settings.s3_public_url}/{settings.s3_bucket}/{key}"
+def get_session_image_url(session_id: int, image_id: int) -> str:
+    """Construct the in-app proxy URL for a session image."""
+    return f"{settings.public_url}/api/sessions/{session_id}/images/{image_id}"
 
 
 async def upload_session_image(
     session_id: int, filename: str, contents: bytes, content_type: str
-) -> str:
-    """Upload a session image to S3 and return its public URL."""
+) -> None:
+    """Upload a session image to S3."""
     key = _session_object_key(session_id, filename)
     async with _get_client() as client:
         await client.put_object(
@@ -77,7 +93,6 @@ async def upload_session_image(
             Body=contents,
             ContentType=content_type,
         )
-    return get_session_image_url(session_id, filename)
 
 
 async def delete_session_image(session_id: int, filename: str) -> None:
@@ -87,8 +102,25 @@ async def delete_session_image(session_id: int, filename: str) -> None:
         await client.delete_object(Bucket=settings.s3_bucket, Key=key)
 
 
+async def fetch_session_image(
+    session_id: int, filename: str
+) -> tuple[bytes, str | None]:
+    """Read a session image from S3, returning (body, content_type)."""
+    key = _session_object_key(session_id, filename)
+    async with _get_client() as client:
+        try:
+            obj = await client.get_object(Bucket=settings.s3_bucket, Key=key)
+        except ClientError as e:
+            code = e.response.get("Error", {}).get("Code")
+            if code in ("NoSuchKey", "404"):
+                raise ImageNotFound(key) from e
+            raise
+        body = await obj["Body"].read()
+        return body, obj.get("ContentType")
+
+
 async def ensure_bucket() -> None:
-    """Create the bucket if it doesn't exist and set public-read policy."""
+    """Create the bucket if it doesn't exist. Bucket stays private — images are served via the app."""
     async with _get_client() as client:
         try:
             await client.head_bucket(Bucket=settings.s3_bucket)
@@ -96,18 +128,3 @@ async def ensure_bucket() -> None:
         except ClientError:
             await client.create_bucket(Bucket=settings.s3_bucket)
             logger.info("Created S3 bucket '%s'", settings.s3_bucket)
-
-        policy = json.dumps(
-            {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Principal": "*",
-                        "Action": "s3:GetObject",
-                        "Resource": f"arn:aws:s3:::{settings.s3_bucket}/*",
-                    }
-                ],
-            }
-        )
-        await client.put_bucket_policy(Bucket=settings.s3_bucket, Policy=policy)

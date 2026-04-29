@@ -68,7 +68,7 @@ _TINY_PNG = bytes.fromhex(
 
 
 def _fetch_image(url: str) -> httpx.Response:
-    """Fetch an image by its absolute URL (served by MinIO)."""
+    """Fetch an image by its absolute URL (served by the FastAPI proxy endpoint)."""
     with httpx.Client(timeout=10) as c:
         return c.get(url)
 
@@ -113,7 +113,7 @@ class TestImageUpload:
         data = resp.json()
         assert data["image_url"] is not None
         assert data["image_url"].startswith("http")
-        assert data["image_url"].endswith(".jpg")
+        assert data["image_url"].endswith(f"/api/games/{game['id']}/image")
 
     def test_upload_png(self, client, admin_headers, game):
         resp = client.post(
@@ -122,7 +122,7 @@ class TestImageUpload:
             files={"file": ("cover.png", _TINY_PNG, "image/png")},
         )
         assert resp.status_code == 200
-        assert resp.json()["image_url"].endswith(".png")
+        assert resp.json()["image_url"].endswith(f"/api/games/{game['id']}/image")
 
     def test_upload_requires_admin(self, client, game):
         resp = client.post(
@@ -191,7 +191,6 @@ class TestImageServing:
             files={"file": ("cover.jpg", _TINY_JPEG, "image/jpeg")},
         )
         image_url = resp.json()["image_url"]
-        # Fetch without any auth headers — S3 bucket has public-read policy
         img_resp = _fetch_image(image_url)
         assert img_resp.status_code == 200
 
@@ -204,6 +203,7 @@ class TestImageReplace:
             files={"file": ("cover.jpg", _TINY_JPEG, "image/jpeg")},
         )
         url1 = resp1.json()["image_url"]
+        bytes1 = _fetch_image(url1).content
 
         resp2 = client.post(
             f"/games/{game['id']}/image",
@@ -211,8 +211,11 @@ class TestImageReplace:
             files={"file": ("cover.png", _TINY_PNG, "image/png")},
         )
         url2 = resp2.json()["image_url"]
-        assert url1 != url2
-        assert url2.endswith(".png")
+        # URL is filename-agnostic now (`/api/games/{id}/image`); bytes change instead.
+        assert url1 == url2
+        bytes2 = _fetch_image(url2).content
+        assert bytes1 != bytes2
+        assert _fetch_image(url2).headers.get("content-type", "").startswith("image/png")
 
 
 class TestImageDelete:

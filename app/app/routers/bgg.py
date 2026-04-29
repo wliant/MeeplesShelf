@@ -98,7 +98,7 @@ async def bgg_import_image(
     game.image_filename = filename
     await db.commit()
 
-    return {"image_url": storage.get_public_url(game.id, filename)}
+    return {"image_url": storage.get_public_url(game.id)}
 
 
 @router.post("/bgg/import-details/{bgg_id}", status_code=200)

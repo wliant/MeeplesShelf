@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -50,7 +50,7 @@ def _session_load_options():
 def _populate_image_urls(session: GameSession) -> GameSession:
     """Set image_url on each SessionImage for serialization."""
     for img in session.images:
-        img.image_url = storage.get_session_image_url(img.session_id, img.filename)
+        img.image_url = storage.get_session_image_url(img.session_id, img.id)
     return session
 
 
@@ -475,7 +475,7 @@ async def upload_session_image(
     db.add(img)
     await db.commit()
     await db.refresh(img, ["player"])
-    img.image_url = storage.get_session_image_url(session_id, filename)
+    img.image_url = storage.get_session_image_url(session_id, img.id)
     return img
 
 
@@ -511,6 +511,32 @@ async def delete_session_image(
     await storage.delete_session_image(session_id, img.filename)
     await db.delete(img)
     await db.commit()
+
+
+@router.get("/sessions/{session_id}/images/{image_id}")
+async def get_session_image_bytes(
+    session_id: int,
+    image_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(SessionImage).where(
+            SessionImage.id == image_id,
+            SessionImage.session_id == session_id,
+        )
+    )
+    img = result.scalar_one_or_none()
+    if not img:
+        raise HTTPException(404, "Image not found")
+    try:
+        body, content_type = await storage.fetch_session_image(session_id, img.filename)
+    except storage.ImageNotFound as exc:
+        raise HTTPException(404, "Image not found") from exc
+    return Response(
+        content=body,
+        media_type=content_type or img.content_type or "application/octet-stream",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
 
 
 # --- Score Reactions ---

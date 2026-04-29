@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -96,7 +96,7 @@ def _enrich_game(
     game_read.session_count = count
     game_read.last_played_at = last
     if game.image_filename:
-        game_read.image_url = storage.get_public_url(game.id, game.image_filename)
+        game_read.image_url = storage.get_public_url(game.id)
     if rating_stats:
         avg, rcount, user_r = rating_stats.get(game.id, (None, 0, None))
         game_read.average_rating = avg
@@ -372,6 +372,26 @@ async def delete_game_image(
     await storage.delete_image(game.id, game.image_filename)
     game.image_filename = None
     await db.commit()
+
+
+@router.get("/games/{game_id}/image")
+async def get_game_image(
+    game_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Game).where(Game.id == game_id))
+    game = result.scalar_one_or_none()
+    if not game or not game.image_filename:
+        raise HTTPException(404, "Image not found")
+    try:
+        body, content_type = await storage.fetch_image(game.id, game.image_filename)
+    except storage.ImageNotFound as exc:
+        raise HTTPException(404, "Image not found") from exc
+    return Response(
+        content=body,
+        media_type=content_type or "application/octet-stream",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
 
 
 # --- Expansions ---
