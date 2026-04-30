@@ -34,7 +34,6 @@ import { extractErrorMessage } from "../../utils/errors";
 import ExpansionList from "./ExpansionList";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 interface Props {
   game: Game;
@@ -74,10 +73,6 @@ export default function GameCard({ game, onEdit, onDelete, onRefresh, isAdmin, o
 
     if (!ALLOWED_TYPES.has(file.type)) {
       showSnackbar("Unsupported file type. Allowed: JPEG, PNG, WebP", "error");
-      return;
-    }
-    if (file.size > MAX_SIZE) {
-      showSnackbar("File too large. Maximum size: 5MB", "error");
       return;
     }
 

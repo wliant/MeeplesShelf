@@ -25,7 +25,6 @@ from app.services.seed import SEED_GAMES
 
 _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _CONTENT_TYPE_EXT = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
-_MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 router = APIRouter(tags=["games"])
 
@@ -324,8 +323,6 @@ async def upload_game_image(
         raise HTTPException(400, "Unsupported file type. Allowed: JPEG, PNG, WebP")
 
     contents = await file.read()
-    if len(contents) > _MAX_IMAGE_SIZE:
-        raise HTTPException(400, "File too large. Maximum size: 5MB")
 
     result = await db.execute(
         select(Game)

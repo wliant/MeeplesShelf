@@ -381,7 +381,6 @@ Upload or replace a cover image for a game. Accepts multipart form-data with a s
 **Path parameter:** `game_id: integer`  
 **Request body:** multipart form-data with `file` field  
 **Allowed content types:** `image/jpeg`, `image/png`, `image/webp`  
-**Maximum file size:** 5 MB  
 **Response:** `200 OK` → `GameRead` (with `image_url` populated)
 
 **Errors:**
@@ -389,7 +388,6 @@ Upload or replace a cover image for a game. Accepts multipart form-data with a s
 | Status | `detail` | Condition |
 |---|---|---|
 | `400` | `"Unsupported file type. Allowed: JPEG, PNG, WebP"` | Content type not in allowed set |
-| `400` | `"File too large. Maximum size: 5MB"` | File exceeds 5 MB |
 | `401` | — | Missing or invalid token |
 | `403` | — | Not admin |
 | `404` | `"Game not found"` | No game with that ID |

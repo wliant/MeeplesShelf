@@ -177,7 +177,7 @@ Renders one `GameCard` per game.
   - Upload icon button (`PhotoCamera`) with white semi-transparent background → opens a hidden file input (`accept="image/jpeg,image/png,image/webp"`)
   - Remove icon button (`Close`, only when `game.image_url` is not null) → calls `DELETE /api/games/{id}/image` then `onRefresh()`
 - Upload loading overlay: `<CircularProgress>` centered over the image area with translucent white background (shown during upload/delete)
-- Client-side validation: file type must be JPEG/PNG/WebP, max 5 MB; errors shown via snackbar
+- Client-side validation: file type must be JPEG/PNG/WebP; errors shown via snackbar
 - On successful upload: calls `POST /api/games/{id}/image` (multipart form-data) then `onRefresh()`
 
 **Layout (always visible):**

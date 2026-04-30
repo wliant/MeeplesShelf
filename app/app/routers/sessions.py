@@ -28,7 +28,6 @@ from app.services.scoring import calculate_total, merge_scoring_spec
 
 _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _CONTENT_TYPE_EXT = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
-_MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 router = APIRouter(tags=["sessions"])
 
@@ -436,8 +435,6 @@ async def upload_session_image(
         raise HTTPException(400, "Unsupported file type. Allowed: JPEG, PNG, WebP")
 
     contents = await file.read()
-    if len(contents) > _MAX_IMAGE_SIZE:
-        raise HTTPException(400, "File too large. Maximum size: 5MB")
 
     result = await db.execute(
         select(GameSession).where(GameSession.id == session_id)
