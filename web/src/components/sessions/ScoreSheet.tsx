@@ -1,11 +1,14 @@
 import {
+  Box,
+  Divider,
+  Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Typography,
   useMediaQuery,
   useTheme,
@@ -31,6 +34,42 @@ export default function ScoreSheet({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  if (isMobile) {
+    return (
+      <Stack spacing={1.5}>
+        {players.map((p) => (
+          <Paper key={p.id} variant="outlined" sx={{ p: 1.5 }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="baseline"
+              sx={{ mb: 1 }}
+            >
+              <Typography variant="subtitle1" fontWeight="bold">
+                {p.name}
+              </Typography>
+              <Typography variant="h6">
+                {calculateTotal(spec, scoreData[p.id] ?? {})}
+              </Typography>
+            </Stack>
+            <Divider sx={{ mb: 1.5 }} />
+            <Stack spacing={1.5}>
+              {spec.fields.map((field) => (
+                <Box key={field.id}>
+                  <ScoreFieldRenderer
+                    field={field}
+                    value={scoreData[p.id]?.[field.id]}
+                    onChange={(val) => onChange(p.id, field.id, val)}
+                  />
+                </Box>
+              ))}
+            </Stack>
+          </Paper>
+        ))}
+      </Stack>
+    );
+  }
+
   return (
     <TableContainer component={Paper} variant="outlined">
       <Table size="small">
@@ -47,11 +86,11 @@ export default function ScoreSheet({
         <TableBody>
           {spec.fields.map((field) => (
             <TableRow key={field.id}>
-              <TableCell sx={{ minWidth: isMobile ? 100 : 140 }}>
+              <TableCell sx={{ minWidth: 140 }}>
                 <Typography variant="body2">{field.label}</Typography>
               </TableCell>
               {players.map((p) => (
-                <TableCell key={p.id} align="center" sx={{ minWidth: isMobile ? 80 : 140 }}>
+                <TableCell key={p.id} align="center" sx={{ minWidth: 140 }}>
                   <ScoreFieldRenderer
                     field={field}
                     value={scoreData[p.id]?.[field.id]}

@@ -206,7 +206,7 @@ export default function SessionsPage() {
   };
 
   return (
-    <Box sx={{ pb: { xs: 10, sm: 0 } }}>
+    <Box sx={{ pb: { xs: "calc(80px + env(safe-area-inset-bottom))", sm: 0 } }}>
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -310,7 +310,11 @@ export default function SessionsPage() {
         <Fab
           color="primary"
           aria-label="Log new session"
-          sx={{ position: "fixed", bottom: 24, right: 24 }}
+          sx={{
+            position: "fixed",
+            bottom: { xs: "calc(24px + env(safe-area-inset-bottom))", sm: 24 },
+            right: { xs: "calc(24px + env(safe-area-inset-right))", sm: 24 },
+          }}
           onClick={() => setFormOpen(true)}
         >
           <AddIcon />

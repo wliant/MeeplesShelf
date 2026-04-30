@@ -38,8 +38,9 @@ export default function MostPlayedGames({ data }: Props) {
   const displayData = showAll ? data : data.filter((g) => g.times_played > 0);
   const { sorted, orderBy, order, onSort } = useSortableTable(displayData, "times_played", "desc");
 
-  const top10 = displayData.slice(0, 10);
-  const chartData = top10.map((g) => ({
+  const chartLimit = isMobile ? 5 : 10;
+  const chartTop = displayData.slice(0, chartLimit);
+  const chartData = chartTop.map((g) => ({
     name: g.game_name,
     timesPlayed: g.times_played,
   }));
@@ -55,12 +56,12 @@ export default function MostPlayedGames({ data }: Props) {
         />
       </Stack>
 
-      {!isMobile && top10.length > 0 && (
-        <ResponsiveContainer width="100%" height={250}>
+      {chartTop.length > 0 && (
+        <ResponsiveContainer width="100%" height={isMobile ? 200 : 250}>
           <BarChart data={chartData} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" allowDecimals={false} />
-            <YAxis type="category" dataKey="name" width={120} />
+            <YAxis type="category" dataKey="name" width={isMobile ? 80 : 120} />
             <Tooltip
               formatter={(value) => [value, "Sessions"]}
             />

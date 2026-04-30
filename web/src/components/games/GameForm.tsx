@@ -320,13 +320,14 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
             onChange={(e) => setName(e.target.value)}
             required
           />
-          <Stack direction="row" spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Min Players"
               type="number"
               value={minPlayers}
               onChange={(e) => setMinPlayers(Number(e.target.value))}
               slotProps={{ htmlInput: { min: 1 } }}
+              sx={{ flex: 1 }}
             />
             <TextField
               label="Max Players"
@@ -334,6 +335,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
               value={maxPlayers}
               onChange={(e) => setMaxPlayers(Number(e.target.value))}
               slotProps={{ htmlInput: { min: 1 } }}
+              sx={{ flex: 1 }}
             />
           </Stack>
 
@@ -488,9 +490,10 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
                     {field.variants.map((v, vi) => (
                       <Stack
                         key={vi}
-                        direction="row"
+                        direction={{ xs: "column", sm: "row" }}
                         spacing={1}
                         sx={{ mt: 0.5 }}
+                        alignItems={{ sm: "center" }}
                       >
                         <TextField
                           size="small"
@@ -501,6 +504,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
                             variants[vi] = { ...v, id: e.target.value };
                             updateField(i, { ...field, variants });
                           }}
+                          sx={{ flex: 1 }}
                         />
                         <TextField
                           size="small"
@@ -511,6 +515,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
                             variants[vi] = { ...v, label: e.target.value };
                             updateField(i, { ...field, variants });
                           }}
+                          sx={{ flex: 1 }}
                         />
                         <TextField
                           size="small"
@@ -525,7 +530,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
                             };
                             updateField(i, { ...field, variants });
                           }}
-                          sx={{ width: 80 }}
+                          sx={{ width: { xs: "100%", sm: 100 } }}
                         />
                         <Tooltip title="Delete variant">
                           <IconButton
@@ -537,6 +542,7 @@ export default function GameForm({ open, game, onClose, onSave, saving = false }
                               );
                               updateField(i, { ...field, variants });
                             }}
+                            sx={{ alignSelf: { xs: "flex-end", sm: "auto" } }}
                           >
                             <DeleteIcon fontSize="small" />
                           </IconButton>

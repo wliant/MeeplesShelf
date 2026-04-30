@@ -41,8 +41,9 @@ export default function PlayerLeaderboard({ data }: Props) {
   const displayData = showAll ? data : data.filter((p) => p.sessions_played > 0);
   const { sorted, orderBy, order, onSort } = useSortableTable(displayData, "win_rate", "desc");
 
-  const top10 = displayData.slice(0, 10);
-  const chartData = top10.map((p) => ({
+  const chartLimit = isMobile ? 5 : 10;
+  const chartTop = displayData.slice(0, chartLimit);
+  const chartData = chartTop.map((p) => ({
     name: p.player_name,
     winRate: Math.round(p.win_rate * 1000) / 10,
   }));
@@ -58,21 +59,37 @@ export default function PlayerLeaderboard({ data }: Props) {
         />
       </Stack>
 
-      {!isMobile && top10.length > 0 && (
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis unit="%" domain={[0, 100]} />
-            <Tooltip
-              formatter={(value) => [`${value}%`, "Win Rate"]}
-            />
-            <Bar
-              dataKey="winRate"
-              fill={theme.palette.primary.main}
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
+      {chartTop.length > 0 && (
+        <ResponsiveContainer width="100%" height={isMobile ? 200 : 250}>
+          {isMobile ? (
+            <BarChart data={chartData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" unit="%" domain={[0, 100]} />
+              <YAxis type="category" dataKey="name" width={80} />
+              <Tooltip
+                formatter={(value) => [`${value}%`, "Win Rate"]}
+              />
+              <Bar
+                dataKey="winRate"
+                fill={theme.palette.primary.main}
+                radius={[0, 4, 4, 0]}
+              />
+            </BarChart>
+          ) : (
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis unit="%" domain={[0, 100]} />
+              <Tooltip
+                formatter={(value) => [`${value}%`, "Win Rate"]}
+              />
+              <Bar
+                dataKey="winRate"
+                fill={theme.palette.primary.main}
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          )}
         </ResponsiveContainer>
       )}
 

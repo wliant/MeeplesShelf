@@ -113,7 +113,7 @@ export default function PlayerProfilePage() {
     },
   ];
 
-  const gameChartData = stats.games.slice(0, 10).map((g) => ({
+  const gameChartData = stats.games.slice(0, isMobile ? 5 : 10).map((g) => ({
     name: g.game_name,
     timesPlayed: g.times_played,
   }));
@@ -169,12 +169,12 @@ export default function PlayerProfilePage() {
               Games Breakdown
             </Typography>
 
-            {!isMobile && gameChartData.length > 0 && (
-              <ResponsiveContainer width="100%" height={250}>
+            {gameChartData.length > 0 && (
+              <ResponsiveContainer width="100%" height={isMobile ? 200 : 250}>
                 <BarChart data={gameChartData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" allowDecimals={false} />
-                  <YAxis type="category" dataKey="name" width={120} />
+                  <YAxis type="category" dataKey="name" width={isMobile ? 80 : 120} />
                   <Tooltip formatter={(value) => [value, "Sessions"]} />
                   <Bar
                     dataKey="timesPlayed"
@@ -185,7 +185,7 @@ export default function PlayerProfilePage() {
               </ResponsiveContainer>
             )}
 
-            <TableContainer component={Paper} variant="outlined" sx={{ mt: gameChartData.length > 0 && !isMobile ? 2 : 0 }}>
+            <TableContainer component={Paper} variant="outlined" sx={{ mt: gameChartData.length > 0 ? 2 : 0 }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
