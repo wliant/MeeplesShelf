@@ -14,6 +14,7 @@ import {
   EmojiEvents as EmojiEventsIcon,
 } from "@mui/icons-material";
 import type { GameSession } from "../../types/session";
+import { formatDateTime } from "../../utils/datetime";
 
 interface Props {
   session: GameSession;
@@ -47,7 +48,7 @@ export default function SessionCard({
                 <Chip label="Sealed" size="small" color="warning" variant="outlined" sx={{ height: 20, fontSize: "0.65rem" }} />
               )}
               <Typography variant="body2" color="text.secondary">
-                {new Date(session.played_at).toLocaleDateString()}
+                {formatDateTime(session.played_at)}
               </Typography>
             </Stack>
           </Stack>

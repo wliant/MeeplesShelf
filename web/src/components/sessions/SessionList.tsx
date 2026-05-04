@@ -25,6 +25,7 @@ import {
 } from "@mui/icons-material";
 import type { GameSession } from "../../types/session";
 import useSortableTable from "../../hooks/useSortableTable";
+import { formatDateTime } from "../../utils/datetime";
 import SessionCard from "./SessionCard";
 
 interface Props {
@@ -115,7 +116,7 @@ export default function SessionList({
                   onClick={() => onSelect(s)}
                 >
                   <TableCell>
-                    {new Date(s.played_at).toLocaleDateString()}
+                    {formatDateTime(s.played_at)}
                   </TableCell>
                   <TableCell>{s.game.name}</TableCell>
                   <TableCell>

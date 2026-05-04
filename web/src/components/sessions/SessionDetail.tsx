@@ -35,7 +35,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import type { Game } from "../../types/game";
 import type { GameSession } from "../../types/session";
-import { formatRelativeTime } from "../../utils/stats";
+import { formatDateTime, formatRelativeTime } from "../../utils/datetime";
 import ReactionPicker from "./ReactionPicker";
 
 interface Props {
@@ -141,7 +141,7 @@ export default function SessionDetail({
               </MuiLink>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Typography variant="body2" color="text.secondary">
-                  {new Date(session.played_at).toLocaleDateString()}
+                  {formatDateTime(session.played_at)}
                   {" \u2014 "}
                   {formatRelativeTime(session.played_at)}
                 </Typography>

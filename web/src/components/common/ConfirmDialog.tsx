@@ -7,6 +7,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
+import { formatDateTime } from "../../utils/datetime";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -59,8 +60,7 @@ export function buildSessionDeleteMessage(
   gameName: string,
   playedAt: string,
 ): string {
-  const date = new Date(playedAt).toLocaleDateString();
-  return `Delete the ${gameName} session from ${date}? This cannot be undone.`;
+  return `Delete the ${gameName} session from ${formatDateTime(playedAt)}? This cannot be undone.`;
 }
 
 export function buildExpansionDeleteMessage(
