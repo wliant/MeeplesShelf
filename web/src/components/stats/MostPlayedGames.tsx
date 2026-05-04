@@ -26,6 +26,7 @@ import {
 } from "recharts";
 import type { GameStats } from "../../types/stats";
 import useSortableTable from "../../hooks/useSortableTable";
+import { formatLastPlayed } from "../../utils/datetime";
 
 interface Props {
   data: GameStats[];
@@ -107,9 +108,7 @@ export default function MostPlayedGames({ data }: Props) {
                 <TableCell align="right">{g.times_played}</TableCell>
                 <TableCell align="right">{g.unique_players}</TableCell>
                 <TableCell align="right">
-                  {g.last_played
-                    ? new Date(g.last_played).toLocaleDateString()
-                    : "Never"}
+                  {formatLastPlayed(g.last_played)}
                 </TableCell>
               </TableRow>
             ))}

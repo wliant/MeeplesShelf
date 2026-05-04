@@ -39,6 +39,7 @@ import {
 import { getPlayerProfileStats } from "../api/sessions";
 import type { PlayerProfileStats } from "../types/stats";
 import { formatScore, formatWinRate } from "../utils/stats";
+import { formatDateTime } from "../utils/datetime";
 import ActivityChart from "../components/stats/ActivityChart";
 
 export default function PlayerProfilePage() {
@@ -257,7 +258,7 @@ export default function PlayerProfilePage() {
                             {s.game_name}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            {new Date(s.played_at).toLocaleDateString()}
+                            {formatDateTime(s.played_at)}
                           </Typography>
                         </Box>
                         <Stack direction="row" spacing={1} alignItems="center">
@@ -302,7 +303,7 @@ export default function PlayerProfilePage() {
                       <TableRow key={s.session_id}>
                         <TableCell>{s.game_name}</TableCell>
                         <TableCell>
-                          {new Date(s.played_at).toLocaleDateString()}
+                          {formatDateTime(s.played_at)}
                         </TableCell>
                         <TableCell align="right">
                           {formatScore(s.total_score)}

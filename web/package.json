@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "TZ=America/New_York vitest run",
+    "test:watch": "TZ=America/New_York vitest"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

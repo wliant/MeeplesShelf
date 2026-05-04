@@ -22,6 +22,10 @@ import type { Game } from "../../types/game";
 import type { Player, GameSession, GameSessionCreate, GameSessionUpdate } from "../../types/session";
 import { listPlayers, createPlayer } from "../../api/sessions";
 import { calculateTotal, mergeScoringSpec } from "../../utils/scoring";
+import {
+  toLocalDateTimeInput,
+  fromLocalDateTimeInput,
+} from "../../utils/datetime";
 import ScoreSheet from "./ScoreSheet";
 
 interface Props {
@@ -46,7 +50,7 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
     Record<number, Record<string, unknown>>
   >({});
   const [playedAt, setPlayedAt] = useState(
-    new Date().toISOString().slice(0, 16)
+    toLocalDateTimeInput(new Date().toISOString())
   );
   const [notes, setNotes] = useState("");
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -74,7 +78,7 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
       if (editSession) {
         const game = games.find((g) => g.id === editSession.game_id) ?? null;
         setSelectedGame(game);
-        setPlayedAt(new Date(editSession.played_at).toISOString().slice(0, 16));
+        setPlayedAt(toLocalDateTimeInput(editSession.played_at));
         setNotes(editSession.notes ?? "");
         setSelectedExpansionIds(new Set(editSession.expansions.map((e) => e.id)));
         setWinnerIds(
@@ -95,7 +99,7 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
         setSelectedPlayers([]);
         setScoreData({});
         setSelectedExpansionIds(new Set());
-        setPlayedAt(new Date().toISOString().slice(0, 16));
+        setPlayedAt(toLocalDateTimeInput(new Date().toISOString()));
         setNotes("");
         setWinnerIds(new Set());
         setWinNotes({});
@@ -204,7 +208,7 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
     });
     if (isEditMode) {
       onSave({
-        played_at: new Date(playedAt).toISOString(),
+        played_at: fromLocalDateTimeInput(playedAt),
         notes: notes || undefined,
         expansion_ids: [...selectedExpansionIds],
         players: playerData,
@@ -212,7 +216,7 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
     } else {
       onSave({
         game_id: selectedGame.id,
-        played_at: new Date(playedAt).toISOString(),
+        played_at: fromLocalDateTimeInput(playedAt),
         notes: notes || undefined,
         expansion_ids: [...selectedExpansionIds],
         players: playerData,
