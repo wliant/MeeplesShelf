@@ -20,9 +20,9 @@ beforeAll(() => {
 
 describe("formatDateTime", () => {
   it("formats a UTC ISO string in local time", () => {
-    // 20:30 UTC on 2026-05-04 is 16:30 EDT.
+    // 20:30 UTC on 2026-05-04 is 16:30 EDT. Day/month order varies by locale.
     const result = formatDateTime("2026-05-04T20:30:00Z");
-    expect(result).toMatch(/5\/4\/26/);
+    expect(result).toMatch(/(?:5\/4|4\/5)\/26/);
     expect(result).toMatch(/4:30/);
   });
 
@@ -46,7 +46,7 @@ describe("formatDateTime", () => {
 describe("formatDate", () => {
   it("formats a UTC ISO string as a localized date", () => {
     const result = formatDate("2026-05-04T20:30:00Z");
-    expect(result).toMatch(/5\/4\/26/);
+    expect(result).toMatch(/(?:5\/4|4\/5)\/26/);
   });
 
   it("returns the fallback for null", () => {
