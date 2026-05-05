@@ -49,12 +49,21 @@ export const getPlayerProfileStats = (playerId: number) =>
 export const toggleSealSession = (id: number) =>
   client.put<GameSession>(`/sessions/${id}/seal`).then((r) => r.data);
 
-export const uploadSessionImage = (sessionId: number, file: File) => {
+export const uploadSessionImage = (
+  sessionId: number,
+  file: File,
+  onProgress?: (pct: number) => void,
+) => {
   const formData = new FormData();
   formData.append("file", file);
   return client
     .post<SessionImage>(`/sessions/${sessionId}/images`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      },
     })
     .then((r) => r.data);
 };

@@ -175,13 +175,29 @@ export default function SessionsPage() {
     }
   };
 
-  const handleUploadImage = async (sessionId: number, file: File) => {
-    try {
-      await uploadSessionImage(sessionId, file);
-      showSnackbar("Photo uploaded");
+  const handleUploadImage = async (
+    sessionId: number,
+    file: File,
+    onProgress?: (pct: number) => void,
+  ) => {
+    await uploadSessionImage(sessionId, file, onProgress);
+  };
+
+  const handleUploadComplete = async (
+    sessionId: number,
+    successCount: number,
+    errorCount: number,
+  ) => {
+    if (successCount > 0) {
+      const label = successCount === 1 ? "Photo uploaded" : `${successCount} photos uploaded`;
+      const message = errorCount > 0 ? `${label} (${errorCount} failed)` : label;
+      showSnackbar(message, errorCount > 0 ? "warning" : "success");
       await refreshDetail(sessionId);
-    } catch (err) {
-      showSnackbar(extractErrorMessage(err), "error");
+    } else if (errorCount > 0) {
+      showSnackbar(
+        errorCount === 1 ? "Photo upload failed" : `${errorCount} photo uploads failed`,
+        "error",
+      );
     }
   };
 
@@ -354,6 +370,7 @@ export default function SessionsPage() {
         playerId={playerId}
         onSeal={handleSeal}
         onUploadImage={handleUploadImage}
+        onUploadComplete={handleUploadComplete}
         onDeleteImage={handleDeleteImage}
         onReact={handleReact}
       />
