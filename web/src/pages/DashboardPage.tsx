@@ -51,10 +51,19 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!playerId) return;
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getPlayerProfileStats(playerId)
-      .then(setStats)
-      .finally(() => setLoading(false));
+      .then((s) => {
+        if (!cancelled) setStats(s);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [playerId]);
 
   if (!playerId) {

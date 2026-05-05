@@ -49,6 +49,7 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSnackbar(): SnackbarContextValue {
   const ctx = useContext(SnackbarContext);
   if (!ctx)

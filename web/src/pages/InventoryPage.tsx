@@ -44,7 +44,8 @@ import { importBGGImage } from "../api/bgg";
 import GameList from "../components/games/GameList";
 import GameForm from "../components/games/GameForm";
 import GameDetailDialog from "../components/games/GameDetailDialog";
-import ConfirmDialog, { buildGameDeleteMessage } from "../components/common/ConfirmDialog";
+import ConfirmDialog from "../components/common/ConfirmDialog";
+import { buildGameDeleteMessage } from "../components/common/confirmMessages";
 import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
 import { extractErrorMessage } from "../utils/errors";
@@ -59,6 +60,7 @@ export default function InventoryPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [searchParams, setSearchParams] = useSearchParams();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const initialSearch = useMemo(() => searchParams.get("search") ?? "", []);
   const [games, setGames] = useState<Game[]>([]);
   const [total, setTotal] = useState(0);

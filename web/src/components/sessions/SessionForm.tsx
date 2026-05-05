@@ -106,6 +106,7 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
         setWinnersTouched(false);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
@@ -121,6 +122,7 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
       }
       setScoreData(scores);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allPlayers]);
 
   useEffect(() => {
@@ -128,6 +130,7 @@ export default function SessionForm({ open, games, defaultGame, onClose, onSave,
       setSelectedExpansionIds(new Set());
       setScoreData({});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGame]);
 
   const autoWinnerIds = useMemo(() => {

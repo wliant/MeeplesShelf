@@ -4,7 +4,7 @@ import {
   buildSessionDeleteMessage,
   buildExpansionDeleteMessage,
   buildPlayerDeleteMessage,
-} from "./ConfirmDialog";
+} from "./confirmMessages";
 
 describe("buildGameDeleteMessage", () => {
   it("mentions expansion count when game has expansions", () => {

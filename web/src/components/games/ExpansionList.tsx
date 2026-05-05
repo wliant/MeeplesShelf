@@ -13,7 +13,8 @@ import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
 import { useState } from "react";
 import type { Game, Expansion } from "../../types/game";
 import { addExpansion, deleteExpansion } from "../../api/games";
-import ConfirmDialog, { buildExpansionDeleteMessage } from "../common/ConfirmDialog";
+import ConfirmDialog from "../common/ConfirmDialog";
+import { buildExpansionDeleteMessage } from "../common/confirmMessages";
 import { useSnackbar } from "../../context/SnackbarContext";
 import { extractErrorMessage } from "../../utils/errors";
 

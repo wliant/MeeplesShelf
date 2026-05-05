@@ -36,7 +36,6 @@ export default function StatisticsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
     Promise.all([
       getOverviewStats(),
       getPlayerStats(),

@@ -54,16 +54,25 @@ export default function PlayerProfilePage() {
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setNotFound(false);
     getPlayerProfileStats(Number(id))
-      .then(setStats)
+      .then((s) => {
+        if (!cancelled) setStats(s);
+      })
       .catch((err) => {
-        if (err.response?.status === 404) {
+        if (!cancelled && err.response?.status === 404) {
           setNotFound(true);
         }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (loading) {
