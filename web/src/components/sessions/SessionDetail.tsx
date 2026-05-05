@@ -19,6 +19,7 @@ import {
   Link as MuiLink,
   IconButton,
   Tooltip,
+  LinearProgress,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -31,6 +32,8 @@ import {
   AddPhotoAlternate as AddPhotoIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
+  CheckCircle as CheckCircleIcon,
+  ErrorOutline as ErrorOutlineIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import type { Game } from "../../types/game";
@@ -47,10 +50,22 @@ interface Props {
   isAdmin?: boolean;
   playerId?: number | null;
   onSeal?: (session: GameSession) => void;
-  onUploadImage?: (sessionId: number, file: File) => Promise<void>;
+  onUploadImage?: (
+    sessionId: number,
+    file: File,
+    onProgress?: (pct: number) => void,
+  ) => Promise<void>;
+  onUploadComplete?: (sessionId: number, successCount: number, errorCount: number) => void;
   onDeleteImage?: (sessionId: number, imageId: number) => Promise<void>;
   onReact?: (sessionPlayerId: number, reaction: string) => Promise<void>;
 }
+
+type UploadEntry = {
+  id: string;
+  name: string;
+  progress: number;
+  status: "uploading" | "done" | "error";
+};
 
 export default function SessionDetail({
   session,
@@ -62,6 +77,7 @@ export default function SessionDetail({
   playerId,
   onSeal,
   onUploadImage,
+  onUploadComplete,
   onDeleteImage,
   onReact,
 }: Props) {
@@ -69,7 +85,7 @@ export default function SessionDetail({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploads, setUploads] = useState<UploadEntry[]>([]);
   const [reactionAnchor, setReactionAnchor] = useState<HTMLElement | null>(null);
   const [reactionTarget, setReactionTarget] = useState<number | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -85,16 +101,53 @@ export default function SessionDetail({
   const canUpload = !session.sealed && (!!playerId || isAdmin);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !onUploadImage) return;
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    setUploading(true);
-    try {
-      await onUploadImage(session.id, file);
-    } finally {
-      setUploading(false);
+    if (files.length === 0 || !onUploadImage) return;
+
+    const sessionId = session.id;
+    const entries: UploadEntry[] = files.map((f) => ({
+      id:
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random()}`,
+      name: f.name,
+      progress: 0,
+      status: "uploading",
+    }));
+    setUploads((prev) => [...prev, ...entries]);
+
+    const updateEntry = (id: string, patch: Partial<UploadEntry>) => {
+      setUploads((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
+    };
+
+    const results = await Promise.allSettled(
+      files.map((file, i) => {
+        const entry = entries[i];
+        return onUploadImage(sessionId, file, (pct) => updateEntry(entry.id, { progress: pct }))
+          .then(() => updateEntry(entry.id, { status: "done", progress: 100 }))
+          .catch((err) => {
+            updateEntry(entry.id, { status: "error" });
+            throw err;
+          });
+      }),
+    );
+
+    const successCount = results.filter((r) => r.status === "fulfilled").length;
+    const errorCount = results.length - successCount;
+    onUploadComplete?.(sessionId, successCount, errorCount);
+
+    const successIds = entries
+      .filter((_, i) => results[i].status === "fulfilled")
+      .map((u) => u.id);
+    if (successIds.length > 0) {
+      setTimeout(() => {
+        setUploads((prev) => prev.filter((u) => !successIds.includes(u.id)));
+      }, 1500);
     }
   };
+
+  const isUploading = uploads.some((u) => u.status === "uploading");
 
   const myReaction = (sessionPlayerId: number) => {
     if (!playerId) return undefined;
@@ -192,17 +245,73 @@ export default function SessionDetail({
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                   <Typography variant="subtitle2">Photos</Typography>
                   {canUpload && onUploadImage && (
-                    <Tooltip title="Upload photo">
-                      <IconButton
-                        size="small"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                      >
-                        <AddPhotoIcon fontSize="small" />
-                      </IconButton>
+                    <Tooltip title="Upload photos">
+                      <span>
+                        <IconButton
+                          size="small"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploading}
+                        >
+                          <AddPhotoIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   )}
                 </Stack>
+                {uploads.length > 0 && (
+                  <Stack spacing={0.5} sx={{ mb: 1 }}>
+                    {uploads.map((u) => (
+                      <Stack
+                        key={u.id}
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            flex: "0 0 40%",
+                            maxWidth: 200,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            color:
+                              u.status === "error" ? "error.main" : "text.secondary",
+                          }}
+                          title={u.name}
+                        >
+                          {u.name}
+                        </Typography>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={u.status === "error" ? 100 : u.progress}
+                            color={
+                              u.status === "error"
+                                ? "error"
+                                : u.status === "done"
+                                ? "success"
+                                : "primary"
+                            }
+                          />
+                        </Box>
+                        <Box sx={{ width: 20, display: "flex", justifyContent: "center" }}>
+                          {u.status === "done" && (
+                            <CheckCircleIcon color="success" sx={{ fontSize: 16 }} />
+                          )}
+                          {u.status === "error" && (
+                            <ErrorOutlineIcon color="error" sx={{ fontSize: 16 }} />
+                          )}
+                          {u.status === "uploading" && (
+                            <Typography variant="caption" color="text.secondary">
+                              {u.progress}%
+                            </Typography>
+                          )}
+                        </Box>
+                      </Stack>
+                    ))}
+                  </Stack>
+                )}
                 {session.images.length > 0 && (
                   <Stack
                     direction="row"
@@ -250,6 +359,7 @@ export default function SessionDetail({
                   ref={fileInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
+                  multiple
                   hidden
                   onChange={handleFileSelect}
                 />
