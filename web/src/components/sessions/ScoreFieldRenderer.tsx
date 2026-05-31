@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   TextField,
   FormControlLabel,
@@ -6,12 +7,56 @@ import {
   Typography,
   Tooltip,
 } from "@mui/material";
+import type { ReactNode } from "react";
 import type { ScoringField } from "../../types/scoring";
 
 interface Props {
   field: ScoringField;
   value: unknown;
   onChange: (value: unknown) => void;
+}
+
+interface NumericFieldProps {
+  label: ReactNode;
+  value: unknown;
+  onChange: (value: number) => void;
+  helperText?: ReactNode;
+}
+
+/**
+ * Numeric score input that keeps a string editing buffer so partial entries
+ * like a leading "-" survive while typing. Without the buffer, a controlled
+ * number input coerces the intermediate "-" back to 0, making it impossible
+ * to enter negative scores.
+ */
+function NumericField({ label, value, onChange, helperText }: NumericFieldProps) {
+  const numericValue = typeof value === "number" ? value : 0;
+  const [text, setText] = useState(numericValue === 0 ? "" : String(numericValue));
+
+  useEffect(() => {
+    const parsed = text === "" || text === "-" ? 0 : Number(text);
+    if (parsed !== numericValue) {
+      setText(numericValue === 0 ? "" : String(numericValue));
+    }
+    // Only resync when the external value changes, not on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [numericValue]);
+
+  return (
+    <TextField
+      label={label}
+      type="number"
+      size="small"
+      value={text}
+      onChange={(e) => {
+        const raw = e.target.value;
+        setText(raw);
+        onChange(raw === "" || raw === "-" ? 0 : Number(raw));
+      }}
+      helperText={helperText}
+      fullWidth
+    />
+  );
 }
 
 export default function ScoreFieldRenderer({ field, value, onChange }: Props) {
@@ -27,20 +72,15 @@ export default function ScoreFieldRenderer({ field, value, onChange }: Props) {
     case "raw_score":
     case "numeric":
       return (
-        <TextField
+        <NumericField
           label={label}
-          type="number"
-          size="small"
-          value={value ?? ""}
-          onChange={(e) =>
-            onChange(e.target.value === "" ? 0 : Number(e.target.value))
-          }
+          value={value}
+          onChange={onChange}
           helperText={
             field.type === "numeric" && field.multiplier !== 1
               ? `x${field.multiplier}`
               : undefined
           }
-          fullWidth
         />
       );
 
